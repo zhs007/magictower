@@ -1,0 +1,8 @@
+{
+  "id": "green_slime",
+  "name": "Green Slime",
+  "hp": 10,
+  "attack": 3,
+  "defense": 1,
+  "gold": 1
+}
