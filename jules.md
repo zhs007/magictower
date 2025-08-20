@@ -31,8 +31,10 @@
 │   ├── map/
 │   └── monster/
 ├── gamedata/            # 游戏数据配置 (JSON)
-│   ├── items.json
-│   └── monsters.json
+│   ├── items/           # 道具配置目录
+│   │   └── yellow_key.json
+│   └── monsters/        # 怪物配置目录
+│       └── green_slime.json
 ├── jules/               # Jules 的开发计划文件
 │   ├── plan001.md
 │   └── ...
