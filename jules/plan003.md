@@ -8,23 +8,23 @@
 
 1.  **定义数据结构类型 (`src/data/types.ts`)**:
     - 创建与 JSON 文件结构相匹配的 TypeScript 类型。例如：
-        - `MonsterData`: 对应 `gamedata/monsters.json` 中的单个怪物条目。
-        - `ItemData`: 对应 `gamedata/items.json` 中的单个道具条目。
+        - `MonsterData`: 对应单个怪物 JSON 文件。
+        - `ItemData`: 对应单个道具 JSON 文件。
         - `MapLayout`: 对应 `mapdata/` 中的地图文件结构。
 
 2.  **创建示例配置文件**:
-    - 在 `gamedata/` 目录下创建 `monsters.json` 和 `items.json`。
-        - **`monsters.json`**: 包含一个怪物数组，每个怪物有 `id`, `name`, `hp`, `attack`, `defense`, `assetId` (图片资源标识) 等字段。
-        - **`items.json`**: 包含一个道具数组，每个道具有 `id`, `name`, `type` (e.g., `POTION`, `KEY`, `STAT_BOOST`), `value` (效果数值), `assetId` 等字段。
+    - 在 `gamedata/monsters/` 目录下创建一个示例怪物文件，如 `green_slime.json`。文件内容是一个独立的 JSON 对象，包含 `id`, `name`, `hp`, `attack`, `defense`, `assetId` 等字段。
+    - 在 `gamedata/items/` 目录下创建一个示例道具文件，如 `yellow_key.json`。文件内容是一个独立的 JSON 对象，包含 `id`, `name`, `type`, `value`, `assetId` 等字段。
     - 在 `mapdata/` 目录下创建 `floor_01.json`。
         - 文件内容为一个 JSON 对象，包含 `layout` 字段，其值为一个二维数组，代表地图。
         - 数组中的每个元素是一个对象，如 `{ ground: 1, entity: 101 }`，其中 `1` 是地块 tile 的 ID，`101` 是实体（怪物/道具）的 ID。
 
 3.  **实现数据加载器 (`src/data/data-manager.ts`)**:
     - 创建 `DataManager` 类。
-    - 使用 `fetch` API (或 Vite 的 `import.meta.glob`) 来异步加载 JSON 文件。
+    - **强烈推荐使用 Vite 的 `import.meta.glob` 功能**，它可以轻松地一次性导入一个目录下的所有文件。
+    - 示例: `const monsterModules = import.meta.glob('/gamedata/monsters/*.json');`
     - 提供方法来获取数据，例如：
-        - `loadGameData()`: 加载所有 `gamedata` 下的配置，并将其存储在内存中（例如，`Map` 对象中，以便通过 ID 快速查找）。
+        - `loadGameData()`: 加载 `gamedata/monsters/` 和 `gamedata/items/` 目录下的所有 JSON 文件，解析后将其存储在内存中（例如，以 ID 为键的 `Map` 对象中），以便快速查找。
         - `loadMap(level: number)`: 加载指定楼层的地图数据。
         - `getMonsterById(id: number): MonsterData`
         - `getItemById(id: number): ItemData`
