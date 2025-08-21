@@ -1,83 +1,34 @@
 import { Application } from 'pixi.js';
-import { Renderer } from './renderer/renderer';
-import { GameState, EntityType, IPlayer, IMonster, IItem } from './core/types';
+import { GameScene } from './scenes/game-scene';
 
+/**
+ * The main entry point of the application.
+ */
 async function main() {
-    // Create a new application
+    // Create a new Pixi.js application
     const app = new Application();
 
-    // Get the canvas element
+    // Find the canvas element
     const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+    if (!canvas) {
+        console.error('Could not find canvas element with id "game-canvas"');
+        return;
+    }
 
     // Initialize the application
     await app.init({
         canvas,
-        width: 800,
-        height: 600,
+        width: 540, // Common mobile resolution width
+        height: 960, // Common mobile resolution height
         backgroundColor: 0x1099bb,
         resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
     });
 
-    // Create a new renderer
-    const renderer = new Renderer(app.stage);
-
-    // Load assets
-    await renderer.loadAssets();
-
-    const player: IPlayer = {
-        id: 'player',
-        name: 'Player',
-        hp: 100,
-        attack: 10,
-        defense: 5,
-        x: 1,
-        y: 1,
-        equipment: {},
-        backupEquipment: [],
-        buffs: [],
-    };
-
-    const monster: IMonster = {
-        id: 'monster_green_slime',
-        name: 'Green Slime',
-        hp: 10,
-        attack: 3,
-        defense: 1,
-        x: 3,
-        y: 1,
-        equipment: {},
-        backupEquipment: [],
-        buffs: [],
-    };
-
-    const item: IItem = {
-        id: 'item_yellow_key',
-        name: 'Yellow Key',
-        type: 'key',
-        color: 'yellow',
-    };
-
-    // Create a static GameState for testing
-    const testGameState: GameState = {
-        currentFloor: 1,
-        map: [
-            [{ groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }],
-            [{ groundLayer: 1 }, { groundLayer: 0, entityLayer: { type: EntityType.PLAYER, id: 'player' } }, { groundLayer: 0 }, { groundLayer: 0, entityLayer: { type: EntityType.MONSTER, id: 'monster_green_slime' } }, { groundLayer: 1 }],
-            [{ groundLayer: 1 }, { groundLayer: 0 }, { groundLayer: 1 }, { groundLayer: 0 }, { groundLayer: 1 }],
-            [{ groundLayer: 1 }, { groundLayer: 0, entityLayer: { type: EntityType.ITEM, id: 'item_yellow_key' } }, { groundLayer: 0 }, { groundLayer: 0 }, { groundLayer: 1 }],
-            [{ groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }],
-        ],
-        player: player,
-        monsters: { [monster.id]: monster },
-        items: { [item.id]: item },
-        equipments: {},
-        doors: {},
-    };
-
-    // Game loop
-    app.ticker.add(() => {
-        renderer.render(testGameState);
-    });
+    // Create and start the main game scene
+    const gameScene = new GameScene(app);
+    await gameScene.start();
 }
 
+// Run the main function
 main();
