@@ -45,3 +45,9 @@ Core logic in `src/core/` should have high test coverage. All new features shoul
 - **Development Plans**: All development tasks are guided by plan files located in the `jules/` directory. Each plan corresponds to a specific feature or development phase.
 - **Reporting**: After completing a plan, create a corresponding `-report.md` file in the `jules/` directory, summarizing the work done.
 - **Updating Status**: Update `jules.md` to reflect the current development status after a plan is completed.
+
+## Agent Activity Log
+
+This section logs significant actions taken by AI agents.
+
+- **2025-08-21 (Jules)**: Created design document `jules/plan011.md` for UI and resolution scaling. Updated `jules.md` to reflect the new plan and confirmed `plan005` as the next implementation task.
