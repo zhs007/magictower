@@ -7,4 +7,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  test: {
+    environment: 'jsdom',
+    globals: true, // Use to have global api like expect, it, etc.
+  },
 });
