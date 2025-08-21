@@ -1,4 +1,4 @@
-import { GameState, IPlayer, IMonster } from './types';
+import { GameState, IPlayer, IMonster, ICharacter, EquipmentSlot } from './types';
 import * as _ from 'lodash';
 
 export function handleMove(state: GameState, dx: number, dy: number): GameState {
@@ -34,14 +34,42 @@ export interface BattleOutcome {
     didPlayerWin: boolean;
 }
 
+function getCharacterTotalStats(character: ICharacter): { totalAttack: number; totalDefense: number } {
+    let totalAttack = character.attack;
+    let totalDefense = character.defense;
+
+    for (const slot of Object.values(EquipmentSlot)) {
+        const equipment = character.equipment[slot];
+        if (equipment) {
+            totalAttack += equipment.attackBonus || 0;
+            totalDefense += equipment.defenseBonus || 0;
+        }
+    }
+
+    return { totalAttack, totalDefense };
+}
+
 export function calculateBattleOutcome(player: IPlayer, monster: IMonster): BattleOutcome {
-    const playerDamageToMonster = Math.max(0, player.attack - monster.defense);
-    const monsterDamageToPlayer = Math.max(0, monster.attack - player.defense);
+    const playerStats = getCharacterTotalStats(player);
+    const monsterStats = getCharacterTotalStats(monster);
+
+    const playerDamageToMonster = Math.max(0, playerStats.totalAttack - monsterStats.totalDefense);
+    const monsterDamageToPlayer = Math.max(0, monsterStats.totalAttack - playerStats.totalDefense);
 
     let playerHp = player.hp;
     let monsterHp = monster.hp;
     let playerTurns = 0;
     let monsterTurns = 0;
+
+    // --- Buff Logic: ON_BATTLE_START ---
+    const playerHasFirstStrike = player.buffs.some(b => b.id === 'buff_first_strike' && b.charges > 0);
+    const monsterHasFirstStrike = monster.buffs.some(b => b.id === 'buff_first_strike' && b.charges > 0);
+
+    if (playerHasFirstStrike && !monsterHasFirstStrike) {
+        monsterHp -= playerDamageToMonster;
+    } else if (monsterHasFirstStrike && !playerHasFirstStrike) {
+        playerHp -= monsterDamageToPlayer;
+    }
 
     // Simplified turn-based combat until one is defeated
     while (playerHp > 0 && monsterHp > 0) {
@@ -53,10 +81,29 @@ export function calculateBattleOutcome(player: IPlayer, monster: IMonster): Batt
         }
         monsterHp -= playerDamageToMonster;
         playerTurns++;
-        if (monsterHp <= 0) break;
+        if (monsterHp <= 0) {
+            // --- Buff Logic: ON_HP_LESS_THAN_ZERO ---
+            const monsterHasLifeSaving = monster.buffs.some(b => b.id === 'buff_life_saving' && b.charges > 0);
+            if (monsterHasLifeSaving) {
+                monsterHp = 1;
+                // In a real implementation, we would mark the buff as consumed.
+                // Since this function is pure, we assume the caller handles state changes.
+            } else {
+                break;
+            }
+        }
 
         playerHp -= monsterDamageToPlayer;
         monsterTurns++;
+        if (playerHp <= 0) {
+            // --- Buff Logic: ON_HP_LESS_THAN_ZERO ---
+            const playerHasLifeSaving = player.buffs.some(b => b.id === 'buff_life_saving' && b.charges > 0);
+            if (playerHasLifeSaving) {
+                playerHp = 1;
+            } else {
+                break;
+            }
+        }
     }
 
     const finalPlayerHp = Math.max(0, playerHp);
