@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { calculateBattleOutcome } from '../logic';
-import { IPlayer, IMonster } from '../types';
+import { IPlayer, IMonster, IEquipment, IBuff, EquipmentSlot, BuffTrigger } from '../types';
 
 describe('calculateBattleOutcome', () => {
     it('should calculate a battle where the player wins', () => {
@@ -34,6 +34,68 @@ describe('calculateBattleOutcome', () => {
         expect(outcome.didPlayerWin).toBe(false); // Player can't damage the monster
         expect(outcome.playerHpLoss).toBe(100);
         expect(outcome.monsterHpLoss).toBe(0);
+    });
+});
+
+describe('calculateBattleOutcome with Equipment and Buffs', () => {
+    it('should correctly calculate battle outcome with equipment bonuses', () => {
+        const player: IPlayer = {
+            id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0,
+            equipment: {
+                [EquipmentSlot.RIGHT_HAND]: { id: 'eq_broadsword', name: 'Broadsword', slot: EquipmentSlot.RIGHT_HAND, attackBonus: 20 },
+                [EquipmentSlot.BODY]: { id: 'eq_steel_armor', name: 'Steel Armor', slot: EquipmentSlot.BODY, defenseBonus: 50 }
+            },
+            backupEquipment: [],
+            buffs: []
+        };
+        const monster: IMonster = { id: 'monster', name: 'Slime', hp: 100, attack: 50, defense: 20, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
+
+        // Player stats with equipment: attack=30, defense=55
+        // Monster stats: attack=50, defense=20
+        // Player damage to monster: max(0, 30 - 20) = 10
+        // Monster damage to player: max(0, 50 - 55) = 0
+        // Player should win without taking any damage.
+        const outcome = calculateBattleOutcome(player, monster);
+
+        expect(outcome.didPlayerWin).toBe(true);
+        expect(outcome.playerHpLoss).toBe(0);
+        expect(outcome.monsterHpLoss).toBe(100);
+    });
+
+    it('should correctly apply "First Strike" buff', () => {
+        const player: IPlayer = {
+            id: 'player', name: 'Hero', hp: 100, attack: 50, defense: 5, x: 0, y: 0,
+            equipment: {},
+            backupEquipment: [],
+            buffs: [{ id: 'buff_first_strike', name: 'First Strike', duration: 1, charges: 1, triggers: [BuffTrigger.ON_BATTLE_START] }]
+        };
+        const monster: IMonster = { id: 'monster', name: 'Slime', hp: 40, attack: 100, defense: 10, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
+
+        // Player damage to monster: 50 - 10 = 40
+        // With first strike, player attacks first and defeats the monster instantly.
+        const outcome = calculateBattleOutcome(player, monster);
+
+        expect(outcome.didPlayerWin).toBe(true);
+        expect(outcome.playerHpLoss).toBe(0);
+        expect(outcome.monsterHpLoss).toBe(40);
+    });
+
+    it('should correctly apply "Life Saving" buff', () => {
+        const player: IPlayer = {
+            id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0,
+            equipment: {},
+            backupEquipment: [],
+            buffs: [{ id: 'buff_life_saving', name: 'Life Saving', duration: -1, charges: 1, triggers: [BuffTrigger.ON_HP_LESS_THAN_ZERO] }]
+        };
+        const monster: IMonster = { id: 'monster', name: 'Dragon', hp: 1000, attack: 105, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
+
+        // Monster damage to player: 105 - 5 = 100. Player should be defeated in one hit.
+        // With life saving buff, player should survive with 1 HP.
+        const outcome = calculateBattleOutcome(player, monster);
+
+        expect(outcome.didPlayerWin).toBe(false);
+        // Player is saved once, but defeated on the next hit. Final HP is 0.
+        expect(outcome.playerHpLoss).toBe(100);
     });
 });
 

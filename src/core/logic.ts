@@ -71,6 +71,9 @@ export function calculateBattleOutcome(player: IPlayer, monster: IMonster): Batt
         playerHp -= monsterDamageToPlayer;
     }
 
+    let playerLifeSavingUsed = false;
+    let monsterLifeSavingUsed = false;
+
     // Simplified turn-based combat until one is defeated
     while (playerHp > 0 && monsterHp > 0) {
         if (playerDamageToMonster <= 0) {
@@ -84,10 +87,9 @@ export function calculateBattleOutcome(player: IPlayer, monster: IMonster): Batt
         if (monsterHp <= 0) {
             // --- Buff Logic: ON_HP_LESS_THAN_ZERO ---
             const monsterHasLifeSaving = monster.buffs.some(b => b.id === 'buff_life_saving' && b.charges > 0);
-            if (monsterHasLifeSaving) {
+            if (monsterHasLifeSaving && !monsterLifeSavingUsed) {
                 monsterHp = 1;
-                // In a real implementation, we would mark the buff as consumed.
-                // Since this function is pure, we assume the caller handles state changes.
+                monsterLifeSavingUsed = true; // Mark as used for this battle calculation
             } else {
                 break;
             }
@@ -98,8 +100,9 @@ export function calculateBattleOutcome(player: IPlayer, monster: IMonster): Batt
         if (playerHp <= 0) {
             // --- Buff Logic: ON_HP_LESS_THAN_ZERO ---
             const playerHasLifeSaving = player.buffs.some(b => b.id === 'buff_life_saving' && b.charges > 0);
-            if (playerHasLifeSaving) {
+            if (playerHasLifeSaving && !playerLifeSavingUsed) {
                 playerHp = 1;
+                playerLifeSavingUsed = true; // Mark as used for this battle calculation
             } else {
                 break;
             }
