@@ -1,8 +1,30 @@
 {
-  "floor": 1,
-  "layout": [
-    [0, 0, 0],
-    [0, 1, 0],
-    [0, 0, 0]
-  ]
+    "floor": 1,
+    "layout": [
+      [1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 1],
+      [1, 0, 1, 0, 1],
+      [1, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1]
+    ],
+    "entities": {
+      "player_start": {
+        "type": "player_start",
+        "id": "player",
+        "x": 1,
+        "y": 1
+      },
+      "monster_1": {
+        "type": "monster",
+        "id": "monster_green_slime",
+        "x": 3,
+        "y": 1
+      },
+      "item_1": {
+        "type": "item",
+        "id": "item_yellow_key",
+        "x": 1,
+        "y": 3
+      }
+    }
 }
