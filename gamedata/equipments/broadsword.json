@@ -1,0 +1,7 @@
+{
+  "id": "eq_broadsword",
+  "name": "Broadsword",
+  "slot": "right_hand",
+  "weaponType": "one_handed",
+  "attackBonus": 20
+}

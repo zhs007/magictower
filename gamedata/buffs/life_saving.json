@@ -1,0 +1,7 @@
+{
+  "id": "buff_life_saving",
+  "name": "Life Saving",
+  "duration": -1,
+  "charges": 1,
+  "triggers": ["on_hp_less_than_zero"]
+}

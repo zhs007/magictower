@@ -4,8 +4,8 @@ import { IPlayer, IMonster } from '../types';
 
 describe('calculateBattleOutcome', () => {
     it('should calculate a battle where the player wins', () => {
-        const player: IPlayer = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0 };
-        const monster: IMonster = { id: 'monster', name: 'Slime', hp: 50, attack: 5, defense: 2 };
+        const player: IPlayer = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
+        const monster: IMonster = { id: 'monster', name: 'Slime', hp: 50, attack: 5, defense: 2, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
 
         const outcome = calculateBattleOutcome(player, monster);
 
@@ -15,8 +15,8 @@ describe('calculateBattleOutcome', () => {
     });
 
     it('should calculate a battle where the player loses', () => {
-        const player: IPlayer = { id: 'player', name: 'Hero', hp: 50, attack: 5, defense: 2, x: 0, y: 0 };
-        const monster: IMonster = { id: 'monster', name: 'Dragon', hp: 100, attack: 10, defense: 5 };
+        const player: IPlayer = { id: 'player', name: 'Hero', hp: 50, attack: 5, defense: 2, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
+        const monster: IMonster = { id: 'monster', name: 'Dragon', hp: 100, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
 
         const outcome = calculateBattleOutcome(player, monster);
 
@@ -26,8 +26,8 @@ describe('calculateBattleOutcome', () => {
     });
 
     it('should handle a battle where player attack is less than monster defense', () => {
-        const player: IPlayer = { id: 'player', name: 'Hero', hp: 100, attack: 5, defense: 10, x: 0, y: 0 };
-        const monster: IMonster = { id: 'monster', name: 'Stone Golem', hp: 100, attack: 10, defense: 10 };
+        const player: IPlayer = { id: 'player', name: 'Hero', hp: 100, attack: 5, defense: 10, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
+        const monster: IMonster = { id: 'monster', name: 'Stone Golem', hp: 100, attack: 10, defense: 10, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
 
         const outcome = calculateBattleOutcome(player, monster);
 
@@ -51,9 +51,10 @@ describe('handleMove', () => {
                 [{ groundLayer: 1 }, { groundLayer: 1, entityLayer: { type: EntityType.WALL, id: 'wall' } }, { groundLayer: 1 }],
                 [{ groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }],
             ],
-            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0 },
+            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] },
             monsters: {},
             items: {},
+            equipments: {},
             doors: {},
         };
     });
@@ -78,9 +79,10 @@ describe('handlePickupItem', () => {
             map: [
                 [{ groundLayer: 1, entityLayer: { type: EntityType.ITEM, id: 'potion1' } }],
             ],
-            player: { id: 'player', name: 'Hero', hp: 50, attack: 10, defense: 5, x: 0, y: 0 },
+            player: { id: 'player', name: 'Hero', hp: 50, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] },
             monsters: {},
             items: { 'potion1': { id: 'potion1', name: 'Health Potion', type: 'potion', value: 20 } },
+            equipments: {},
             doors: {},
         };
 
@@ -98,9 +100,10 @@ describe('handleOpenDoor', () => {
             map: [
                 [{ groundLayer: 1, entityLayer: { type: EntityType.DOOR, id: 'door1' } }],
             ],
-            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0 },
+            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] },
             monsters: {},
             items: {},
+            equipments: {},
             doors: { 'door1': { id: 'door1', color: 'yellow' } },
         };
 

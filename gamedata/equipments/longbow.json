@@ -1,0 +1,7 @@
+{
+  "id": "eq_longbow",
+  "name": "Longbow",
+  "slot": ["left_hand", "right_hand"],
+  "weaponType": "two_handed",
+  "attackBonus": 35
+}

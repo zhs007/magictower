@@ -1,0 +1,7 @@
+{
+  "id": "buff_first_strike",
+  "name": "First Strike",
+  "duration": 1,
+  "charges": 1,
+  "triggers": ["on_battle_start"]
+}
