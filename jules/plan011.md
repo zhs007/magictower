@@ -1,34 +1,77 @@
-# Plan 011: 游戏界面与分辨率适配设计方案
+# Plan 011: Implement UI Layout and Resolution Scaling
 
-## 1. 任务目标
+## 1. Task Objective
 
-根据新的设计要求，明确定义游戏在不同分辨率设备上的显示规范，并调整核心游戏界面的布局。本次任务仅输出设计文档，不涉及具体实现。
+Implement the new UI design which includes resolution scaling, screen layout, and HUD positioning. This task will involve modifications to the HTML, CSS, and TypeScript source files to match the design specifications.
 
-## 2. 设计规范
+## 2. Design Specifications (Summary)
 
-### 2.1. 分辨率与屏幕适配
+- **Design Resolution**: 1080x1920 (Portrait)
+- **Scaling**: Maintain aspect ratio, center the canvas, and fill the background with a blurred image.
+- **Layout**: The main game map area will be 1040px wide with 20px side margins. The HUD will be at the bottom.
+- **Tile Size**: Logical size is 16x16, rendered size is 65x65.
 
-- **设计分辨率**: 游戏的核心视觉设计基于 `1080x1920` 的竖屏分辨率。
-- **屏幕适配策略**:
-    - 当用户设备的实际分辨率与设计分辨率不一致时，必须保持 `1080:1920` (即 `9:16`) 的宽高比。
-    - 画布（Canvas）应在保持宽高比的前提下，尽可能大地填充屏幕。
-    - 对于屏幕上因保持宽高比而产生的空白区域（黑边），应使用一张模糊的背景图进行填充。此背景图的填充建议通过 DOM + CSS 实现，以避免增加 WebGL/Canvas 的渲染负担。
+## 3. Implementation Steps
 
-### 2.2. 地图与布局
+### Step 3.1: CSS and HTML modifications (`index.html`, `src/style.css`)
 
-- **地图在屏幕中的位置**: 游戏地图不应占满整个屏幕宽度，应在顶部居中显示，并与屏幕边缘保留一定的边距。
-- **地图尺寸**:
-    - 地图在屏幕上渲染的宽度为 `1040px`。
-    - 屏幕左右两侧各留出 `20px` 的边距 (`20 + 1040 + 20 = 1080`)。
-- **图块 (Tile) 尺寸**:
-    - **逻辑尺寸**: 地图数据的基本单位，即一个图块在逻辑上代表 `16x16` 的区域。
-    - **渲染尺寸**: 在 `1080x1920` 的设计分辨率下，每个图块应被渲染为 `65x65` 像素大小。
-    - 基于此设计，地图在宽度上可以容纳 `1040 / 65 = 16` 个图块。
+1.  **Create `src/style.css`**: Create a new CSS file to style the page.
+2.  **Add background**: In `style.css`, set a blurred background image for the `body`.
+    ```css
+    body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000; /* Fallback color */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
+    }
+    body::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: url('/assets/map/background_blur.png') no-repeat center center;
+        background-size: cover;
+        filter: blur(8px);
+        z-index: -1;
+    }
+    ```
+    *(Note: A placeholder background image `background_blur.png` will need to be added to `assets/map/`)*
+3.  **Style Canvas**: Add styles to center the canvas element and handle aspect ratio.
+    ```css
+    canvas {
+        display: block;
+        max-width: 100vw;
+        max-height: 100vh;
+        object-fit: contain;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    ```
+4.  **Link CSS**: In `index.html`, ensure a `<div id="app"></div>` exists for the Pixi app and link the CSS.
+5.  **Import CSS in `main.ts`**: To ensure Vite bundles the CSS, add `import './style.css';` at the top of `src/main.ts`.
 
-### 2.3. HUD (Heads-Up Display)
+### Step 3.2: Application Setup (`src/main.ts`)
 
-- **HUD 位置**: 主界面的 HUD（如玩家状态、道具栏等）应固定显示在屏幕的下方区域，位于游戏地图渲染区域的下方。
+1.  **Modify Pixi Application**: Adjust the `PIXI.Application` constructor to use the fixed design resolution (1080x1920) and attach it to the `#app` div.
+2.  **Remove auto-resizing**: Any existing JavaScript-based resizing logic should be removed. CSS will now handle all responsive scaling.
 
-## 3. 预期成果
+### Step 3.3: Game Scene Layout (`src/scenes/game-scene.ts`)
 
-- 本文档 (`plan011.md`) 作为未来相关开发任务（如 `plan006: HUD 与 UI 界面` 和 `plan008: 屏幕管理与菜单界面`）的设计依据。
+1.  **Position the Map**: The container for the game map should be positioned at `x: 20` to account for the left margin. Its `y` position should be near the top.
+2.  **Position the HUD**: The container for the HUD should be positioned below the map area. The exact Y-coordinate will depend on the map's height and should be calculated dynamically or set as a constant.
+
+### Step 3.4: Add Placeholder Asset
+
+1.  To fulfill the CSS requirement, a placeholder image named `background_blur.png` must be created or found and placed in the `assets/map/` directory.
+
+## 4. Verification
+
+After implementation:
+- Run the application (`npm run dev`).
+- Verify that the canvas is centered on the screen with a blurred background filling the excess space.
+- Check that the map is rendered with a 20px margin on the left and right.
+- Confirm the HUD appears at the bottom of the screen, below the map.
