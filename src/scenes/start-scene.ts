@@ -1,7 +1,7 @@
 import { Container, Text, Graphics } from 'pixi.js';
 import { BaseScene } from './base-scene';
 import { SceneManager } from './scene-manager';
-import { saveManager } from '../core/save-manager';
+import { SaveManager } from '../core/save-manager';
 
 /**
  * The start menu scene.
@@ -15,7 +15,8 @@ export class StartScene extends BaseScene {
     }
 
     public async onEnter(): Promise<void> {
-        this.saveSlots = await saveManager.listSaves();
+        // Use the static listSaves method which returns string[]
+        this.saveSlots = SaveManager.listSaves();
         this.drawMenu();
     }
 

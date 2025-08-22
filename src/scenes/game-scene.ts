@@ -4,7 +4,7 @@ import { InputManager } from '../core/input-manager';
 import { dataManager } from '../data/data-manager';
 import { BaseScene } from './base-scene';
 import { SceneManager } from './scene-manager';
-import { saveManager } from '../core/save-manager';
+import { SaveManager } from '../core/save-manager';
 
 interface GameSceneOptions {
     newGame?: boolean;
@@ -45,7 +45,8 @@ export class GameScene extends BaseScene {
 
         let initialState;
         if (options.loadSlot) {
-            const loadedState = await saveManager.loadGame(options.loadSlot);
+            // Use the static loadGame method
+            const loadedState = await SaveManager.loadGame(options.loadSlot);
             if (loadedState) {
                 initialState = loadedState;
             } else {
