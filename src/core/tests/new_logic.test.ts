@@ -4,8 +4,15 @@ import { handleMove, handlePickupItem, handleStartBattle, handleAttack, handleEn
 
 describe('Game Logic with Interactions', () => {
     let gameState: GameState;
+    const playerEntityKey = 'player_start_0_0';
+    const monsterEntityKey = 'monster_green_slime_2_1';
+    const itemEntityKey = 'item_yellow_key_0_1';
 
     beforeEach(() => {
+        const player: IPlayer = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 1, y: 1, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } };
+        const monster: IMonster = { id: 'monster_green_slime', name: 'Green Slime', hp: 30, attack: 8, defense: 2, x: 2, y: 1, equipment: {}, backupEquipment: [], buffs: [] };
+        const item: IItem = { id: 'item_yellow_key', name: 'Yellow Key', type: 'key', color: 'yellow' };
+
         gameState = {
             currentFloor: 1,
             map: [
@@ -13,17 +20,17 @@ describe('Game Logic with Interactions', () => {
                 [0, 0, 0],
                 [0, 0, 0],
             ],
-            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 1, y: 1, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } },
+            player,
             entities: {
-                'player_start_0_0': { type: 'player_start', id: 'player', x: 1, y: 1 },
-                'item_yellow_key_0_1': { type: 'item', id: 'item_yellow_key', x: 0, y: 1 },
-                'monster_green_slime_2_1': { type: 'monster', id: 'monster_green_slime', x: 2, y: 1 },
+                [playerEntityKey]: { ...player, type: 'player_start' },
+                [itemEntityKey]: { ...item, type: 'item', x: 0, y: 1 },
+                [monsterEntityKey]: { ...monster, type: 'monster' },
             },
             monsters: {
-                'monster_green_slime_2_1': { id: 'monster_green_slime', name: 'Green Slime', hp: 30, attack: 8, defense: 2, x: 2, y: 1, equipment: {}, backupEquipment: [], buffs: [] }
+                [monsterEntityKey]: monster
             },
             items: {
-                'item_yellow_key_0_1': { id: 'item_yellow_key', name: 'Yellow Key', type: 'key', color: 'yellow' }
+                [itemEntityKey]: item
             },
             equipments: {},
             doors: {},
@@ -34,25 +41,25 @@ describe('Game Logic with Interactions', () => {
     // Test Item Pickup
     describe('handleMove (Item Interaction)', () => {
         it('should set interactionState to "item_pickup" when moving onto an item', () => {
-            const newState = handleMove(gameState, -1, 0); // Move left onto the key
+            const newState = handleMove(gameState, -1, 0);
             expect(newState.interactionState.type).toBe('item_pickup');
             if (newState.interactionState.type === 'item_pickup') {
-                expect(newState.interactionState.itemId).toBe('item_yellow_key_0_1');
+                expect(newState.interactionState.itemId).toBe(itemEntityKey);
             }
-            expect(newState.player.x).toBe(1); // Player should not have moved yet
+            expect(newState.player.x).toBe(1);
         });
     });
 
     describe('handlePickupItem', () => {
         it('should correctly handle picking up an item', () => {
             const stateWithItemInteraction = handleMove(gameState, -1, 0);
-            const newState = handlePickupItem(stateWithItemInteraction, 'item_yellow_key_0_1');
+            const newState = handlePickupItem(stateWithItemInteraction, itemEntityKey);
 
             expect(newState.player.x).toBe(0);
             expect(newState.player.y).toBe(1);
             expect(newState.player.keys.yellow).toBe(1);
-            expect(newState.entities['item_yellow_key_0_1']).toBeUndefined();
-            expect(newState.items['item_yellow_key_0_1']).toBeUndefined();
+            expect(newState.entities[itemEntityKey]).toBeUndefined();
+            expect(newState.items[itemEntityKey]).toBeUndefined();
             expect(newState.interactionState.type).toBe('none');
         });
     });
@@ -60,64 +67,86 @@ describe('Game Logic with Interactions', () => {
     // Test Combat
     describe('handleMove (Combat Interaction)', () => {
         it('should set interactionState to "battle" when moving onto a monster', () => {
-            const newState = handleMove(gameState, 1, 0); // Move right onto the slime
+            const newState = handleMove(gameState, 1, 0);
             expect(newState.interactionState.type).toBe('battle');
             if (newState.interactionState.type === 'battle') {
-                expect(newState.interactionState.monsterId).toBe('monster_green_slime_2_1');
+                expect(newState.interactionState.monsterId).toBe(monsterEntityKey);
             }
-            expect(newState.player.x).toBe(1); // Player should not have moved yet
+            expect(newState.player.x).toBe(1);
         });
     });
 
     describe('handleStartBattle', () => {
         it('should initialize battle state correctly', () => {
-            const newState = handleStartBattle(gameState, 'monster_green_slime_2_1');
+            const newState = handleStartBattle(gameState, monsterEntityKey);
             expect(newState.interactionState.type).toBe('battle');
             if (newState.interactionState.type === 'battle') {
-                expect(newState.interactionState.monsterId).toBe('monster_green_slime_2_1');
+                expect(newState.interactionState.monsterId).toBe(monsterEntityKey);
                 expect(newState.interactionState.turn).toBe('player');
                 expect(newState.interactionState.playerHp).toBe(100);
                 expect(newState.interactionState.monsterHp).toBe(30);
+                expect(newState.interactionState.round).toBe(1);
             }
         });
     });
 
     describe('handleAttack', () => {
         it('should correctly apply damage and switch turns', () => {
-            let state = handleStartBattle(gameState, 'monster_green_slime_2_1');
+            let state = handleStartBattle(gameState, monsterEntityKey);
 
-            state = handleAttack(state, 'player', 'monster_green_slime_2_1');
+            state = handleAttack(state, playerEntityKey, monsterEntityKey);
             if (state.interactionState.type === 'battle') {
                 expect(state.interactionState.monsterHp).toBe(22);
                 expect(state.interactionState.turn).toBe('monster');
             }
 
-            state = handleAttack(state, 'monster_green_slime_2_1', 'player');
+            state = handleAttack(state, monsterEntityKey, playerEntityKey);
             if (state.interactionState.type === 'battle') {
                 expect(state.interactionState.playerHp).toBe(97);
                 expect(state.interactionState.turn).toBe('player');
+                expect(state.interactionState.round).toBe(2);
             }
         });
     });
 
     describe('handleEndBattle', () => {
         it('should correctly end the battle when the player wins', () => {
-            let state = handleStartBattle(gameState, 'monster_green_slime_2_1');
+            let state = handleStartBattle(gameState, monsterEntityKey);
             if (state.interactionState.type === 'battle') {
                 state.interactionState.monsterHp = 5;
             }
 
-            state = handleAttack(state, 'player', 'monster_green_slime_2_1');
+            state = handleAttack(state, playerEntityKey, monsterEntityKey);
 
             expect(state.interactionState.type).toBe('battle');
             if (state.interactionState.type === 'battle') {
                 expect(state.interactionState.turn).toBe('battle_end');
             }
 
-            const finalState = handleEndBattle(state, 'player');
+            const finalState = handleEndBattle(state, playerEntityKey, 'hp_depleted');
             expect(finalState.interactionState.type).toBe('none');
-            expect(finalState.monsters['monster_green_slime_2_1']).toBeUndefined();
-            expect(finalState.entities['monster_green_slime_2_1']).toBeUndefined();
+            expect(finalState.monsters[monsterEntityKey]).toBeUndefined();
+            expect(finalState.entities[monsterEntityKey]).toBeUndefined();
+            expect(finalState.player.hp).toBe(100);
+        });
+
+        it('should end the battle on round timeout', () => {
+            let state = handleStartBattle(gameState, monsterEntityKey);
+            if (state.interactionState.type === 'battle') {
+                state.interactionState.round = 9;
+            }
+
+            state = handleAttack(state, playerEntityKey, monsterEntityKey);
+
+            expect(state.interactionState.type).toBe('battle');
+            if (state.interactionState.type === 'battle') {
+                expect(state.interactionState.turn).toBe('battle_end');
+            }
+
+            const finalState = handleEndBattle(state, null, 'timeout');
+            expect(finalState.interactionState.type).toBe('none');
+            expect(finalState.monsters[monsterEntityKey]).toBeDefined();
+            expect(finalState.entities[monsterEntityKey]).toBeDefined();
             expect(finalState.player.hp).toBe(100);
         });
     });

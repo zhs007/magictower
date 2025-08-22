@@ -101,7 +101,7 @@ export class GameScene extends BaseScene {
             if (battleState.round > 8) {
                 this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId: null, reason: 'timeout' } });
             } else {
-                const winnerId = battleState.playerHp > 0 ? 'player' : battleState.monsterId;
+                const winnerId = battleState.playerHp > 0 ? this.playerEntityKey : battleState.monsterId;
                 this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId, reason: 'hp_depleted' } });
             }
             this.renderer.render(this.gameStateManager.getState());
@@ -126,7 +126,7 @@ export class GameScene extends BaseScene {
 
         this.renderer.animateAttack(attackerId, defenderId, damage, () => {
             if (this.gameStateManager) {
-                this.gameStateManager.dispatch({ type: 'ATTACK', payload: { attackerId: attacker.id, defenderId: defender.id } });
+                this.gameStateManager.dispatch({ type: 'ATTACK', payload: { attackerId, defenderId } });
                 const nextState = this.gameStateManager.getState();
                 this.renderer.render(nextState);
                 this.isAnimating = false;
