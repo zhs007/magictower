@@ -5,24 +5,22 @@ import { dataManager } from '../data/data-manager';
 import { BaseScene } from './base-scene';
 import { SceneManager } from './scene-manager';
 import { SaveManager } from '../core/save-manager';
+import { GameState } from '../core/types';
+import { calculateDamage } from '../core/logic';
 
 interface GameSceneOptions {
     newGame?: boolean;
     loadSlot?: string;
 }
 
-/**
- * The main scene for the game, handling the primary game loop.
- */
 export class GameScene extends BaseScene {
     private gameStateManager: GameStateManager | null = null;
     private renderer: Renderer;
     private inputManager: InputManager;
+    private isAnimating: boolean = false;
 
     constructor(sceneManager: SceneManager) {
         super(sceneManager);
-
-        // The renderer will now render to this scene's container
         this.renderer = new Renderer(this);
         this.inputManager = new InputManager();
     }
@@ -33,43 +31,96 @@ export class GameScene extends BaseScene {
 
     public onExit(): void {
         this.inputManager.destroy();
-        this.renderer.destroy();
-        // Ensure all children are removed from the stage
         this.removeChildren();
     }
 
     private async initializeGame(options: GameSceneOptions): Promise<void> {
-        // Load all necessary game data and assets first
         await dataManager.loadAllData();
         await this.renderer.loadAssets();
 
         let initialState;
         if (options.loadSlot) {
-            // Use the static loadGame method
             const loadedState = await SaveManager.loadGame(options.loadSlot);
-            if (loadedState) {
-                initialState = loadedState;
-            } else {
-                console.error(`Failed to load game from slot: ${options.loadSlot}. Starting a new game.`);
-                initialState = await GameStateManager.createInitialState({ floor: 1 });
-            }
+            initialState = loadedState || await GameStateManager.createInitialState({ floor: 1 });
         } else {
-            // By default, or if newGame is explicitly true
             initialState = await GameStateManager.createInitialState({ floor: 1 });
         }
 
         this.gameStateManager = new GameStateManager();
         this.gameStateManager.initializeState(initialState);
+        this.renderer.initialize(this.gameStateManager.getState());
 
-        // Render the initial state
-        this.renderer.render(this.gameStateManager.getState());
+        this.inputManager.on('action', (action) => this.handleAction(action));
+    }
 
-        // Set up the input listener to drive the game loop
-        this.inputManager.on('action', (action) => {
+    private handleAction(action: any): void {
+        if (this.isAnimating || !this.gameStateManager) return;
+
+        this.gameStateManager.dispatch(action);
+        const newState = this.gameStateManager.getState();
+
+        this.processInteraction(newState);
+    }
+
+    private processInteraction(state: GameState): void {
+        switch (state.interactionState.type) {
+            case 'item_pickup':
+                this.handleItemPickup(state);
+                break;
+            case 'battle':
+                this.handleBattle(state);
+                break;
+            default:
+                this.renderer.render(state);
+        }
+    }
+
+    private handleItemPickup(state: GameState): void {
+        this.isAnimating = true;
+        this.renderer.animateItemPickup(state, () => {
+            if (this.gameStateManager && state.interactionState.type === 'item_pickup') {
+                this.gameStateManager.dispatch({ type: 'PICK_UP_ITEM', payload: { itemId: state.interactionState.itemId } });
+                this.renderer.render(this.gameStateManager.getState());
+            }
+            this.isAnimating = false;
+        });
+    }
+
+    private handleBattle(state: GameState): void {
+        if (!this.gameStateManager) return;
+
+        const battleState = state.interactionState;
+        if (battleState.turn === 'battle_end') {
+            const winnerId = battleState.playerHp > 0 ? 'player' : battleState.monsterId;
+            this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId } });
+            this.renderer.render(this.gameStateManager.getState());
+            return;
+        }
+
+        this.isAnimating = true;
+
+        const player = state.player;
+        const monster = state.monsters[battleState.monsterId];
+        if (!monster) {
+            this.isAnimating = false;
+            return;
+        }
+
+        const attacker = battleState.turn === 'player' ? player : monster;
+        const defender = battleState.turn === 'player' ? monster : player;
+        const attackerId = battleState.turn === 'player' ? 'player_start_0_0' : battleState.monsterId;
+        const defenderId = battleState.turn === 'player' ? battleState.monsterId : 'player_start_0_0';
+
+        const damage = calculateDamage(attacker, defender);
+
+        this.renderer.animateAttack(attackerId, defenderId, damage, () => {
             if (this.gameStateManager) {
-                this.gameStateManager.dispatch(action);
-                const newState = this.gameStateManager.getState();
-                this.renderer.render(newState);
+                this.gameStateManager.dispatch({ type: 'ATTACK', payload: { attackerId: attacker.id, defenderId: defender.id } });
+                const nextState = this.gameStateManager.getState();
+                this.renderer.render(nextState); // Render intermediate state
+                this.isAnimating = false;
+                // Trigger the next turn processing
+                this.processInteraction(nextState);
             }
         });
     }

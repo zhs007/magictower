@@ -1,5 +1,5 @@
 import { GameState, Action, IPlayer, IMonster, IItem } from './types';
-import { handleMove, handlePickupItem, handleOpenDoor } from './logic';
+import { handleMove, handlePickupItem, handleOpenDoor, handleStartBattle, handleAttack, handleEndBattle } from './logic';
 import { dataManager } from '../data/data-manager';
 
 export class GameStateManager {
@@ -71,6 +71,7 @@ export class GameStateManager {
             items,
             equipments: {},
             doors: {},
+            interactionState: { type: 'none' },
         };
     }
 
@@ -94,6 +95,15 @@ export class GameStateManager {
                 break;
             case 'OPEN_DOOR':
                 newState = handleOpenDoor(this.currentState, action.payload.doorId);
+                break;
+            case 'START_BATTLE':
+                newState = handleStartBattle(this.currentState, action.payload.monsterId);
+                break;
+            case 'ATTACK':
+                newState = handleAttack(this.currentState, action.payload.attackerId, action.payload.defenderId);
+                break;
+            case 'END_BATTLE':
+                newState = handleEndBattle(this.currentState, action.payload.winnerId);
                 break;
             default:
                 newState = this.currentState;

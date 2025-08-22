@@ -9,9 +9,11 @@ vi.mock('pixi.js', async () => {
     return {
         ...actualPixi,
         Container: class {
-            constructor() { this.x = 0; this.y = 0; }
-            addChild = vi.fn();
-            removeChildren = vi.fn();
+            x = 0;
+            y = 0;
+            children: any[] = [];
+            addChild = vi.fn((child) => this.children.push(child));
+            removeChildren = vi.fn(() => { this.children = []; });
         },
         Assets: {
             get: vi.fn(key => ({ texture: key })),
@@ -20,23 +22,17 @@ vi.mock('pixi.js', async () => {
         },
         Sprite: vi.fn(texture => ({
             __type: 'Sprite',
-            x: 0, y: 0, width: 0, height: 0, texture
+            x: 0, y: 0, width: 0, height: 0, texture,
+            anchor: { set: vi.fn() },
+            visible: true,
         })),
-        Text: vi.fn(() => ({ __type: 'Text', x: 0, y: 0 })),
-        Graphics: vi.fn(() => ({
-            __type: 'Graphics',
-            fill: vi.fn().mockReturnThis(),
-            drawRect: vi.fn().mockReturnThis(),
-        })),
+        Text: vi.fn(() => ({ __type: 'Text', x: 0, y: 0, anchor: { set: vi.fn() } })),
     };
 });
 
 vi.mock('../../data/data-manager', () => ({
     dataManager: {
         loadAllData: vi.fn().mockResolvedValue(undefined),
-        monsters: new Map(),
-        items: new Map(),
-        equipments: new Map(),
     },
 }));
 
@@ -51,23 +47,25 @@ describe('Renderer', () => {
         renderer = new Renderer(mockStage);
     });
 
-    it('should clear map container and update HUD on render', () => {
+    it('should call syncSprites and update HUD on render', () => {
         const gameState = createMockGameState();
-        // Spy on the hud's update method
+        const syncSpritesSpy = vi.spyOn(renderer, 'syncSprites');
         const hudUpdateSpy = vi.spyOn(renderer.hud, 'update');
 
         renderer.render(gameState);
 
-        expect(renderer.mapContainer.removeChildren).toHaveBeenCalledTimes(1);
+        expect(syncSpritesSpy).toHaveBeenCalledWith(gameState);
         expect(hudUpdateSpy).toHaveBeenCalledWith(gameState);
     });
 
-    it('should render map tiles and entities correctly', async () => {
+    it('should render map tiles and entities correctly on initialize', async () => {
         const gameState = createMockGameState();
-        renderer.render(gameState);
+        renderer.initialize(gameState);
 
-        // 4 tiles + 3 entities = 7
-        expect(renderer.mapContainer.addChild).toHaveBeenCalledTimes(7);
+        // 4 map tiles
+        expect(renderer.mapContainer.addChild).toHaveBeenCalledTimes(4);
+        // 3 entities
+        expect(renderer.entityContainer.addChild).toHaveBeenCalledTimes(3);
 
         const PIXI = await import('pixi.js');
         expect(PIXI.Assets.get).toHaveBeenCalledWith('wall');
@@ -79,35 +77,34 @@ describe('Renderer', () => {
 
     it('should position sprites correctly', () => {
         const gameState = createMockGameState();
-        renderer.render(gameState);
+        renderer.initialize(gameState); // Use initialize to create sprites
 
         const TILE_SIZE = 65;
-        const addedObjects = (renderer.mapContainer.addChild as any).mock.calls.map(call => call[0]);
-        const addedSprites = addedObjects.filter(o => o.__type === 'Sprite');
+        const addedSprites = renderer.entityContainer.children;
 
         const playerSprite = addedSprites.find(s => s.texture.texture === 'player');
         expect(playerSprite).toBeDefined();
-        expect(playerSprite.x).toBe(1 * TILE_SIZE);
-        expect(playerSprite.y).toBe(1 * TILE_SIZE);
+        expect(playerSprite.x).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
+        expect(playerSprite.y).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
 
         const monsterSprite = addedSprites.find(s => s.texture.texture === 'monster_green_slime');
         expect(monsterSprite).toBeDefined();
-        expect(monsterSprite.x).toBe(0 * TILE_SIZE);
-        expect(monsterSprite.y).toBe(1 * TILE_SIZE);
+        expect(monsterSprite.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
+        expect(monsterSprite.y).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
     });
 });
 
 function createMockGameState(): GameState {
     const player: IPlayer = {
         id: 'player', name: 'Player', hp: 100, attack: 10, defense: 5, x: 1, y: 1,
-        equipment: {}, backupEquipment: [], buffs: [], type: 'player_start'
+        equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 }
     };
     const monster: IMonster = {
         id: 'monster_green_slime', name: 'Green Slime', hp: 10, attack: 3, defense: 1, x: 0, y: 1,
-        equipment: {}, backupEquipment: [], buffs: [], type: 'monster'
+        equipment: {}, backupEquipment: [], buffs: []
     };
     const item: IItem = {
-        id: 'item_yellow_key', name: 'Yellow Key', type: 'item', color: 'yellow', x: 1, y: 0,
+        id: 'item_yellow_key', name: 'Yellow Key', type: 'key', color: 'yellow'
     };
 
     return {
@@ -118,13 +115,14 @@ function createMockGameState(): GameState {
         ],
         player,
         entities: {
-            'player_start': player,
-            'monster_1': monster,
-            'item_1': item,
+            'player_start_0_0': { ...player, type: 'player_start' },
+            'monster_1': { ...monster, type: 'monster', x: 0, y: 1 },
+            'item_1': { ...item, type: 'item', x: 1, y: 0 },
         },
         monsters: { 'monster_1': monster },
         items: { 'item_1': item },
         equipments: {},
         doors: {},
+        interactionState: { type: 'none' },
     };
 }

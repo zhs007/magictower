@@ -92,6 +92,17 @@ export enum EntityType {
 
 export type IEntity = (IPlayer | IMonster | IItem | IEquipment) & { type: string };
 
+export type InteractionState =
+    | { type: 'none' }
+    | { type: 'item_pickup'; itemId: string }
+    | {
+        type: 'battle';
+        monsterId: string;
+        turn: 'player' | 'monster' | 'battle_end';
+        playerHp: number;
+        monsterHp: number;
+      };
+
 export interface GameState {
     currentFloor: number;
     map: number[][];
@@ -101,12 +112,16 @@ export interface GameState {
     items: Record<string, IItem>;
     equipments: Record<string, IEquipment>;
     doors: Record<string, { id: string; color: string; }>;
+    interactionState: InteractionState;
 }
 
 export type Action =
     | { type: 'MOVE'; payload: { dx: number; dy: number } }
     | { type: 'PICK_UP_ITEM'; payload: { itemId: string } }
-    | { type: 'OPEN_DOOR'; payload: { doorId: string } };
+    | { type: 'OPEN_DOOR'; payload: { doorId: string } }
+    | { type: 'START_BATTLE'; payload: { monsterId: string } }
+    | { type: 'ATTACK'; payload: { attackerId: string, defenderId: string } }
+    | { type: 'END_BATTLE'; payload: { winnerId: string } };
 
 export interface SaveData {
     timestamp: number;

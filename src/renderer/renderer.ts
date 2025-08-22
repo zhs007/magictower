@@ -1,29 +1,36 @@
-import { Container, Assets, Sprite } from 'pixi.js';
+import { Container, Assets, Sprite, Text } from 'pixi.js';
 import { GameState } from '../core/types';
 import { dataManager } from '../data/data-manager';
 import { HUD } from './ui/hud';
+import { gsap } from 'gsap';
 
-const TILE_SIZE = 65; // Logical size 16x16, rendered at 65x65
+const TILE_SIZE = 65;
 const MAP_WIDTH_TILES = 16;
 const MAP_OFFSET_X = 20;
 
 export class Renderer {
     private stage: Container;
     private mapContainer: Container;
+    private entityContainer: Container;
     private hud: HUD;
+
+    private entitySprites: Map<string, Sprite> = new Map();
 
     constructor(stage: Container) {
         this.stage = stage;
         this.mapContainer = new Container();
+        this.entityContainer = new Container();
         this.hud = new HUD();
 
         this.mapContainer.x = MAP_OFFSET_X;
-        this.mapContainer.y = 200; // Placeholder Y, adjust as needed
+        this.mapContainer.y = 200;
 
-        this.hud.y = (MAP_WIDTH_TILES * TILE_SIZE) + this.mapContainer.y; // Position HUD below map
+        this.entityContainer.x = this.mapContainer.x;
+        this.entityContainer.y = this.mapContainer.y;
 
-        this.stage.addChild(this.mapContainer);
-        this.stage.addChild(this.hud);
+        this.hud.y = (MAP_WIDTH_TILES * TILE_SIZE) + this.mapContainer.y;
+
+        this.stage.addChild(this.mapContainer, this.entityContainer, this.hud);
     }
 
     public async loadAssets(): Promise<void> {
@@ -44,18 +51,18 @@ export class Renderer {
             ],
         };
 
-        // This logic is simplified as we are using generic monster/item images for now
-        // A more robust system would map specific monster IDs to specific asset files
-
         await Assets.init({ manifest: assetManifest });
         await Assets.loadBundle('game-assets');
     }
 
-    public render(state: GameState): void {
-        // Clear the map container for the next frame
-        this.mapContainer.removeChildren();
+    public initialize(state: GameState): void {
+        this.drawMap(state);
+        this.syncSprites(state);
+        this.hud.update(state);
+    }
 
-        // Render Map Tiles
+    private drawMap(state: GameState): void {
+        this.mapContainer.removeChildren();
         for (let y = 0; y < state.map.length; y++) {
             for (let x = 0; x < state.map[y].length; x++) {
                 const tileValue = state.map[y][x];
@@ -67,29 +74,130 @@ export class Renderer {
                 this.mapContainer.addChild(tileSprite);
             }
         }
+    }
 
-        // Render Entities
-        for (const entity of Object.values(state.entities)) {
+    public syncSprites(state: GameState): void {
+        const allEntityIds = Object.keys(state.entities);
+
+        // Sync existing and new sprites
+        for (const entityId of allEntityIds) {
+            const entity = state.entities[entityId];
             if (!entity) continue;
-            let entitySprite: Sprite | undefined;
-            if (entity.type === 'player_start') {
-                entitySprite = new Sprite(Assets.get('player'));
-            } else if (entity.type === 'monster') {
-                entitySprite = new Sprite(Assets.get(entity.id));
-            } else if (entity.type === 'item') {
-                entitySprite = new Sprite(Assets.get(entity.id));
+
+            let sprite = this.entitySprites.get(entityId);
+            if (!sprite) {
+                // Create new sprite
+                let textureAlias = '';
+                if (entity.type === 'player_start') textureAlias = 'player';
+                else if (entity.type === 'monster') textureAlias = entity.id;
+                else if (entity.type === 'item') textureAlias = entity.id;
+
+                if (textureAlias) {
+                    sprite = new Sprite(Assets.get(textureAlias));
+                    sprite.width = TILE_SIZE;
+                    sprite.height = TILE_SIZE;
+                    sprite.anchor.set(0.5); // Set anchor to center for animations
+                    this.entitySprites.set(entityId, sprite);
+                    this.entityContainer.addChild(sprite);
+                }
             }
 
-            if (entitySprite) {
-                entitySprite.x = entity.x * TILE_SIZE;
-                entitySprite.y = entity.y * TILE_SIZE;
-                entitySprite.width = TILE_SIZE;
-                entitySprite.height = TILE_SIZE;
-                this.mapContainer.addChild(entitySprite);
+            if (sprite) {
+                // Update sprite properties
+                sprite.x = entity.x * TILE_SIZE + TILE_SIZE / 2;
+                sprite.y = entity.y * TILE_SIZE + TILE_SIZE / 2;
+                sprite.visible = true;
             }
         }
 
-        // Update the HUD with the new state
+        // Hide or remove sprites for entities that no longer exist
+        for (const [entityId, sprite] of this.entitySprites.entries()) {
+            if (!state.entities[entityId]) {
+                sprite.visible = false;
+                // Optionally, you can remove the sprite completely if entities are permanently removed
+                // this.entityContainer.removeChild(sprite);
+                // this.entitySprites.delete(entityId);
+            }
+        }
+    }
+
+    public render(state: GameState): void {
+        // The main render call now syncs sprites and updates the HUD
+        this.syncSprites(state);
         this.hud.update(state);
+    }
+
+    public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
+        if (state.interactionState.type !== 'item_pickup') return;
+
+        const playerSprite = this.entitySprites.get('player_start_0_0'); // Assumes player id is stable
+        const itemSprite = this.entitySprites.get(state.interactionState.itemId);
+
+        if (!playerSprite || !itemSprite) return;
+
+        const item = state.entities[state.interactionState.itemId];
+        if(!item) return;
+
+        const targetX = item.x * TILE_SIZE + TILE_SIZE / 2;
+        const targetY = item.y * TILE_SIZE + TILE_SIZE / 2;
+
+        const tl = gsap.timeline({ onComplete });
+
+        // Player jumps to item position
+        tl.to(playerSprite, {
+            x: targetX,
+            y: targetY,
+            duration: 0.3,
+            ease: 'power1.inOut',
+        });
+
+        // Item animates up, fades out, and shrinks
+        tl.to(itemSprite, {
+            y: targetY - TILE_SIZE,
+            alpha: 0,
+            width: itemSprite.width * 0.5,
+            height: itemSprite.height * 0.5,
+            duration: 0.5,
+            ease: 'power1.in',
+        }, '-=0.2'); // Start this animation slightly before player lands
+    }
+
+    public async animateAttack(attackerId: string, defenderId: string, damage: number, onComplete: () => void): Promise<void> {
+        const attackerSprite = this.entitySprites.get(attackerId);
+        const defenderSprite = this.entitySprites.get(defenderId);
+
+        if (!attackerSprite || !defenderSprite) return;
+
+        const originalX = attackerSprite.x;
+        const originalY = attackerSprite.y;
+        const targetX = defenderSprite.x;
+        const targetY = defenderSprite.y;
+
+        const tl = gsap.timeline({ onComplete });
+
+        // Attacker hops towards defender
+        tl.to(attackerSprite, {
+            x: (originalX + targetX) / 2,
+            y: (originalY + targetY) / 2,
+            duration: 0.15,
+            ease: 'power1.in',
+            yoyo: true,
+            repeat: 1,
+        });
+
+        // Damage text appears and floats up
+        const damageText = new Text(String(damage), { fontSize: 24, fill: 'red', fontWeight: 'bold' });
+        damageText.x = defenderSprite.x;
+        damageText.y = defenderSprite.y - TILE_SIZE / 2;
+        damageText.anchor.set(0.5);
+        this.entityContainer.addChild(damageText);
+
+        tl.to(damageText, {
+            y: damageText.y - 40,
+            alpha: 0,
+            duration: 1,
+            ease: 'power1.out',
+            onComplete: () => this.entityContainer.removeChild(damageText),
+        }, '-=0.1');
     }
 }
