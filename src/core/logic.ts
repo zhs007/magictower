@@ -11,18 +11,26 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         return state; // Out of bounds, do nothing
     }
 
-    const destinationTile = newState.map[newY][newX];
+    // Check for wall
+    if (newState.map[newY][newX] === 1) {
+        return state; // Wall, do nothing
+    }
 
-    // Check for walls or other impassable terrain
-    // This part of logic will be expanded later. For now, we assume any tile without an entity is movable.
+    const destinationEntity = Object.values(newState.entities).find(e => e.x === newX && e.y === newY);
 
-    if (destinationTile.entityLayer) {
+    if (destinationEntity) {
         // Handle collision with entities (monsters, items, etc.)
         // This will be expanded in later steps.
     } else {
         // Move player
         newState.player.x = newX;
         newState.player.y = newY;
+        // Also update the player's position in the entities list
+        const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+        if (playerEntityKey) {
+            newState.entities[playerEntityKey].x = newX;
+            newState.entities[playerEntityKey].y = newY;
+        }
     }
 
     return newState;

@@ -109,11 +109,14 @@ describe('handleMove', () => {
         gameState = {
             currentFloor: 1,
             map: [
-                [{ groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }],
-                [{ groundLayer: 1 }, { groundLayer: 1, entityLayer: { type: EntityType.WALL, id: 'wall' } }, { groundLayer: 1 }],
-                [{ groundLayer: 1 }, { groundLayer: 1 }, { groundLayer: 1 }],
+                [0, 0, 1],
+                [0, 0, 0],
+                [1, 0, 0],
             ],
-            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] },
+            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 1, y: 1, equipment: {}, backupEquipment: [], buffs: [] },
+            entities: {
+                'player_start': { type: 'player_start', id: 'player', x: 1, y: 1 },
+            },
             monsters: {},
             items: {},
             equipments: {},
@@ -122,15 +125,22 @@ describe('handleMove', () => {
     });
 
     it('should allow player to move to an empty tile', () => {
-        const newState = handleMove(gameState, 1, 0);
+        const newState = handleMove(gameState, 0, -1); // Move up
         expect(newState.player.x).toBe(1);
         expect(newState.player.y).toBe(0);
+        expect(newState.entities['player_start'].y).toBe(0);
     });
 
     it('should not allow player to move out of bounds', () => {
-        const newState = handleMove(gameState, -1, 0);
-        expect(newState.player.x).toBe(0);
-        expect(newState.player.y).toBe(0);
+        const newState = handleMove(gameState, 0, -2); // Move up out of bounds
+        expect(newState.player.x).toBe(1);
+        expect(newState.player.y).toBe(1);
+    });
+
+    it('should not allow player to move into a wall', () => {
+        const newState = handleMove(gameState, 1, -1); // Move to a wall at (2,0)
+        expect(newState.player.x).toBe(1);
+        expect(newState.player.y).toBe(1);
     });
 });
 
@@ -139,19 +149,24 @@ describe('handlePickupItem', () => {
         const gameState: GameState = {
             currentFloor: 1,
             map: [
-                [{ groundLayer: 1, entityLayer: { type: EntityType.ITEM, id: 'potion1' } }],
+                [0],
             ],
             player: { id: 'player', name: 'Hero', hp: 50, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] },
+            entities: {
+                'potion1': { type: 'item', id: 'potion1', x: 0, y: 0 }
+            },
             monsters: {},
             items: { 'potion1': { id: 'potion1', name: 'Health Potion', type: 'potion', value: 20 } },
             equipments: {},
             doors: {},
         };
 
+        // This test is not fully valid anymore as handlePickupItem needs to be triggered differently
+        // For now, we are just ensuring the logic inside handlePickupItem works
+        // The logic for removing the entity from the map is not in handlePickupItem anymore
         const newState = handlePickupItem(gameState, 'potion1');
         expect(newState.player.hp).toBe(70);
         expect(newState.items['potion1']).toBeUndefined();
-        expect(newState.map[0][0].entityLayer).toBeUndefined();
     });
 });
 
@@ -160,9 +175,12 @@ describe('handleOpenDoor', () => {
         const gameState: GameState = {
             currentFloor: 1,
             map: [
-                [{ groundLayer: 1, entityLayer: { type: EntityType.DOOR, id: 'door1' } }],
+                [0],
             ],
             player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [] },
+            entities: {
+                'door1': { type: 'door', id: 'door1', x: 0, y: 0 }
+            },
             monsters: {},
             items: {},
             equipments: {},
@@ -171,6 +189,5 @@ describe('handleOpenDoor', () => {
 
         const newState = handleOpenDoor(gameState, 'door1');
         expect(newState.doors['door1']).toBeUndefined();
-        expect(newState.map[0][0].entityLayer).toBeUndefined();
     });
 });

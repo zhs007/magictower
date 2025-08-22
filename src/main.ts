@@ -1,3 +1,4 @@
+import './style.css';
 import { Application } from 'pixi.js';
 import { GameScene } from './scenes/game-scene';
 
@@ -5,25 +6,24 @@ import { GameScene } from './scenes/game-scene';
  * The main entry point of the application.
  */
 async function main() {
-    // Create a new Pixi.js application
+    // Create a new Pixi.js application with a fixed design resolution
     const app = new Application();
 
-    // Find the canvas element
-    const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
-    if (!canvas) {
-        console.error('Could not find canvas element with id "game-canvas"');
+    await app.init({
+        width: 1080,
+        height: 1920,
+        backgroundColor: 0x000000,
+        resolution: 1, // Use a fixed resolution
+    });
+
+    // Append the app's view to the #app div
+    const appContainer = document.getElementById('app');
+    if (appContainer) {
+        appContainer.appendChild(app.canvas);
+    } else {
+        console.error('Could not find element with id "app"');
         return;
     }
-
-    // Initialize the application
-    await app.init({
-        canvas,
-        width: 540, // Common mobile resolution width
-        height: 960, // Common mobile resolution height
-        backgroundColor: 0x1099bb,
-        resolution: window.devicePixelRatio || 1,
-        autoDensity: true,
-    });
 
     // Create and start the main game scene
     const gameScene = new GameScene(app);

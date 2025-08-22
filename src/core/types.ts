@@ -86,21 +86,15 @@ export enum EntityType {
     DOOR
 }
 
-export interface Tile {
-    groundLayer: number; // e.g., floor texture id
-    entityLayer?: {
-        type: EntityType;
-        id: string;
-    };
-}
+export type IEntity = (IPlayer | IMonster | IItem | IEquipment) & { type: string };
 
 export interface GameState {
     currentFloor: number;
-    map: Tile[][];
+    map: number[][];
     player: IPlayer;
+    entities: Record<string, any>; // A dictionary of all entities on the map
     monsters: Record<string, IMonster>;
     items: Record<string, IItem>;
-    // To store equipment that might be found on the map
     equipments: Record<string, IEquipment>;
     doors: Record<string, { id: string; color: string; }>;
 }
