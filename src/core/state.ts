@@ -1,4 +1,4 @@
-import { GameState, Action, Tile, IPlayer, IMonster, IItem, EntityType } from './types';
+import { GameState, Action, IPlayer, IMonster, IItem } from './types';
 import { handleMove, handlePickupItem, handleOpenDoor } from './logic';
 import { dataManager } from '../data/data-manager';
 
@@ -10,50 +10,39 @@ export class GameStateManager {
     }
 
     public static async createInitialState(floor: number): Promise<GameState> {
-        // Ensure data is loaded before creating the state
         await dataManager.loadAllData();
-
-        const mapLayout = dataManager.getMapLayout(floor);
-        if (!mapLayout) {
+        const mapData = dataManager.getMapLayout(floor);
+        if (!mapData) {
             throw new Error(`Map for floor ${floor} not found.`);
         }
 
-        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, equipment: {}, backupEquipment: [], buffs: [] };
-        let player: IPlayer | null = null;
-
+        const map = mapData.layout.map(row => row.map(Number));
+        const entities: Record<string, any> = {};
         const monsters: Record<string, IMonster> = {};
         const items: Record<string, IItem> = {};
+        let player: IPlayer | null = null;
 
-        // Create the map tiles
-        const map: Tile[][] = mapLayout.layout.map(row =>
-            row.map(cell => ({ groundLayer: Number(cell) }))
-        );
+        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, equipment: {}, backupEquipment: [], buffs: [] };
 
-        // Populate entities from the map data
-        if (mapLayout.entities) {
-            for (const entityKey in mapLayout.entities) {
-                const entityInfo = mapLayout.entities[entityKey];
-                const { x, y, id, type } = entityInfo;
+        if (mapData.entities) {
+            for (const entityKey of Object.keys(mapData.entities)) {
+                const entityInfo = mapData.entities[entityKey];
+                entities[entityKey] = { ...entityInfo };
 
-                switch (type) {
-                    case 'player_start':
-                        player = { ...playerTemplate, x, y };
-                        map[y][x].entityLayer = { type: EntityType.PLAYER, id: 'player' };
-                        break;
-                    case 'monster':
-                        const monsterData = dataManager.getMonsterData(id);
-                        if (monsterData) {
-                            monsters[entityKey] = { ...monsterData, x, y, equipment: {}, backupEquipment: [], buffs: [] };
-                            map[y][x].entityLayer = { type: EntityType.MONSTER, id: entityKey };
-                        }
-                        break;
-                    case 'item':
-                        const itemData = dataManager.getItemData(id);
-                        if (itemData) {
-                            items[entityKey] = { ...itemData, type: 'key', x, y }; // Assuming a type for now
-                            map[y][x].entityLayer = { type: EntityType.ITEM, id: entityKey };
-                        }
-                        break;
+                if (entityInfo.type === 'player_start') {
+                    player = { ...playerTemplate, ...entityInfo };
+                } else if (entityInfo.type === 'monster') {
+                    const monsterData = dataManager.getMonsterData(entityInfo.id);
+                    if (monsterData) {
+                        monsters[entityKey] = { ...monsterData, x: entityInfo.x, y: entityInfo.y, equipment: {}, backupEquipment: [], buffs: [] };
+                        entities[entityKey] = { ...monsters[entityKey], ...entityInfo };
+                    }
+                } else if (entityInfo.type === 'item') {
+                    const itemData = dataManager.getItemData(entityInfo.id);
+                    if (itemData) {
+                        items[entityKey] = { ...itemData, type: 'key', x: entityInfo.x, y: entityInfo.y };
+                        entities[entityKey] = { ...items[entityKey], ...entityInfo };
+                    }
                 }
             }
         }
@@ -66,10 +55,11 @@ export class GameStateManager {
             currentFloor: floor,
             map,
             player,
+            entities,
             monsters,
             items,
-            equipments: {}, // Assuming no equipment on the ground initially
-            doors: {}, // Assuming no doors initially
+            equipments: {},
+            doors: {},
         };
     }
 
