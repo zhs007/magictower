@@ -79,14 +79,12 @@ export class Renderer {
     public syncSprites(state: GameState): void {
         const allEntityIds = Object.keys(state.entities);
 
-        // Sync existing and new sprites
         for (const entityId of allEntityIds) {
             const entity = state.entities[entityId];
             if (!entity) continue;
 
             let sprite = this.entitySprites.get(entityId);
             if (!sprite) {
-                // Create new sprite
                 let textureAlias = '';
                 if (entity.type === 'player_start') textureAlias = 'player';
                 else if (entity.type === 'monster') textureAlias = entity.id;
@@ -96,33 +94,27 @@ export class Renderer {
                     sprite = new Sprite(Assets.get(textureAlias));
                     sprite.width = TILE_SIZE;
                     sprite.height = TILE_SIZE;
-                    sprite.anchor.set(0.5); // Set anchor to center for animations
+                    sprite.anchor.set(0.5);
                     this.entitySprites.set(entityId, sprite);
                     this.entityContainer.addChild(sprite);
                 }
             }
 
             if (sprite) {
-                // Update sprite properties
                 sprite.x = entity.x * TILE_SIZE + TILE_SIZE / 2;
                 sprite.y = entity.y * TILE_SIZE + TILE_SIZE / 2;
                 sprite.visible = true;
             }
         }
 
-        // Hide or remove sprites for entities that no longer exist
         for (const [entityId, sprite] of this.entitySprites.entries()) {
             if (!state.entities[entityId]) {
                 sprite.visible = false;
-                // Optionally, you can remove the sprite completely if entities are permanently removed
-                // this.entityContainer.removeChild(sprite);
-                // this.entitySprites.delete(entityId);
             }
         }
     }
 
     public render(state: GameState): void {
-        // The main render call now syncs sprites and updates the HUD
         this.syncSprites(state);
         this.hud.update(state);
     }
@@ -130,20 +122,28 @@ export class Renderer {
     public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
         if (state.interactionState.type !== 'item_pickup') return;
 
-        const playerSprite = this.entitySprites.get('player_start_0_0'); // Assumes player id is stable
+        const playerKey = Object.keys(state.entities).find(k => state.entities[k].type === 'player_start');
+        if (!playerKey) return;
+
+        const playerSprite = this.entitySprites.get(playerKey);
         const itemSprite = this.entitySprites.get(state.interactionState.itemId);
 
-        if (!playerSprite || !itemSprite) return;
+        if (!playerSprite || !itemSprite) {
+            onComplete();
+            return;
+        }
 
         const item = state.entities[state.interactionState.itemId];
-        if(!item) return;
+        if(!item) {
+            onComplete();
+            return;
+        }
 
         const targetX = item.x * TILE_SIZE + TILE_SIZE / 2;
         const targetY = item.y * TILE_SIZE + TILE_SIZE / 2;
 
         const tl = gsap.timeline({ onComplete });
 
-        // Player jumps to item position
         tl.to(playerSprite, {
             x: targetX,
             y: targetY,
@@ -151,7 +151,6 @@ export class Renderer {
             ease: 'power1.inOut',
         });
 
-        // Item animates up, fades out, and shrinks
         tl.to(itemSprite, {
             y: targetY - TILE_SIZE,
             alpha: 0,
@@ -159,14 +158,17 @@ export class Renderer {
             height: itemSprite.height * 0.5,
             duration: 0.5,
             ease: 'power1.in',
-        }, '-=0.2'); // Start this animation slightly before player lands
+        }, '-=0.2');
     }
 
     public async animateAttack(attackerId: string, defenderId: string, damage: number, onComplete: () => void): Promise<void> {
         const attackerSprite = this.entitySprites.get(attackerId);
         const defenderSprite = this.entitySprites.get(defenderId);
 
-        if (!attackerSprite || !defenderSprite) return;
+        if (!attackerSprite || !defenderSprite) {
+            onComplete();
+            return;
+        }
 
         const originalX = attackerSprite.x;
         const originalY = attackerSprite.y;
@@ -175,7 +177,6 @@ export class Renderer {
 
         const tl = gsap.timeline({ onComplete });
 
-        // Attacker hops towards defender
         tl.to(attackerSprite, {
             x: (originalX + targetX) / 2,
             y: (originalY + targetY) / 2,
@@ -185,8 +186,7 @@ export class Renderer {
             repeat: 1,
         });
 
-        // Damage text appears and floats up
-        const damageText = new Text(String(damage), { fontSize: 24, fill: 'red', fontWeight: 'bold' });
+        const damageText = new Text(`-${damage}`, { fontSize: 24, fill: 'red', fontWeight: 'bold' });
         damageText.x = defenderSprite.x;
         damageText.y = defenderSprite.y - TILE_SIZE / 2;
         damageText.anchor.set(0.5);

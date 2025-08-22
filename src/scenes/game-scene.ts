@@ -18,6 +18,7 @@ export class GameScene extends BaseScene {
     private renderer: Renderer;
     private inputManager: InputManager;
     private isAnimating: boolean = false;
+    private playerEntityKey: string | undefined;
 
     constructor(sceneManager: SceneManager) {
         super(sceneManager);
@@ -48,6 +49,7 @@ export class GameScene extends BaseScene {
 
         this.gameStateManager = new GameStateManager();
         this.gameStateManager.initializeState(initialState);
+        this.playerEntityKey = Object.keys(initialState.entities).find(k => initialState.entities[k].type === 'player_start');
         this.renderer.initialize(this.gameStateManager.getState());
 
         this.inputManager.on('action', (action) => this.handleAction(action));
@@ -64,6 +66,10 @@ export class GameScene extends BaseScene {
     }
 
     private processInteraction(state: GameState): void {
+        if (this.isAnimating) {
+            return;
+        }
+
         switch (state.interactionState.type) {
             case 'item_pickup':
                 this.handleItemPickup(state);
@@ -88,12 +94,16 @@ export class GameScene extends BaseScene {
     }
 
     private handleBattle(state: GameState): void {
-        if (!this.gameStateManager) return;
+        if (!this.gameStateManager || !this.playerEntityKey) return;
 
         const battleState = state.interactionState;
         if (battleState.turn === 'battle_end') {
-            const winnerId = battleState.playerHp > 0 ? 'player' : battleState.monsterId;
-            this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId } });
+            if (battleState.round > 8) {
+                this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId: null, reason: 'timeout' } });
+            } else {
+                const winnerId = battleState.playerHp > 0 ? this.playerEntityKey : battleState.monsterId;
+                this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId, reason: 'hp_depleted' } });
+            }
             this.renderer.render(this.gameStateManager.getState());
             return;
         }
@@ -109,14 +119,14 @@ export class GameScene extends BaseScene {
 
         const attacker = battleState.turn === 'player' ? player : monster;
         const defender = battleState.turn === 'player' ? monster : player;
-        const attackerId = battleState.turn === 'player' ? 'player_start_0_0' : battleState.monsterId;
-        const defenderId = battleState.turn === 'player' ? battleState.monsterId : 'player_start_0_0';
+        const attackerId = battleState.turn === 'player' ? this.playerEntityKey : battleState.monsterId;
+        const defenderId = battleState.turn === 'player' ? battleState.monsterId : this.playerEntityKey;
 
         const damage = calculateDamage(attacker, defender);
 
         this.renderer.animateAttack(attackerId, defenderId, damage, () => {
             if (this.gameStateManager) {
-                this.gameStateManager.dispatch({ type: 'ATTACK', payload: { attackerId: attacker.id, defenderId: defender.id } });
+                this.gameStateManager.dispatch({ type: 'ATTACK', payload: { attackerId, defenderId } });
                 const nextState = this.gameStateManager.getState();
                 this.renderer.render(nextState);
                 this.isAnimating = false;

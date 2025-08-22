@@ -103,7 +103,7 @@ export class GameStateManager {
                 newState = handleAttack(this.currentState, action.payload.attackerId, action.payload.defenderId);
                 break;
             case 'END_BATTLE':
-                newState = handleEndBattle(this.currentState, action.payload.winnerId);
+                newState = handleEndBattle(this.currentState, action.payload.winnerId, action.payload.reason);
                 break;
             default:
                 newState = this.currentState;

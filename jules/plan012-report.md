@@ -41,6 +41,21 @@ This report details the successful implementation of interactive combat and item
 - Existing tests were cleaned up, and the renderer tests were fixed to align with the refactored rendering engine.
 - All tests are currently passing.
 
+## Post-Implementation Bug Fixes and Refinements
+
+Following the initial implementation, user feedback highlighted several issues and requested new features, which have now been addressed:
+
+- **Game Freeze During Combat:** A critical bug was found where the game would become unresponsive during combat. This was traced to two issues:
+    1.  An incorrect hardcoded entity key for the player was preventing the renderer from finding the player's sprite for animations.
+    2.  The game logic in `handleAttack` was using the wrong ID to look up monster data, causing the turn-based loop to fail.
+    - **Fix:** Both issues were resolved by correctly using dynamic entity keys and fixing the data lookup logic in `handleAttack`. The turn-based combat loop is now stable.
+
+- **Missing Monster Attack:** The game freeze bug was also the cause of the missing monster attack turn. With the freeze resolved, monsters now correctly attack back in a turn-based manner.
+
+- **Combat Round Limit:** A new feature was added to limit combat to a maximum of 8 rounds. If the battle is not decided by the end of the 8th round, combat ends, and the player is returned to their pre-battle state, free to move again.
+
+- **Negative Damage Display:** The damage animation was updated to display the damage value as a negative number (e.g., "-9"), as requested.
+
 ## Conclusion
 
-The implementation of `plan012` has successfully introduced a layer of dynamic, interactive animations to the game, significantly improving the user experience for combat and item collection. The underlying systems are now more robust and extensible for future development.
+The implementation of `plan012` has successfully introduced a layer of dynamic, interactive animations to the game, significantly improving the user experience for combat and item collection. Subsequent bug fixes and refinements have made the system robust and aligned with all user requirements. The underlying systems are now more stable and extensible for future development.

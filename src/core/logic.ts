@@ -1,6 +1,8 @@
 import { GameState, IPlayer, IMonster, ICharacter, EquipmentSlot, Action } from './types';
 import * as _ from 'lodash';
 
+const MAX_COMBAT_ROUNDS = 8;
+
 export function handleMove(state: GameState, dx: number, dy: number): GameState {
     const newState = _.cloneDeep(state);
     const newX = newState.player.x + dx;
@@ -17,7 +19,14 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         if (destinationEntity.type === 'item') {
             newState.interactionState = { type: 'item_pickup', itemId: destinationEntityKey };
         } else if (destinationEntity.type === 'monster') {
-            newState.interactionState = { type: 'battle', monsterId: destinationEntityKey, turn: 'player', playerHp: newState.player.hp, monsterHp: newState.monsters[destinationEntityKey].hp };
+            newState.interactionState = {
+                type: 'battle',
+                monsterId: destinationEntityKey,
+                turn: 'player',
+                playerHp: newState.player.hp,
+                monsterHp: newState.monsters[destinationEntityKey].hp,
+                round: 1,
+            };
         }
     } else {
         newState.player.x = newX;
@@ -70,6 +79,7 @@ export function handleStartBattle(state: GameState, monsterEntityKey: string): G
         turn,
         playerHp: newState.player.hp,
         monsterHp: monster.hp,
+        round: 1,
     };
 
     return newState;
@@ -79,13 +89,14 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     const newState = _.cloneDeep(state);
     if (newState.interactionState.type !== 'battle') return state;
 
-    const attacker = attackerId === 'player' ? newState.player : newState.monsters[attackerId];
-    const defender = defenderId === 'player' ? newState.player : newState.monsters[defenderId];
+    const attacker = newState.entities[attackerId];
+    const defender = newState.entities[defenderId];
+
     if (!attacker || !defender) return state;
 
     const damage = calculateDamage(attacker, defender);
 
-    if (defenderId === 'player') {
+    if (defender.type === 'player_start') {
         newState.interactionState.playerHp -= damage;
     } else {
         newState.interactionState.monsterHp -= damage;
@@ -94,23 +105,32 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     if (newState.interactionState.playerHp <= 0 || newState.interactionState.monsterHp <= 0) {
         newState.interactionState.turn = 'battle_end';
     } else {
-        newState.interactionState.turn = newState.interactionState.turn === 'player' ? 'monster' : 'player';
+        if (newState.interactionState.turn === 'monster') {
+            newState.interactionState.round++;
+        }
+
+        if (newState.interactionState.round > MAX_COMBAT_ROUNDS) {
+            newState.interactionState.turn = 'battle_end';
+        } else {
+            newState.interactionState.turn = newState.interactionState.turn === 'player' ? 'monster' : 'player';
+        }
     }
 
     return newState;
 }
 
-export function handleEndBattle(state: GameState, winnerId: string): GameState {
+export function handleEndBattle(state: GameState, winnerId: string | null, reason: 'hp_depleted' | 'timeout'): GameState {
     const newState = _.cloneDeep(state);
     if (newState.interactionState.type !== 'battle') return state;
 
     const monsterEntityKey = newState.interactionState.monsterId;
+    const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
 
-    if (winnerId === 'player') {
+    if (reason === 'hp_depleted' && winnerId === playerEntityKey) {
         newState.player.hp = newState.interactionState.playerHp;
         delete newState.entities[monsterEntityKey];
         delete newState.monsters[monsterEntityKey];
-    } else {
+    } else if (reason === 'hp_depleted' && winnerId === monsterEntityKey) {
         newState.player.hp = 0;
     }
 

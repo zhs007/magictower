@@ -101,7 +101,8 @@ export type InteractionState =
         turn: 'player' | 'monster' | 'battle_end';
         playerHp: number;
         monsterHp: number;
-      };
+        round: number;
+    };
 
 export interface GameState {
     currentFloor: number;
@@ -121,7 +122,7 @@ export type Action =
     | { type: 'OPEN_DOOR'; payload: { doorId: string } }
     | { type: 'START_BATTLE'; payload: { monsterId: string } }
     | { type: 'ATTACK'; payload: { attackerId: string, defenderId: string } }
-    | { type: 'END_BATTLE'; payload: { winnerId: string } };
+    | { type: 'END_BATTLE'; payload: { winnerId: string | null, reason: 'hp_depleted' | 'timeout' } };
 
 export interface SaveData {
     timestamp: number;
