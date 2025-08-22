@@ -51,14 +51,15 @@ export class GameScene extends BaseScene {
                 initialState = loadedState;
             } else {
                 console.error(`Failed to load game from slot: ${options.loadSlot}. Starting a new game.`);
-                initialState = await GameStateManager.createInitialState(1);
+                initialState = await GameStateManager.createInitialState({ floor: 1 });
             }
         } else {
             // By default, or if newGame is explicitly true
-            initialState = await GameStateManager.createInitialState(1);
+            initialState = await GameStateManager.createInitialState({ floor: 1 });
         }
 
-        this.gameStateManager = new GameStateManager(initialState);
+        this.gameStateManager = new GameStateManager();
+        this.gameStateManager.initializeState(initialState);
 
         // Render the initial state
         this.renderer.render(this.gameStateManager.getState());
