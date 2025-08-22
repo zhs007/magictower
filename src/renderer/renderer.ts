@@ -114,9 +114,6 @@ export class Renderer {
         for (const [entityId, sprite] of this.entitySprites.entries()) {
             if (!state.entities[entityId]) {
                 sprite.visible = false;
-                // Optionally, you can remove the sprite completely if entities are permanently removed
-                // this.entityContainer.removeChild(sprite);
-                // this.entitySprites.delete(entityId);
             }
         }
     }
@@ -130,7 +127,10 @@ export class Renderer {
     public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
         if (state.interactionState.type !== 'item_pickup') return;
 
-        const playerSprite = this.entitySprites.get('player_start_0_0'); // Assumes player id is stable
+        const playerKey = Object.keys(state.entities).find(k => state.entities[k].type === 'player_start');
+        if (!playerKey) return;
+
+        const playerSprite = this.entitySprites.get(playerKey);
         const itemSprite = this.entitySprites.get(state.interactionState.itemId);
 
         if (!playerSprite || !itemSprite) return;
@@ -143,7 +143,6 @@ export class Renderer {
 
         const tl = gsap.timeline({ onComplete });
 
-        // Player jumps to item position
         tl.to(playerSprite, {
             x: targetX,
             y: targetY,
@@ -151,7 +150,6 @@ export class Renderer {
             ease: 'power1.inOut',
         });
 
-        // Item animates up, fades out, and shrinks
         tl.to(itemSprite, {
             y: targetY - TILE_SIZE,
             alpha: 0,
@@ -159,7 +157,7 @@ export class Renderer {
             height: itemSprite.height * 0.5,
             duration: 0.5,
             ease: 'power1.in',
-        }, '-=0.2'); // Start this animation slightly before player lands
+        }, '-=0.2');
     }
 
     public async animateAttack(attackerId: string, defenderId: string, damage: number, onComplete: () => void): Promise<void> {
@@ -175,7 +173,6 @@ export class Renderer {
 
         const tl = gsap.timeline({ onComplete });
 
-        // Attacker hops towards defender
         tl.to(attackerSprite, {
             x: (originalX + targetX) / 2,
             y: (originalY + targetY) / 2,
@@ -185,7 +182,6 @@ export class Renderer {
             repeat: 1,
         });
 
-        // Damage text appears and floats up
         const damageText = new Text(String(damage), { fontSize: 24, fill: 'red', fontWeight: 'bold' });
         damageText.x = defenderSprite.x;
         damageText.y = defenderSprite.y - TILE_SIZE / 2;
