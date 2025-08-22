@@ -89,14 +89,16 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     const newState = _.cloneDeep(state);
     if (newState.interactionState.type !== 'battle') return state;
 
-    const attacker = newState.entities[attackerId];
-    const defender = newState.entities[defenderId];
+    const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+
+    const attacker = attackerId === playerEntityKey ? newState.player : newState.monsters[attackerId];
+    const defender = defenderId === playerEntityKey ? newState.player : newState.monsters[defenderId];
 
     if (!attacker || !defender) return state;
 
     const damage = calculateDamage(attacker, defender);
 
-    if (defender.type === 'player_start') {
+    if (defenderId === playerEntityKey) {
         newState.interactionState.playerHp -= damage;
     } else {
         newState.interactionState.monsterHp -= damage;
