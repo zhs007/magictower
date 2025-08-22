@@ -4,13 +4,24 @@ import { dataManager } from '../data/data-manager';
 
 export class GameStateManager {
     private currentState: GameState;
+    public actionHistory: Action[] = [];
+    public initialStateSeed: any;
 
-    constructor(initialState: GameState) {
-        this.currentState = initialState;
+    constructor() {
+        // State is now initialized via createInitialState or by loading a save.
+        // The constructor is kept for instantiation, but the state is set later.
+        this.currentState = {} as GameState; // Default to an empty state.
     }
 
-    public static async createInitialState(floor: number): Promise<GameState> {
+    public async createAndInitializeState(floor: number): Promise<void> {
+        this.initialStateSeed = { floor };
+        const initialState = await GameStateManager.createInitialState(this.initialStateSeed);
+        this.initializeState(initialState);
+    }
+
+    public static async createInitialState(seed: { floor: number }): Promise<GameState> {
         await dataManager.loadAllData();
+        const { floor } = seed;
         const mapData = dataManager.getMapLayout(floor);
         if (!mapData) {
             throw new Error(`Map for floor ${floor} not found.`);
@@ -65,6 +76,7 @@ export class GameStateManager {
 
     public initializeState(initialState: GameState): void {
         this.currentState = initialState;
+        this.actionHistory = []; // Reset history when a new state is initialized
     }
 
     public getState(): GameState {
@@ -87,5 +99,6 @@ export class GameStateManager {
                 newState = this.currentState;
         }
         this.currentState = newState;
+        this.actionHistory.push(action);
     }
 }

@@ -107,3 +107,10 @@ export type Action =
     | { type: 'MOVE'; payload: { dx: number; dy: number } }
     | { type: 'PICK_UP_ITEM'; payload: { itemId: string } }
     | { type: 'OPEN_DOOR'; payload: { doorId: string } };
+
+export interface SaveData {
+    timestamp: number;
+    initialStateSeed: any; // Used to generate the initial game state
+    actions: Action[];     // All actions from game start to the save point
+    screenshot?: string;   // Optional screenshot for the save list display
+}
