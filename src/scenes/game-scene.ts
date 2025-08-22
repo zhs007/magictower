@@ -98,8 +98,12 @@ export class GameScene extends BaseScene {
 
         const battleState = state.interactionState;
         if (battleState.turn === 'battle_end') {
-            const winnerId = battleState.playerHp > 0 ? 'player' : battleState.monsterId;
-            this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId } });
+            if (battleState.round > 8) {
+                this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId: null, reason: 'timeout' } });
+            } else {
+                const winnerId = battleState.playerHp > 0 ? 'player' : battleState.monsterId;
+                this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId, reason: 'hp_depleted' } });
+            }
             this.renderer.render(this.gameStateManager.getState());
             return;
         }
