@@ -137,7 +137,9 @@ export function handlePickupItem(state: GameState, itemId: string): GameState {
             newState.player.hp += item.value || 0;
             break;
         case 'key':
-            // Key logic will be added later.
+            if (item.color && newState.player.keys.hasOwnProperty(item.color)) {
+                (newState.player.keys as any)[item.color]++;
+            }
             break;
     }
 

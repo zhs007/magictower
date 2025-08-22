@@ -1,6 +1,7 @@
-import { Container, Assets, Sprite, Graphics, Text } from 'pixi.js';
-import { GameState, EntityType } from '../core/types';
+import { Container, Assets, Sprite } from 'pixi.js';
+import { GameState } from '../core/types';
 import { dataManager } from '../data/data-manager';
+import { HUD } from './ui/hud';
 
 const TILE_SIZE = 65; // Logical size 16x16, rendered at 65x65
 const MAP_WIDTH_TILES = 16;
@@ -9,20 +10,20 @@ const MAP_OFFSET_X = 20;
 export class Renderer {
     private stage: Container;
     private mapContainer: Container;
-    private hudContainer: Container;
+    private hud: HUD;
 
     constructor(stage: Container) {
         this.stage = stage;
         this.mapContainer = new Container();
-        this.hudContainer = new Container();
+        this.hud = new HUD();
 
         this.mapContainer.x = MAP_OFFSET_X;
         this.mapContainer.y = 200; // Placeholder Y, adjust as needed
 
-        this.hudContainer.y = (MAP_WIDTH_TILES * TILE_SIZE) + this.mapContainer.y; // Position HUD below map
+        this.hud.y = (MAP_WIDTH_TILES * TILE_SIZE) + this.mapContainer.y; // Position HUD below map
 
         this.stage.addChild(this.mapContainer);
-        this.stage.addChild(this.hudContainer);
+        this.stage.addChild(this.hud);
     }
 
     public async loadAssets(): Promise<void> {
@@ -51,10 +52,10 @@ export class Renderer {
     }
 
     public render(state: GameState): void {
+        // Clear the map container for the next frame
         this.mapContainer.removeChildren();
-        this.hudContainer.removeChildren();
 
-        // Render Map
+        // Render Map Tiles
         for (let y = 0; y < state.map.length; y++) {
             for (let x = 0; x < state.map[y].length; x++) {
                 const tileValue = state.map[y][x];
@@ -69,35 +70,26 @@ export class Renderer {
 
         // Render Entities
         for (const entity of Object.values(state.entities)) {
-             if (!entity) continue;
-             let entitySprite: Sprite | undefined;
-             if (entity.type === 'player_start') {
+            if (!entity) continue;
+            let entitySprite: Sprite | undefined;
+            if (entity.type === 'player_start') {
                 entitySprite = new Sprite(Assets.get('player'));
-             } else if (entity.type === 'monster') {
+            } else if (entity.type === 'monster') {
                 entitySprite = new Sprite(Assets.get(entity.id));
-             } else if (entity.type === 'item') {
+            } else if (entity.type === 'item') {
                 entitySprite = new Sprite(Assets.get(entity.id));
-             }
+            }
 
-             if (entitySprite) {
+            if (entitySprite) {
                 entitySprite.x = entity.x * TILE_SIZE;
                 entitySprite.y = entity.y * TILE_SIZE;
                 entitySprite.width = TILE_SIZE;
                 entitySprite.height = TILE_SIZE;
                 this.mapContainer.addChild(entitySprite);
-             }
+            }
         }
 
-        // Render HUD
-        const hudBackground = new Graphics();
-        hudBackground.fill(0x000000);
-        hudBackground.drawRect(0, 0, 1080, 400); // Simple black bar for HUD
-        hudBackground.fill();
-        this.hudContainer.addChild(hudBackground);
-
-        const hpText = new Text(`HP: ${state.player.hp}`, { fill: 'white', fontSize: 48 });
-        hpText.x = 50;
-        hpText.y = 50;
-        this.hudContainer.addChild(hpText);
+        // Update the HUD with the new state
+        this.hud.update(state);
     }
 }
