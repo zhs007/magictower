@@ -50,5 +50,6 @@ Core logic in `src/core/` should have high test coverage. All new features shoul
 
 This section logs significant actions taken by AI agents.
 
+- **2025-08-21 (Jules)**: Executed `plan007`. Implemented the action-based save/load system, created a `SaveManager`, and extended `GameStateManager` to support action history. Wrote a full suite of unit tests for the new functionality and fixed a regression in existing tests. Created `plan007-report.md` and updated `jules.md`.
 - **2025-08-21 (Jules)**: Executed `plan011`. This included implementing the UI layout and resolution scaling, which required a major refactoring of the renderer and game state logic. Updated the map to 16x16, added placeholder assets, and wrote a comprehensive set of tests to ensure all changes were working correctly. Created `plan011-report.md` and updated `jules.md` to reflect the new project status.
 - **2025-08-21 (Jules)**: Created design document `jules/plan011.md` for UI and resolution scaling. Updated `jules.md` to reflect the new plan and confirmed `plan005` as the next implementation task.

@@ -40,7 +40,7 @@ describe('GameStateManager', () => {
             vi.mocked(dataManager.getMonsterData).mockReturnValue(mockMonsterData);
 
             // Act
-            const gameState = await GameStateManager.createInitialState(1);
+            const gameState = await GameStateManager.createInitialState({ floor: 1 });
 
             // Assert
             expect(gameState).toBeDefined();
@@ -66,7 +66,7 @@ describe('GameStateManager', () => {
             vi.mocked(dataManager.getMapLayout).mockReturnValue(mockMapData);
 
             // Act & Assert
-            await expect(GameStateManager.createInitialState(1)).rejects.toThrow(
+            await expect(GameStateManager.createInitialState({ floor: 1 })).rejects.toThrow(
                 'Player start position not found in map data.'
             );
         });
