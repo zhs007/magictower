@@ -22,7 +22,7 @@ export class GameStateManager {
         const items: Record<string, IItem> = {};
         let player: IPlayer | null = null;
 
-        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, equipment: {}, backupEquipment: [], buffs: [] };
+        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } };
 
         if (mapData.entities) {
             for (const entityKey of Object.keys(mapData.entities)) {

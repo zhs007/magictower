@@ -6,16 +6,13 @@ import { Container } from 'pixi.js';
 // Mock Pixi.js components
 vi.mock('pixi.js', async () => {
     const actualPixi = await vi.importActual('pixi.js');
-    // Factory function to create a new mock container each time
-    const createMockContainer = () => ({
-        addChild: vi.fn(),
-        removeChildren: vi.fn(),
-        x: 0,
-        y: 0,
-    });
     return {
         ...actualPixi,
-        Container: vi.fn().mockImplementation(createMockContainer),
+        Container: class {
+            constructor() { this.x = 0; this.y = 0; }
+            addChild = vi.fn();
+            removeChildren = vi.fn();
+        },
         Assets: {
             get: vi.fn(key => ({ texture: key })),
             init: vi.fn().mockResolvedValue(undefined),
@@ -54,19 +51,23 @@ describe('Renderer', () => {
         renderer = new Renderer(mockStage);
     });
 
-    it('should clear containers on render', () => {
+    it('should clear map container and update HUD on render', () => {
         const gameState = createMockGameState();
+        // Spy on the hud's update method
+        const hudUpdateSpy = vi.spyOn(renderer.hud, 'update');
+
         renderer.render(gameState);
+
         expect(renderer.mapContainer.removeChildren).toHaveBeenCalledTimes(1);
-        expect(renderer.hudContainer.removeChildren).toHaveBeenCalledTimes(1);
+        expect(hudUpdateSpy).toHaveBeenCalledWith(gameState);
     });
 
     it('should render map tiles and entities correctly', async () => {
         const gameState = createMockGameState();
         renderer.render(gameState);
 
+        // 4 tiles + 3 entities = 7
         expect(renderer.mapContainer.addChild).toHaveBeenCalledTimes(7);
-        expect(renderer.hudContainer.addChild).toHaveBeenCalledTimes(2);
 
         const PIXI = await import('pixi.js');
         expect(PIXI.Assets.get).toHaveBeenCalledWith('wall');

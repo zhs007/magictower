@@ -63,7 +63,11 @@ export interface ICharacter extends IBaseObject {
 }
 
 export interface IPlayer extends ICharacter {
-    // Player-specific properties can be added here.
+    keys: {
+        yellow: number;
+        blue: number;
+        red: number;
+    };
 }
 
 export interface IMonster extends ICharacter {
