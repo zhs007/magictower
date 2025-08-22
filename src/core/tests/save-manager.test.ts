@@ -58,6 +58,7 @@ describe('SaveManager', () => {
 
         gameStateManager = new GameStateManager();
         await gameStateManager.createAndInitializeState(1);
+        // saveManager is used for saving, which is still an instance method
         saveManager = new SaveManager(gameStateManager);
     });
 
@@ -74,40 +75,38 @@ describe('SaveManager', () => {
 
         const originalState = { ...gameStateManager.getState() };
 
-        // Save the game
+        // Save the game using an instance
         saveManager.saveGame('slot1');
 
-        // Create a new game state manager to load into
-        const newGameStateManager = new GameStateManager();
-        const newSaveManager = new SaveManager(newGameStateManager);
-        await newSaveManager.loadGame('slot1');
+        // Load the game using the static method
+        const loadedState = await SaveManager.loadGame('slot1');
 
-        const loadedState = newGameStateManager.getState();
+        expect(loadedState).not.toBeNull();
 
         // Compare states
-        expect(loadedState.player.x).toEqual(originalState.player.x);
-        expect(loadedState.player.y).toEqual(originalState.player.y);
-        expect(loadedState.currentFloor).toEqual(originalState.currentFloor);
-        expect(newGameStateManager.actionHistory).toEqual(gameStateManager.actionHistory);
+        expect(loadedState!.player.x).toEqual(originalState.player.x);
+        expect(loadedState!.player.y).toEqual(originalState.player.y);
+        expect(loadedState!.currentFloor).toEqual(originalState.currentFloor);
     });
 
-    it('should list all saved games', () => {
+    it('should list all saved game slot IDs', () => {
         saveManager.saveGame('slot1');
         saveManager.saveGame('slot2');
 
-        const saves = saveManager.listSaves();
-        expect(saves.length).toBe(2);
-        expect(saves.map(s => s.actions.length)).toContain(0);
+        const slots = SaveManager.listSaves();
+        expect(slots.length).toBe(2);
+        expect(slots).toContain('slot1');
+        expect(slots).toContain('slot2');
     });
 
     it('should return null when loading a non-existent slot', async () => {
-        const result = await saveManager.loadGame('non_existent_slot');
+        const result = await SaveManager.loadGame('non_existent_slot');
         expect(result).toBeNull();
     });
 
     it('should handle corrupted save data gracefully', async () => {
         localStorage.setItem('save_slot_corrupted', 'this is not json');
-        const result = await saveManager.loadGame('corrupted');
+        const result = await SaveManager.loadGame('corrupted');
         expect(result).toBeNull();
     });
 });
