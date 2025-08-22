@@ -1,6 +1,6 @@
 import './style.css';
-import { Application } from 'pixi.js';
-import { GameScene } from './scenes/game-scene';
+import { Application, Ticker } from 'pixi.js';
+import { SceneManager } from './scenes/scene-manager';
 
 /**
  * The main entry point of the application.
@@ -25,9 +25,16 @@ async function main() {
         return;
     }
 
-    // Create and start the main game scene
-    const gameScene = new GameScene(app);
-    await gameScene.start();
+    // Initialize the scene manager
+    const sceneManager = new SceneManager(app);
+
+    // Set up the game loop
+    Ticker.shared.add((ticker) => {
+        sceneManager.update(ticker.deltaTime);
+    });
+
+    // Go to the start scene
+    sceneManager.goTo('start');
 }
 
 // Run the main function
