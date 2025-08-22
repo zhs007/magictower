@@ -54,11 +54,12 @@ export class GameScene extends BaseScene {
     }
 
     private handleAction(action: any): void {
-        if (this.isAnimating || !this.gameStateManager) return;
+        if (this.isAnimating || !this.gameStateManager) {
+            return;
+        }
 
         this.gameStateManager.dispatch(action);
         const newState = this.gameStateManager.getState();
-
         this.processInteraction(newState);
     }
 
@@ -117,10 +118,12 @@ export class GameScene extends BaseScene {
             if (this.gameStateManager) {
                 this.gameStateManager.dispatch({ type: 'ATTACK', payload: { attackerId: attacker.id, defenderId: defender.id } });
                 const nextState = this.gameStateManager.getState();
-                this.renderer.render(nextState); // Render intermediate state
+                this.renderer.render(nextState);
                 this.isAnimating = false;
-                // Trigger the next turn processing
-                this.processInteraction(nextState);
+
+                setTimeout(() => {
+                    this.processInteraction(this.gameStateManager.getState());
+                }, 0);
             }
         });
     }
