@@ -177,7 +177,7 @@ export class Renderer {
         }
 
         const targetX = item.x * TILE_SIZE + TILE_SIZE / 2;
-        const targetY = item.y * TILE_SIZE + TILE_SIZE / 2;
+        const targetY = (item.y + 1) * TILE_SIZE;
 
         const tl = gsap.timeline({ onComplete });
 
