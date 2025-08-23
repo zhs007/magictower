@@ -75,17 +75,6 @@ describe('plan009 features', () => {
         expect(newState.player.hasMonsterManual).toBe(true);
     });
 
-    it('should pick up snowflake and gain first strike buff', () => {
-        const snowflakeItem: IItem = { id: 'item_snowflake', name: 'Snowflake', type: 'special', specialType: 'snowflake' };
-        baseState.items['item_snowflake_1'] = snowflakeItem;
-        baseState.entities['item_snowflake_1'] = { id: 'item_snowflake', type: 'item', x: 1, y: 0, ...snowflakeItem };
-
-        const newState = handlePickupItem(baseState, 'item_snowflake_1');
-        const firstStrikeBuff = newState.player.buffs.find(b => b.id === 'first_strike');
-        expect(firstStrikeBuff).toBeDefined();
-        expect(firstStrikeBuff?.charges).toBe(2);
-    });
-
     it('should pick up cross and gain stats', () => {
         const crossItem: IItem = { id: 'item_cross', name: 'Cross', type: 'special', specialType: 'cross' };
         baseState.items['item_cross_1'] = crossItem;

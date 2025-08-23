@@ -1,7 +1,10 @@
 {
-  "id": "eq_broadsword",
-  "name": "Broadsword",
-  "slot": "right_hand",
-  "weaponType": "one_handed",
-  "attackBonus": 20
+    "id": "broadsword",
+    "name": "Broadsword",
+    "slot": "RIGHT_HAND",
+    "weaponType": "ONE_HANDED",
+    "stat_mods": {
+        "attack": 15,
+        "speed": -5
+    }
 }

@@ -1,6 +1,9 @@
 {
-  "id": "eq_steel_armor",
-  "name": "Steel Armor",
-  "slot": "body",
-  "defenseBonus": 50
+    "id": "steel_armor",
+    "name": "Steel Armor",
+    "slot": "BODY",
+    "stat_mods": {
+        "defense": 20,
+        "speed": -15
+    }
 }

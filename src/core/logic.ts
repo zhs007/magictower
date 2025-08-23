@@ -1,7 +1,9 @@
-import { GameState, IPlayer, IMonster, ICharacter, EquipmentSlot, Action } from './types';
+import { GameState, IPlayer, IMonster, ICharacter, EquipmentSlot, Action, IEquipment } from './types';
 import * as _ from 'lodash';
 import { AudioManager } from './audio-manager';
 import { eventManager } from './event-manager';
+import { calculateFinalStats } from './stat-calculator';
+import { compareEquipment } from './equipment-manager';
 
 const MAX_COMBAT_ROUNDS = 8;
 
@@ -38,7 +40,11 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     if (destinationEntityKey) {
         const destinationEntity = newState.entities[destinationEntityKey];
         if (destinationEntity.type === 'item') {
-            newState.interactionState = { type: 'item_pickup', itemId: destinationEntityKey };
+            // This is now handled by an action dispatch
+            return { ...newState, interactionState: { type: 'item_pickup', itemId: destinationEntityKey } };
+        } else if (destinationEntity.type === 'equipment') {
+            // Dispatch equipment pickup action
+            return { ...newState, interactionState: { type: 'PICK_UP_EQUIPMENT', equipmentId: destinationEntityKey } as any }; // Using 'any' to bypass strict type check for custom state
         } else if (destinationEntity.type === 'monster') {
             const monster = newState.monsters[destinationEntityKey];
             if (monster) {
@@ -51,11 +57,13 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
             newState.interactionState = {
                 type: 'battle',
                 monsterId: destinationEntityKey,
-                turn: 'player',
+                turn: 'player', // This will be immediately re-evaluated in handleStartBattle
                 playerHp: newState.player.hp,
                 monsterHp: newState.monsters[destinationEntityKey].hp,
                 round: 1,
             };
+            // Immediately call handleStartBattle to set the correct turn order
+            return handleStartBattle(newState, destinationEntityKey);
         }
     } else {
         newState.player.x = newX;
@@ -67,6 +75,60 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         }
     }
 
+    return newState;
+}
+
+export function handlePickupEquipment(state: GameState, equipmentEntityKey: string): GameState {
+    const newState = _.cloneDeep(state);
+    const equipmentOnMap = newState.equipments[equipmentEntityKey];
+    if (!equipmentOnMap) return state;
+
+    const comparison = compareEquipment(newState.player, equipmentOnMap);
+    let sound = 'pickup'; // Default sound
+
+    switch (comparison.type) {
+        case 'AUTO_EQUIP':
+            console.log(`Auto-equipping ${equipmentOnMap.name}.`);
+            const targetSlots = Array.isArray(equipmentOnMap.slot) ? equipmentOnMap.slot : [equipmentOnMap.slot];
+
+            // Move the old item (if any) to backup/inventory
+            if (comparison.oldItem) {
+                console.log(`Storing ${comparison.oldItem.name} in backup.`);
+                newState.player.backupEquipment.push(comparison.oldItem);
+            }
+
+            // Equip the new item
+            for (const slot of targetSlots) {
+                newState.player.equipment[slot] = equipmentOnMap;
+            }
+
+            // Remove the item from the map
+            delete newState.entities[equipmentEntityKey];
+            delete newState.equipments[equipmentEntityKey];
+            sound = 'upgrade'; // Special sound for upgrade
+            break;
+
+        case 'AUTO_DISCARD':
+            console.log(`New equipment ${equipmentOnMap.name} is worse, discarding.`);
+            // Just remove the item from the map
+            delete newState.entities[equipmentEntityKey];
+            delete newState.equipments[equipmentEntityKey];
+            sound = 'downgrade'; // Special sound for downgrade
+            break;
+
+        case 'PROMPT_SWAP':
+            console.log(`Prompting user to swap with ${comparison.oldItems.map(i => i.name).join(', ')}.`);
+            console.log('Stat changes:', comparison.statChanges);
+            // In a real implementation, a UI modal would appear.
+            // The game state would enter a 'waiting_for_player_input' mode.
+            // For now, we'll just discard the new item to prevent getting stuck.
+            delete newState.entities[equipmentEntityKey];
+            delete newState.equipments[equipmentEntityKey];
+            break;
+    }
+
+    // AudioManager.getInstance().playSound(sound); // TODO: Add these sounds
+    newState.interactionState = { type: 'none' };
     return newState;
 }
 
@@ -98,23 +160,10 @@ export function handleUseBomb(state: GameState, monsterType: string): GameState 
     return newState;
 }
 
-function getCharacterTotalStats(character: ICharacter): { totalAttack: number; totalDefense: number } {
-    let totalAttack = character.attack;
-    let totalDefense = character.defense;
-    for (const slot of Object.values(EquipmentSlot)) {
-        const equipment = character.equipment[slot];
-        if (equipment) {
-            totalAttack += equipment.attackBonus || 0;
-            totalDefense += equipment.defenseBonus || 0;
-        }
-    }
-    return { totalAttack, totalDefense };
-}
-
 export function calculateDamage(attacker: ICharacter, defender: ICharacter): number {
-    const attackerStats = getCharacterTotalStats(attacker);
-    const defenderStats = getCharacterTotalStats(defender);
-    const damage = attackerStats.totalAttack - defenderStats.totalDefense;
+    const attackerStats = calculateFinalStats(attacker);
+    const defenderStats = calculateFinalStats(defender);
+    const damage = attackerStats.attack - defenderStats.defense;
     return damage <= 0 ? 1 : damage;
 }
 
@@ -123,13 +172,11 @@ export function handleStartBattle(state: GameState, monsterEntityKey: string): G
     const monster = newState.monsters[monsterEntityKey];
     if (!monster) return state;
 
-    let turn: 'player' | 'monster' = 'player';
-    const playerHasFirstStrike = newState.player.buffs.some(b => b.id === 'buff_first_strike' && b.charges > 0);
-    const monsterHasFirstStrike = monster.buffs.some(b => b.id === 'buff_first_strike' && b.charges > 0);
+    const playerStats = calculateFinalStats(newState.player);
+    const monsterStats = calculateFinalStats(monster);
 
-    if (monsterHasFirstStrike && !playerHasFirstStrike) {
-        turn = 'monster';
-    }
+    // Determine turn order based on speed. Player goes first in a tie.
+    const turn: 'player' | 'monster' = playerStats.speed >= monsterStats.speed ? 'player' : 'monster';
 
     newState.interactionState = {
         type: 'battle',
@@ -163,8 +210,8 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
         hpChangedPayload = {
             entityId: 'player',
             newHp: newState.interactionState.playerHp,
-            attack: newState.player.attack,
-            defense: newState.player.defense,
+            attack: calculateFinalStats(newState.player).attack,
+            defense: calculateFinalStats(newState.player).defense,
             oldHp
         };
     } else {
@@ -175,8 +222,8 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
             entityId: defenderId,
             name: monster.name,
             newHp: newState.interactionState.monsterHp,
-            attack: monster.attack,
-            defense: monster.defense,
+            attack: calculateFinalStats(monster).attack,
+            defense: calculateFinalStats(monster).defense,
             oldHp
         };
     }
@@ -234,14 +281,14 @@ export function handleEndBattle(state: GameState, winnerId: string | null, reaso
             newState.player.hp = 0;
         }
     }
-    // If reason is timeout, player HP is already updated to its final battle value.
 
+    const finalPlayerStats = calculateFinalStats(newState.player);
     eventManager.dispatch('BATTLE_ENDED', {
         winnerId,
         reason,
         finalPlayerHp: newState.player.hp,
-        finalPlayerAtk: newState.player.attack,
-        finalPlayerDef: newState.player.defense,
+        finalPlayerAtk: finalPlayerStats.attack,
+        finalPlayerDef: finalPlayerStats.defense,
     });
     newState.interactionState = { type: 'none' };
     return newState;
@@ -269,26 +316,18 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
     } else if (item.type === 'special') {
         switch (item.specialType) {
             case 'monster_manual':
-                // This is a permanent unlock, so we'll need a way to store it.
-                // For now, let's assume a flag on the player object.
                 newState.player.hasMonsterManual = true;
                 break;
             case 'snowflake':
-                newState.player.buffs.push({
-                    id: 'first_strike',
-                    name: 'First Strike',
-                    duration: -1,
-                    charges: 2,
-                    triggers: ['on_battle_start']
-                });
+                // This item is now obsolete and does nothing.
+                // It could be repurposed to grant a speed buff in the future.
                 break;
             case 'cross':
+                // This provides a base stat increase, which is fine.
                 newState.player.attack += 10;
                 newState.player.defense += 10;
                 break;
             case 'bomb':
-                // Add to inventory, assuming an inventory system exists.
-                // For now, let's add it to a simple array on the player.
                 if (!newState.player.specialItems) {
                     newState.player.specialItems = [];
                 }

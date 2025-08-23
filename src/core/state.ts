@@ -1,5 +1,5 @@
 import { GameState, Action, IPlayer, IMonster, IItem } from './types';
-import { handleMove, handlePickupItem, handleOpenDoor, handleStartBattle, handleAttack, handleEndBattle } from './logic';
+import { handleMove, handlePickupItem, handleOpenDoor, handleStartBattle, handleAttack, handleEndBattle, handlePickupEquipment } from './logic';
 import { dataManager } from '../data/data-manager';
 
 export class GameStateManager {
@@ -32,7 +32,7 @@ export class GameStateManager {
         let player: IPlayer | null = null;
         let playerKey: string | null = null;
 
-        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 }, direction: 'right' as 'left' | 'right' };
+        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, speed: 10, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 }, direction: 'right' as 'left' | 'right' };
 
         if (mapData.entities) {
             for (const entityKey of Object.keys(mapData.entities)) {
@@ -98,6 +98,9 @@ export class GameStateManager {
                 break;
             case 'PICK_UP_ITEM':
                 newState = handlePickupItem(this.currentState, action.payload.itemId);
+                break;
+            case 'PICK_UP_EQUIPMENT':
+                newState = handlePickupEquipment(this.currentState, action.payload.equipmentId);
                 break;
             case 'OPEN_DOOR':
                 newState = handleOpenDoor(this.currentState, action.payload.doorId);
