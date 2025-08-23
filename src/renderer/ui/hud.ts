@@ -50,7 +50,7 @@ export class HUD extends Container {
         this.background.rect(0, 0, HUD_WIDTH, HUD_HEIGHT).fill(0x333333);
     }
 
-    // This method is now only for the very first draw.
+    // This method is for the very first draw.
     public update(state: GameState): void {
         this.updatePlayerStats(state.player.hp, state.player.attack, state.player.defense);
         this.updateKeys(state.player.keys);
@@ -58,37 +58,22 @@ export class HUD extends Container {
     }
 
     private updatePlayerStats(hp: number, attack: number, defense: number): void {
-        const newTextContent = `勇者: HP ${hp}  ATK ${attack}  DEF ${defense}`;
-        if (this.playerStatsText) {
-            this.removeChild(this.playerStatsText);
-        }
-        this.playerStatsText = this.createText(newTextContent, PADDING, PADDING);
-        this.addChild(this.playerStatsText);
+        this.playerStatsText.text = `勇者: HP ${hp}  ATK ${attack}  DEF ${defense}`;
     }
 
     private updateMonsterStats(name: string, hp: number, attack: number, defense: number): void {
-        const newTextContent = `${name}: HP ${hp}  ATK ${attack}  DEF ${defense}`;
-        if (this.monsterStatsText) {
-            this.removeChild(this.monsterStatsText);
-        }
-        this.monsterStatsText = this.createText(newTextContent, PADDING, PADDING + FONT_SIZE * 2);
-        this.addChild(this.monsterStatsText);
-        this.monsterStatsText.visible = true;
+        this.monsterStatsText.text = `${name}: HP ${hp}  ATK ${attack}  DEF ${defense}`;
     }
 
     private updateKeys(keys: { yellow: number, blue: number, red: number }): void {
-        const newTextContent = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
-        if (this.keysText) {
-            this.removeChild(this.keysText);
-        }
-        this.keysText = this.createText(newTextContent, PADDING, PADDING + FONT_SIZE * 4);
-        this.addChild(this.keysText);
+        this.keysText.text = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
     }
 
     private handleHpChange(payload: { entityId: string, name?: string, newHp: number, attack: number, defense: number }): void {
         if (payload.entityId === 'player') {
             this.updatePlayerStats(payload.newHp, payload.attack, payload.defense);
         } else if (payload.name) {
+            this.monsterStatsText.visible = true;
             this.updateMonsterStats(payload.name, payload.newHp, payload.attack, payload.defense);
         }
     }
