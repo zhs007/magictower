@@ -25,6 +25,7 @@ vi.mock('pixi.js', async () => {
             __type: 'Sprite',
             x: 0, y: 0, width: 0, height: 0, texture,
             anchor: { set: vi.fn() },
+            scale: { x: 1, y: 1, set: vi.fn() },
             visible: true,
         })),
         Text: vi.fn(() => ({

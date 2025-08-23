@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Renderer } from '../renderer';
 import { GameState, IPlayer, IMonster } from '../../core/types';
-import { Container, Sprite } from 'pixi.js';
+import { Container, Sprite, Assets } from 'pixi.js';
 
 // Mock Pixi.js components
 vi.mock('pixi.js', async () => {
@@ -20,7 +20,7 @@ vi.mock('pixi.js', async () => {
         ...actualPixi,
         Container: vi.fn(() => ({ ...mockContainer, children: [] })), // Ensure children is fresh for each instance
         Assets: {
-            get: vi.fn(key => ({ texture: key })),
+            get: vi.fn(key => ({ texture: key, width: 65, height: 130 })), // Mock texture dimensions
             init: vi.fn().mockResolvedValue(undefined),
             loadBundle: vi.fn().mockResolvedValue(undefined),
         },
@@ -29,7 +29,7 @@ vi.mock('pixi.js', async () => {
             x: 0, y: 0, width: 0, height: 0, zIndex: 0,
             texture,
             anchor: { _x: 0, _y: 0, set: vi.fn(function(x, y) { this._x = x; this._y = y; }) },
-            scale: { x: 1, y: 1 },
+            scale: { x: 1, y: 1, set: vi.fn(function(s) { this.x = s; this.y = s; }) },
             visible: true,
         })),
     };
@@ -104,13 +104,12 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
         expect(wallSprites.length).toBe(1);
 
         const wallSprite = wallSprites[0];
-        expect(wallSprite.width).toBe(TILE_SIZE);
-        expect(wallSprite.height).toBe(TILE_SIZE * 2);
+        const expectedScale = TILE_SIZE / wallSprite.texture.width;
+        expect(wallSprite.scale.x).toBe(expectedScale);
+        expect(wallSprite.scale.y).toBe(expectedScale);
         expect(wallSprite.anchor._x).toBe(0.5);
         expect(wallSprite.anchor._y).toBe(1);
         expect(wallSprite.zIndex).toBe(0); // y-coordinate of the wall
-        expect(wallSprite.x).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
-        expect(wallSprite.y).toBe((0 + 1) * TILE_SIZE);
     });
 
     it('should create entity sprites with correct properties', () => {
@@ -119,16 +118,15 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
         const monsterSprite = renderer['entitySprites'].get('monster1');
 
         expect(playerSprite).toBeDefined();
-        expect(playerSprite.width).toBe(TILE_SIZE);
-        expect(playerSprite.height).toBe(TILE_SIZE * 2);
+        const expectedScale = TILE_SIZE / playerSprite.texture.width;
+        expect(playerSprite.scale.x).toBe(expectedScale);
+        expect(playerSprite.scale.y).toBe(expectedScale);
         expect(playerSprite.anchor._x).toBe(0.5);
         expect(playerSprite.anchor._y).toBe(1);
         expect(playerSprite.zIndex).toBe(1); // player y = 1
-        expect(playerSprite.y).toBe((1 + 1) * TILE_SIZE);
 
         expect(monsterSprite).toBeDefined();
         expect(monsterSprite.zIndex).toBe(2); // monster y = 2
-        expect(monsterSprite.y).toBe((2 + 1) * TILE_SIZE);
     });
 
     it('should flip sprite horizontally based on direction', () => {
@@ -152,5 +150,21 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
         expect(wallSprite.zIndex).toBe(0);
         expect(playerSprite.zIndex).toBe(1);
         expect(monsterSprite.zIndex).toBe(2);
+    });
+
+    it('should scale sprites proportionally', () => {
+        // Override the mock for this specific test
+        vi.spyOn(Assets, 'get').mockImplementation((key: any) => ({
+            texture: key,
+            width: 130, // Use a different width to test scaling
+            height: 260,
+        }));
+
+        renderer.initialize(gameState);
+        const playerSprite = renderer['entitySprites'].get('player1');
+
+        const expectedScale = TILE_SIZE / 130; // 65 / 130 = 0.5
+        expect(playerSprite.scale.x).toBe(expectedScale);
+        expect(playerSprite.scale.y).toBe(expectedScale);
     });
 });

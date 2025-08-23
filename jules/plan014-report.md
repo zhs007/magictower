@@ -23,8 +23,8 @@ This development plan focused on a significant refactoring of the game's renderi
 - **Z-Ordering Implementation:**
     - The rendering logic now uses a "painter's algorithm" approach. The `zIndex` of all sprites in the `mainContainer` (entities and walls) is set to their `y` grid coordinate. Because the container is sortable, objects that are lower on the screen (higher `y` value) are automatically rendered on top of objects that are higher up.
 - **Sprite Property Updates:**
-    - **Size:** All entity and wall sprites are now rendered at `65x130` pixels.
-    - **Anchor Point:** The anchor point for these sprites was changed to `(0.5, 1)` (bottom-center). This allows artists to design assets that break the 65x130 frame while ensuring they are always grounded correctly to their logical tile.
+    - **Size and Scaling:** Based on user feedback, the sizing logic was corrected. Instead of forcing a fixed size, sprites are now scaled proportionally. Their width is set to `65` pixels, and their height is scaled automatically to preserve the original asset's aspect ratio. This allows artists to control sprite height via the source PNG dimensions.
+    - **Anchor Point:** The anchor point for these sprites was changed to `(0.5, 1)` (bottom-center). This allows artists to design assets that break the 65-pixel width frame while ensuring they are always grounded correctly to their logical tile.
     - **Positioning:** The `y` coordinate calculation for sprites was updated to `(entity.y + 1) * TILE_SIZE` to accommodate the new anchor point.
     - **Directional Flipping:** Sprites are now flipped horizontally by setting `sprite.scale.x = -1` when an entity's `direction` is `'left'`.
 - **Wall Rendering:**
