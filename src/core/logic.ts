@@ -1,4 +1,12 @@
-import { GameState, IPlayer, IMonster, ICharacter, EquipmentSlot, Action, IEquipment } from './types';
+import {
+    GameState,
+    IPlayer,
+    IMonster,
+    ICharacter,
+    EquipmentSlot,
+    Action,
+    IEquipment,
+} from './types';
 import * as _ from 'lodash';
 import { AudioManager } from './audio-manager';
 import { eventManager } from './event-manager';
@@ -18,7 +26,9 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     // Handle turning in place if necessary
     if (moveDirection !== 'none' && player.direction !== moveDirection) {
         player.direction = moveDirection;
-        const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+        const playerEntityKey = Object.keys(newState.entities).find(
+            (k) => newState.entities[k].type === 'player_start'
+        );
         if (playerEntityKey) {
             newState.entities[playerEntityKey].direction = moveDirection;
         }
@@ -31,20 +41,37 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     const newY = player.y + dy;
 
     // Check for collision
-    if (newX < 0 || newX >= newState.map[0].length || newY < 0 || newY >= newState.map.length || newState.map[newY][newX] === 1) {
+    if (
+        newX < 0 ||
+        newX >= newState.map[0].length ||
+        newY < 0 ||
+        newY >= newState.map.length ||
+        newState.map[newY][newX] === 1
+    ) {
         return state; // No change in position or direction
     }
 
     // Check for entity interaction at the destination
-    const destinationEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].x === newX && newState.entities[k].y === newY);
+    const destinationEntityKey = Object.keys(newState.entities).find(
+        (k) => newState.entities[k].x === newX && newState.entities[k].y === newY
+    );
     if (destinationEntityKey) {
         const destinationEntity = newState.entities[destinationEntityKey];
         if (destinationEntity.type === 'item') {
             // This is now handled by an action dispatch
-            return { ...newState, interactionState: { type: 'item_pickup', itemId: destinationEntityKey } };
+            return {
+                ...newState,
+                interactionState: { type: 'item_pickup', itemId: destinationEntityKey },
+            };
         } else if (destinationEntity.type === 'equipment') {
             // Dispatch equipment pickup action
-            return { ...newState, interactionState: { type: 'PICK_UP_EQUIPMENT', equipmentId: destinationEntityKey } as any }; // Using 'any' to bypass strict type check for custom state
+            return {
+                ...newState,
+                interactionState: {
+                    type: 'PICK_UP_EQUIPMENT',
+                    equipmentId: destinationEntityKey,
+                } as any,
+            }; // Using 'any' to bypass strict type check for custom state
         } else if (destinationEntity.type === 'monster') {
             const monster = newState.monsters[destinationEntityKey];
             if (monster) {
@@ -68,7 +95,9 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     } else {
         newState.player.x = newX;
         newState.player.y = newY;
-        const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+        const playerEntityKey = Object.keys(newState.entities).find(
+            (k) => newState.entities[k].type === 'player_start'
+        );
         if (playerEntityKey) {
             newState.entities[playerEntityKey].x = newX;
             newState.entities[playerEntityKey].y = newY;
@@ -89,12 +118,23 @@ export function handlePickupEquipment(state: GameState, equipmentEntityKey: stri
     switch (comparison.type) {
         case 'AUTO_EQUIP':
             console.log(`Auto-equipping ${equipmentOnMap.name}.`);
-            const targetSlots = Array.isArray(equipmentOnMap.slot) ? equipmentOnMap.slot : [equipmentOnMap.slot];
+            const targetSlots = Array.isArray(equipmentOnMap.slot)
+                ? equipmentOnMap.slot
+                : [equipmentOnMap.slot];
 
             // Move the old item (if any) to backup/inventory
             if (comparison.oldItem) {
-                console.log(`Storing ${comparison.oldItem.name} in backup.`);
-                newState.player.backupEquipment.push(comparison.oldItem);
+                if (Array.isArray(comparison.oldItem)) {
+                    for (const old of comparison.oldItem) {
+                        if (old) {
+                            console.log(`Storing ${old.name} in backup.`);
+                            newState.player.backupEquipment.push(old);
+                        }
+                    }
+                } else {
+                    console.log(`Storing ${comparison.oldItem.name} in backup.`);
+                    newState.player.backupEquipment.push(comparison.oldItem);
+                }
             }
 
             // Equip the new item
@@ -117,7 +157,9 @@ export function handlePickupEquipment(state: GameState, equipmentEntityKey: stri
             break;
 
         case 'PROMPT_SWAP':
-            console.log(`Prompting user to swap with ${comparison.oldItems.map(i => i.name).join(', ')}.`);
+            console.log(
+                `Prompting user to swap with ${comparison.oldItems.map((i) => i.name).join(', ')}.`
+            );
             console.log('Stat changes:', comparison.statChanges);
             // In a real implementation, a UI modal would appear.
             // The game state would enter a 'waiting_for_player_input' mode.
@@ -176,7 +218,8 @@ export function handleStartBattle(state: GameState, monsterEntityKey: string): G
     const monsterStats = calculateFinalStats(monster);
 
     // Determine turn order based on speed. Player goes first in a tie.
-    const turn: 'player' | 'monster' = playerStats.speed >= monsterStats.speed ? 'player' : 'monster';
+    const turn: 'player' | 'monster' =
+        playerStats.speed >= monsterStats.speed ? 'player' : 'monster';
 
     newState.interactionState = {
         type: 'battle',
@@ -194,10 +237,14 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     const newState = _.cloneDeep(state);
     if (newState.interactionState.type !== 'battle') return state;
 
-    const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+    const playerEntityKey = Object.keys(newState.entities).find(
+        (k) => newState.entities[k].type === 'player_start'
+    );
 
-    const attacker = attackerId === playerEntityKey ? newState.player : newState.monsters[attackerId];
-    const defender = defenderId === playerEntityKey ? newState.player : newState.monsters[defenderId];
+    const attacker =
+        attackerId === playerEntityKey ? newState.player : newState.monsters[attackerId];
+    const defender =
+        defenderId === playerEntityKey ? newState.player : newState.monsters[defenderId];
 
     if (!attacker || !defender) return state;
 
@@ -212,7 +259,7 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
             newHp: newState.interactionState.playerHp,
             attack: calculateFinalStats(newState.player).attack,
             defense: calculateFinalStats(newState.player).defense,
-            oldHp
+            oldHp,
         };
     } else {
         const monster = newState.monsters[defenderId];
@@ -224,7 +271,7 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
             newHp: newState.interactionState.monsterHp,
             attack: calculateFinalStats(monster).attack,
             defense: calculateFinalStats(monster).defense,
-            oldHp
+            oldHp,
         };
     }
 
@@ -241,19 +288,26 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
         if (newState.interactionState.round > MAX_COMBAT_ROUNDS) {
             newState.interactionState.turn = 'battle_end';
         } else {
-            newState.interactionState.turn = newState.interactionState.turn === 'player' ? 'monster' : 'player';
+            newState.interactionState.turn =
+                newState.interactionState.turn === 'player' ? 'monster' : 'player';
         }
     }
 
     return newState;
 }
 
-export function handleEndBattle(state: GameState, winnerId: string | null, reason: 'hp_depleted' | 'timeout'): GameState {
+export function handleEndBattle(
+    state: GameState,
+    winnerId: string | null,
+    reason: 'hp_depleted' | 'timeout'
+): GameState {
     const newState = _.cloneDeep(state);
     if (newState.interactionState.type !== 'battle') return state;
 
     const monsterEntityKey = newState.interactionState.monsterId;
-    const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+    const playerEntityKey = Object.keys(newState.entities).find(
+        (k) => newState.entities[k].type === 'player_start'
+    );
 
     // Always update player HP to the final battle state HP, unless they lost.
     newState.player.hp = newState.interactionState.playerHp;
@@ -268,8 +322,11 @@ export function handleEndBattle(state: GameState, winnerId: string | null, reaso
             // Check for special door conditions
             for (const doorId in newState.doors) {
                 const door = newState.doors[doorId];
-                if (door.condition?.type === 'DEFEAT_MONSTER' && door.condition.monsterId === defeatedMonsterId) {
-                    const doorEntityKey = Object.keys(newState.entities).find(k => k === doorId);
+                if (
+                    door.condition?.type === 'DEFEAT_MONSTER' &&
+                    door.condition.monsterId === defeatedMonsterId
+                ) {
+                    const doorEntityKey = Object.keys(newState.entities).find((k) => k === doorId);
                     if (doorEntityKey) {
                         delete newState.entities[doorEntityKey];
                     }
@@ -302,7 +359,9 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
     const itemEntity = newState.entities[itemEntityKey];
     newState.player.x = itemEntity.x;
     newState.player.y = itemEntity.y;
-    const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+    const playerEntityKey = Object.keys(newState.entities).find(
+        (k) => newState.entities[k].type === 'player_start'
+    );
     if (playerEntityKey) {
         newState.entities[playerEntityKey].x = itemEntity.x;
         newState.entities[playerEntityKey].y = itemEntity.y;
@@ -350,7 +409,7 @@ export function handleOpenDoor(state: GameState, doorId: string): GameState {
     const door = newState.doors[doorId];
     if (!door) return state;
 
-    const doorEntityKey = Object.keys(newState.entities).find(k => k === doorId);
+    const doorEntityKey = Object.keys(newState.entities).find((k) => k === doorId);
     if (doorEntityKey) {
         delete newState.entities[doorEntityKey];
     }

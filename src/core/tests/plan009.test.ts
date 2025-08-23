@@ -8,7 +8,10 @@ describe('plan009 features', () => {
     beforeEach(() => {
         baseState = {
             currentFloor: 1,
-            map: [[0, 0], [0, 0]],
+            map: [
+                [0, 0],
+                [0, 0],
+            ],
             player: {
                 id: 'player',
                 name: 'Player',
@@ -26,7 +29,7 @@ describe('plan009 features', () => {
                 specialItems: [],
             },
             entities: {
-                'player_start': { id: 'player_start', type: 'player_start', x: 0, y: 0 },
+                player_start: { id: 'player_start', type: 'player_start', x: 0, y: 0 },
             },
             monsters: {},
             items: {},
@@ -37,9 +40,19 @@ describe('plan009 features', () => {
     });
 
     it('should allow picking up a magic bomb', () => {
-        const bombItem: IItem = { id: 'item_bomb', name: 'Magic Bomb', type: 'special', specialType: 'bomb' };
+        const bombItem: IItem = {
+            id: 'item_bomb',
+            name: 'Magic Bomb',
+            type: 'special',
+            specialType: 'bomb',
+        };
         baseState.items['item_bomb_1'] = bombItem;
-        baseState.entities['item_bomb_1'] = { id: 'item_bomb', type: 'item', x: 1, y: 0, ...bombItem };
+        baseState.entities['item_bomb_1'] = Object.assign({}, bombItem, {
+            id: 'item_bomb',
+            type: 'item',
+            x: 1,
+            y: 0,
+        });
 
         const newState = handlePickupItem(baseState, 'item_bomb_1');
         expect(newState.player.specialItems).toContain('bomb');
@@ -49,14 +62,53 @@ describe('plan009 features', () => {
 
     it('should use a magic bomb to destroy all slimes', () => {
         baseState.player.specialItems = ['bomb'];
-        const slime1: IMonster = { id: 'slime1', name: 'Slime', hp: 20, attack: 5, defense: 2, speed: 5, x: 1, y: 0, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
-        const slime2: IMonster = { id: 'slime2', name: 'Slime', hp: 20, attack: 5, defense: 2, speed: 5, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
-        const bat: IMonster = { id: 'bat1', name: 'Bat', hp: 15, attack: 6, defense: 1, speed: 8, x: 0, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
+        const slime1: IMonster = {
+            id: 'slime1',
+            name: 'Slime',
+            hp: 20,
+            attack: 5,
+            defense: 2,
+            speed: 5,
+            x: 1,
+            y: 0,
+            direction: 'left',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        const slime2: IMonster = {
+            id: 'slime2',
+            name: 'Slime',
+            hp: 20,
+            attack: 5,
+            defense: 2,
+            speed: 5,
+            x: 1,
+            y: 1,
+            direction: 'left',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        const bat: IMonster = {
+            id: 'bat1',
+            name: 'Bat',
+            hp: 15,
+            attack: 6,
+            defense: 1,
+            speed: 8,
+            x: 0,
+            y: 1,
+            direction: 'left',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
 
-        baseState.monsters = { 'slime1': slime1, 'slime2': slime2, 'bat1': bat };
-        baseState.entities['slime1'] = { id: 'slime1', type: 'monster', ...slime1 };
-        baseState.entities['slime2'] = { id: 'slime2', type: 'monster', ...slime2 };
-        baseState.entities['bat1'] = { id: 'bat1', type: 'monster', ...bat };
+        baseState.monsters = { slime1: slime1, slime2: slime2, bat1: bat };
+        baseState.entities['slime1'] = Object.assign({}, slime1, { id: 'slime1', type: 'monster' });
+        baseState.entities['slime2'] = Object.assign({}, slime2, { id: 'slime2', type: 'monster' });
+        baseState.entities['bat1'] = Object.assign({}, bat, { id: 'bat1', type: 'monster' });
 
         const newState = handleUseBomb(baseState, 'Slime');
         expect(newState.player.specialItems).not.toContain('bomb');
@@ -69,18 +121,38 @@ describe('plan009 features', () => {
     });
 
     it('should pick up monster manual', () => {
-        const manualItem: IItem = { id: 'item_manual', name: 'Monster Manual', type: 'special', specialType: 'monster_manual' };
+        const manualItem: IItem = {
+            id: 'item_manual',
+            name: 'Monster Manual',
+            type: 'special',
+            specialType: 'monster_manual',
+        };
         baseState.items['item_manual_1'] = manualItem;
-        baseState.entities['item_manual_1'] = { id: 'item_manual', type: 'item', x: 1, y: 0, ...manualItem };
+        baseState.entities['item_manual_1'] = Object.assign({}, manualItem, {
+            id: 'item_manual',
+            type: 'item',
+            x: 1,
+            y: 0,
+        });
 
         const newState = handlePickupItem(baseState, 'item_manual_1');
         expect(newState.player.hasMonsterManual).toBe(true);
     });
 
     it('should pick up cross and gain stats', () => {
-        const crossItem: IItem = { id: 'item_cross', name: 'Cross', type: 'special', specialType: 'cross' };
+        const crossItem: IItem = {
+            id: 'item_cross',
+            name: 'Cross',
+            type: 'special',
+            specialType: 'cross',
+        };
         baseState.items['item_cross_1'] = crossItem;
-        baseState.entities['item_cross_1'] = { id: 'item_cross', type: 'item', x: 1, y: 0, ...crossItem };
+        baseState.entities['item_cross_1'] = Object.assign({}, crossItem, {
+            id: 'item_cross',
+            type: 'item',
+            x: 1,
+            y: 0,
+        });
 
         const newState = handlePickupItem(baseState, 'item_cross_1');
         expect(newState.player.attack).toBe(baseState.player.attack + 10);
@@ -88,13 +160,35 @@ describe('plan009 features', () => {
     });
 
     it('should open a special door after defeating the required monster', () => {
-        const boss: IMonster = { id: 'boss1', name: 'Boss', hp: 100, attack: 20, defense: 10, speed: 12, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
+        const boss: IMonster = {
+            id: 'boss1',
+            name: 'Boss',
+            hp: 100,
+            attack: 20,
+            defense: 10,
+            speed: 12,
+            x: 1,
+            y: 1,
+            direction: 'left',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
         baseState.monsters['boss_1'] = boss;
-        baseState.entities['boss_1'] = { id: 'boss1', type: 'monster', ...boss };
+        baseState.entities['boss_1'] = Object.assign({}, boss, { id: 'boss1', type: 'monster' });
 
-        const specialDoor: IDoor = { id: 'door_special', color: 'blue', condition: { type: 'DEFEAT_MONSTER', monsterId: 'boss1' } };
+        const specialDoor: IDoor = {
+            id: 'door_special',
+            color: 'blue',
+            condition: { type: 'DEFEAT_MONSTER', monsterId: 'boss1' },
+        };
         baseState.doors['door_special_1'] = specialDoor;
-        baseState.entities['door_special_1'] = { id: 'door_special', type: 'door', x: 0, y: 1, ...specialDoor };
+        baseState.entities['door_special_1'] = Object.assign({}, specialDoor, {
+            id: 'door_special',
+            type: 'door',
+            x: 0,
+            y: 1,
+        });
 
         baseState.interactionState = {
             type: 'battle',
@@ -105,8 +199,10 @@ describe('plan009 features', () => {
             round: 1,
         };
 
-        const playerEntityKey = Object.keys(baseState.entities).find(k => baseState.entities[k].type === 'player_start');
-        const newState = handleEndBattle(baseState, playerEntityKey, 'hp_depleted');
+        const playerEntityKey = Object.keys(baseState.entities).find(
+            (k) => baseState.entities[k].type === 'player_start'
+        );
+        const newState = handleEndBattle(baseState, playerEntityKey ?? null, 'hp_depleted');
 
         expect(newState.monsters['boss_1']).toBeUndefined();
         expect(newState.entities['boss_1']).toBeUndefined();

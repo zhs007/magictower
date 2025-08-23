@@ -27,11 +27,24 @@ export class DataManager {
         }
     }
 
-    private loadDataFromModules(modules: Record<string, unknown>, targetMap: Map<string, any>): void {
+    private loadDataFromModules(
+        modules: Record<string, unknown>,
+        targetMap: Map<string, any>
+    ): void {
         for (const path in modules) {
             // The default export of the JSON module is the actual data.
             const data = (modules[path] as any).default;
             if (data && data.id) {
+                // If item data is missing a 'type' field, try to derive it from the id.
+                if (targetMap === this.items) {
+                    if (!data.type) {
+                        data.type = data.id.includes('key')
+                            ? 'key'
+                            : data.id.includes('potion')
+                              ? 'potion'
+                              : 'special';
+                    }
+                }
                 targetMap.set(data.id, data);
             }
         }

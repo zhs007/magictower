@@ -4,13 +4,33 @@ import { ICharacter } from '../types';
 
 describe('calculateDamage', () => {
     const mockPlayer: ICharacter = {
-        id: 'player', name: 'Player', hp: 100, attack: 10, defense: 5, x: 0, y: 0,
-        equipment: {}, backupEquipment: [], buffs: []
+        id: 'player',
+        name: 'Player',
+        hp: 100,
+        attack: 10,
+        defense: 5,
+        x: 0,
+        y: 0,
+        speed: 5,
+        direction: 'right',
+        equipment: {},
+        backupEquipment: [],
+        buffs: [],
     };
 
     const mockMonster: ICharacter = {
-        id: 'monster', name: 'Monster', hp: 50, attack: 8, defense: 2, x: 1, y: 1,
-        equipment: {}, backupEquipment: [], buffs: []
+        id: 'monster',
+        name: 'Monster',
+        hp: 50,
+        attack: 8,
+        defense: 2,
+        x: 1,
+        y: 1,
+        speed: 3,
+        direction: 'left',
+        equipment: {},
+        backupEquipment: [],
+        buffs: [],
     };
 
     it('should calculate positive damage correctly', () => {

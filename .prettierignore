@@ -1,0 +1,17 @@
+node_modules
+dist
+public
+assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.lock
+*.log
+coverage
+/.vite
+.git
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

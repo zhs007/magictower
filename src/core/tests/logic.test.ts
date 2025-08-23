@@ -13,9 +13,29 @@ describe('handleMove', () => {
                 [0, 0, 0],
                 [1, 0, 0],
             ],
-            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 1, y: 1, direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } },
+            player: {
+                id: 'player',
+                name: 'Hero',
+                hp: 100,
+                attack: 10,
+                defense: 5,
+                speed: 5,
+                x: 1,
+                y: 1,
+                direction: 'right',
+                equipment: {},
+                backupEquipment: [],
+                buffs: [],
+                keys: { yellow: 0, blue: 0, red: 0 },
+            },
             entities: {
-                'player_start_0_0': { type: 'player_start', id: 'player', x: 1, y: 1, direction: 'right' },
+                player_start_0_0: {
+                    type: 'player_start',
+                    id: 'player',
+                    x: 1,
+                    y: 1,
+                    direction: 'right',
+                },
             },
             monsters: {},
             items: {},
@@ -49,8 +69,21 @@ describe('handleMove', () => {
         // Player is at x=0, monster is at x=1. Player moves right to engage. Monster should turn left.
         gameState.player.x = 0;
         gameState.entities['player_start_0_0'].x = 0;
-        const monster = { id: 'm1', name: 'M', hp: 10, attack: 1, defense: 1, x: 1, y: 1, direction: 'right', equipment: {}, backupEquipment: [], buffs: [] };
-        gameState.monsters = { 'm1_key': monster };
+        const monster: any = {
+            id: 'm1',
+            name: 'M',
+            hp: 10,
+            attack: 1,
+            defense: 1,
+            speed: 2,
+            x: 1,
+            y: 1,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        gameState.monsters = { m1_key: monster };
         gameState.entities['m1_key'] = { ...monster, type: 'monster' };
 
         const newState = handleMove(gameState, 1, 0); // Player moves right
@@ -66,8 +99,21 @@ describe('handleMove', () => {
         gameState.player.direction = 'left'; // Player must be facing the direction of movement
         gameState.entities['player_start_0_0'].direction = 'left';
 
-        const monster = { id: 'm1', name: 'M', hp: 10, attack: 1, defense: 1, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
-        gameState.monsters = { 'm1_key': monster };
+        const monster: any = {
+            id: 'm1',
+            name: 'M',
+            hp: 10,
+            attack: 1,
+            defense: 1,
+            speed: 2,
+            x: 1,
+            y: 1,
+            direction: 'left',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        gameState.monsters = { m1_key: monster };
         gameState.entities['m1_key'] = { ...monster, type: 'monster' };
 
         const newState = handleMove(gameState, -1, 0); // Player moves left
@@ -125,17 +171,29 @@ describe('handleOpenDoor', () => {
     it('should allow player to open a door', () => {
         const gameState: GameState = {
             currentFloor: 1,
-            map: [
-                [0],
-            ],
-            player: { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } },
+            map: [[0]],
+            player: {
+                id: 'player',
+                name: 'Hero',
+                hp: 100,
+                attack: 10,
+                defense: 5,
+                speed: 5,
+                x: 0,
+                y: 0,
+                direction: 'right',
+                equipment: {},
+                backupEquipment: [],
+                buffs: [],
+                keys: { yellow: 0, blue: 0, red: 0 },
+            },
             entities: {
-                'door1': { type: 'door', id: 'door1', x: 0, y: 0 }
+                door1: { type: 'door', id: 'door1', x: 0, y: 0 },
             },
             monsters: {},
             items: {},
             equipments: {},
-            doors: { 'door1': { id: 'door1', color: 'yellow' } },
+            doors: { door1: { id: 'door1', color: 'yellow' } },
             interactionState: { type: 'none' },
         };
 

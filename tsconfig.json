@@ -6,6 +6,6 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["vitest/globals"]
+  "types": ["vitest/globals", "vite/client"]
   }
 }

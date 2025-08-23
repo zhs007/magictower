@@ -45,14 +45,15 @@ describe('SaveManager', () => {
         localStorageMock.clear();
 
         // Provide mock data for floor 1
-        (dataManager.getMapLayout as vi.Mock).mockReturnValue({
+        vi.mocked(dataManager.getMapLayout).mockReturnValue({
+            floor: 1,
             layout: [
                 [0, 0, 0],
                 [0, 0, 0],
                 [0, 0, 0],
             ],
             entities: {
-                'player_start_1': { type: 'player_start', x: 1, y: 1 },
+                player_start_1: { type: 'player_start', id: 'player', x: 1, y: 1 },
             },
         });
 

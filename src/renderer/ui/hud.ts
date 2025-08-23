@@ -41,7 +41,10 @@ export class HUD extends Container {
     }
 
     private createText(content: string, x: number, y: number): Text {
-        const text = new Text({ text: content, style: { fontFamily: 'Arial', fontSize: FONT_SIZE, fill: 0xffffff, align: 'left' } });
+        const text = new Text({
+            text: content,
+            style: { fontFamily: 'Arial', fontSize: FONT_SIZE, fill: 0xffffff, align: 'left' },
+        });
         text.position.set(x, y);
         return text;
     }
@@ -65,11 +68,17 @@ export class HUD extends Container {
         this.monsterStatsText.text = `${name}: HP ${hp}  ATK ${attack}  DEF ${defense}`;
     }
 
-    private updateKeys(keys: { yellow: number, blue: number, red: number }): void {
+    private updateKeys(keys: { yellow: number; blue: number; red: number }): void {
         this.keysText.text = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
     }
 
-    private handleHpChange(payload: { entityId: string, name?: string, newHp: number, attack: number, defense: number }): void {
+    private handleHpChange(payload: {
+        entityId: string;
+        name?: string;
+        newHp: number;
+        attack: number;
+        defense: number;
+    }): void {
         if (payload.entityId === 'player') {
             this.updatePlayerStats(payload.newHp, payload.attack, payload.defense);
         } else if (payload.name) {
@@ -78,13 +87,23 @@ export class HUD extends Container {
         }
     }
 
-    private handleKeysChange(payload: { keys: { yellow: number, blue: number, red: number } }): void {
+    private handleKeysChange(payload: {
+        keys: { yellow: number; blue: number; red: number };
+    }): void {
         this.updateKeys(payload.keys);
     }
 
-    private handleBattleEnd(payload: { finalPlayerHp: number, finalPlayerAtk: number, finalPlayerDef: number }): void {
+    private handleBattleEnd(payload: {
+        finalPlayerHp: number;
+        finalPlayerAtk: number;
+        finalPlayerDef: number;
+    }): void {
         this.monsterStatsText.visible = false;
-        this.updatePlayerStats(payload.finalPlayerHp, payload.finalPlayerAtk, payload.finalPlayerDef);
+        this.updatePlayerStats(
+            payload.finalPlayerHp,
+            payload.finalPlayerAtk,
+            payload.finalPlayerDef
+        );
     }
 
     public destroy(options?: any): void {

@@ -23,6 +23,8 @@ export interface ItemData {
     name: string;
     description: string;
     assetId?: string;
+    // Optional type to classify the item. If not present in raw JSON, the DataManager will derive it.
+    type?: 'key' | 'potion' | 'special';
 }
 
 /**
@@ -72,6 +74,6 @@ export interface MapLayout {
             id: string;
             x: number;
             y: number;
-        }
-    }
+        };
+    };
 }

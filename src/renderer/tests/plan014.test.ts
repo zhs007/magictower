@@ -11,25 +11,49 @@ vi.mock('pixi.js', async () => {
         y: 0,
         children: [] as any[],
         sortableChildren: false,
-        addChild: vi.fn(function(child) { this.children.push(child); }),
-        removeChild: vi.fn(function(child) { this.children = this.children.filter(c => c !== child); }),
-        removeChildren: vi.fn(function() { this.children = []; }),
+        addChild: vi.fn(function (this: any, child: any) {
+            this.children.push(child);
+        }),
+        removeChild: vi.fn(function (this: any, child: any) {
+            this.children = this.children.filter((c: any) => c !== child);
+        }),
+        removeChildren: vi.fn(function (this: any) {
+            this.children = [];
+        }),
     };
 
     return {
         ...actualPixi,
         Container: vi.fn(() => ({ ...mockContainer, children: [] })), // Ensure children is fresh for each instance
         Assets: {
-            get: vi.fn(key => ({ texture: key, width: 65, height: 130 })), // Mock texture dimensions
+            get: vi.fn((key) => ({ texture: key, width: 65, height: 130 })), // Mock texture dimensions
             init: vi.fn().mockResolvedValue(undefined),
             loadBundle: vi.fn().mockResolvedValue(undefined),
         },
-        Sprite: vi.fn(texture => ({
+        Sprite: vi.fn((texture) => ({
             __type: 'Sprite',
-            x: 0, y: 0, width: 0, height: 0, zIndex: 0,
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+            zIndex: 0,
             texture,
-            anchor: { _x: 0, _y: 0, set: vi.fn(function(x, y) { this._x = x; this._y = y; }) },
-            scale: { x: 1, y: 1, set: vi.fn(function(s) { this.x = s; this.y = s; }) },
+            anchor: {
+                _x: 0,
+                _y: 0,
+                set: vi.fn(function (this: any, x: any, y: any) {
+                    this._x = x;
+                    this._y = y;
+                }),
+            },
+            scale: {
+                x: 1,
+                y: 1,
+                set: vi.fn(function (this: any, s: any) {
+                    this.x = s;
+                    this.y = s;
+                }),
+            },
             visible: true,
         })),
     };
@@ -52,12 +76,33 @@ const TILE_SIZE = 65;
 
 function createMockGameState(): GameState {
     const player: IPlayer = {
-        id: 'player', name: 'Player', hp: 100, attack: 10, defense: 5, speed: 10, x: 1, y: 1,
-        direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 }
+        id: 'player',
+        name: 'Player',
+        hp: 100,
+        attack: 10,
+        defense: 5,
+        speed: 10,
+        x: 1,
+        y: 1,
+        direction: 'right',
+        equipment: {},
+        backupEquipment: [],
+        buffs: [],
+        keys: { yellow: 0, blue: 0, red: 0 },
     };
     const monster: IMonster = {
-        id: 'monster_1', name: 'Test Monster', hp: 10, attack: 3, defense: 1, speed: 5, x: 1, y: 2,
-        direction: 'left', equipment: {}, backupEquipment: [], buffs: []
+        id: 'monster_1',
+        name: 'Test Monster',
+        hp: 10,
+        attack: 3,
+        defense: 1,
+        speed: 5,
+        x: 1,
+        y: 2,
+        direction: 'left',
+        equipment: {},
+        backupEquipment: [],
+        buffs: [],
     };
 
     return {
@@ -69,10 +114,10 @@ function createMockGameState(): GameState {
         ],
         player,
         entities: {
-            'player1': { ...player, type: 'player_start' },
-            'monster1': { ...monster, type: 'monster' },
+            player1: { ...player, type: 'player_start' },
+            monster1: { ...monster, type: 'monster' },
         },
-        monsters: { 'monster1': monster },
+        monsters: { monster1: monster },
         items: {},
         equipments: {},
         doors: {},
@@ -88,7 +133,7 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         const PIXI = await import('pixi.js');
-        mockStage = new (PIXI.Container)();
+        mockStage = new PIXI.Container();
         renderer = new Renderer(mockStage);
         gameState = createMockGameState();
     });
@@ -113,8 +158,8 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
 
     it('should create entity sprites with default scale', () => {
         renderer.initialize(gameState);
-        const playerSprite = renderer['entitySprites'].get('player1');
-        const monsterSprite = renderer['entitySprites'].get('monster1');
+        const playerSprite = renderer['entitySprites'].get('player1')!;
+        const monsterSprite = renderer['entitySprites'].get('monster1')!;
 
         expect(playerSprite).toBeDefined();
         expect(playerSprite.scale.x).toBe(1);
@@ -129,8 +174,8 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
 
     it('should flip sprite horizontally based on direction', () => {
         renderer.initialize(gameState);
-        const playerSprite = renderer['entitySprites'].get('player1'); // direction: 'right'
-        const monsterSprite = renderer['entitySprites'].get('monster1'); // direction: 'left'
+        const playerSprite = renderer['entitySprites'].get('player1')!; // direction: 'right'
+        const monsterSprite = renderer['entitySprites'].get('monster1')!; // direction: 'left'
 
         expect(playerSprite.scale.x).toBe(1);
         expect(monsterSprite.scale.x).toBe(-1);
@@ -138,8 +183,8 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
 
     it('should assign zIndex based on y-coordinate for sorting', () => {
         renderer.initialize(gameState);
-        const playerSprite = renderer['entitySprites'].get('player1');
-        const monsterSprite = renderer['entitySprites'].get('monster1');
+        const playerSprite = renderer['entitySprites'].get('player1')!;
+        const monsterSprite = renderer['entitySprites'].get('monster1')!;
         const wallSprite = renderer['wallSprites'][0];
 
         // Wall is at y=0, zIndex=0

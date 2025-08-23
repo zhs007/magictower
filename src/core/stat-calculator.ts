@@ -14,15 +14,22 @@ export function calculateFinalStats(character: ICharacter): Record<CalculableSta
         hp: character.hp,
         attack: character.attack,
         defense: character.defense,
-        speed: character.speed
+        speed: character.speed,
     };
 
     const flatBonuses: Record<CalculableStats, number> = { hp: 0, attack: 0, defense: 0, speed: 0 };
-    const percentBonuses: Record<CalculableStats, number> = { hp: 0, attack: 0, defense: 0, speed: 0 };
+    const percentBonuses: Record<CalculableStats, number> = {
+        hp: 0,
+        attack: 0,
+        defense: 0,
+        speed: 0,
+    };
 
     // Aggregate bonuses from all equipped items
     for (const slot in character.equipment) {
-        const item = character.equipment[slot as keyof typeof character.equipment] as IEquipment | undefined;
+        const item = character.equipment[slot as keyof typeof character.equipment] as
+            | IEquipment
+            | undefined;
         if (item) {
             if (item.stat_mods) {
                 for (const stat in item.stat_mods) {

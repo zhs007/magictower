@@ -63,9 +63,7 @@ export class StartScene extends BaseScene {
 
     private createButton(text: string, onClick: () => void): Container {
         const button = new Container();
-        const background = new Graphics()
-            .roundRect(0, 0, 400, 100, 15)
-            .fill(0x1e90ff);
+        const background = new Graphics().roundRect(0, 0, 400, 100, 15).fill(0x1e90ff);
 
         const buttonText = new Text({
             text: text,
@@ -106,7 +104,7 @@ export class StartScene extends BaseScene {
         background.position.set(1080 / 2, 1920 / 2);
         this.saveSlotsContainer.addChild(background);
 
-        const title = new Text({text:'Select a Save', style:{ fill: 0xffffff, fontSize: 50 }});
+        const title = new Text({ text: 'Select a Save', style: { fill: 0xffffff, fontSize: 50 } });
         title.anchor.set(0.5);
         title.position.set(background.width / 2, 50);
         background.addChild(title);

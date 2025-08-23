@@ -42,14 +42,16 @@ export class GameScene extends BaseScene {
         let initialState;
         if (options.loadSlot) {
             const loadedState = await SaveManager.loadGame(options.loadSlot);
-            initialState = loadedState || await GameStateManager.createInitialState({ floor: 1 });
+            initialState = loadedState || (await GameStateManager.createInitialState({ floor: 1 }));
         } else {
             initialState = await GameStateManager.createInitialState({ floor: 1 });
         }
 
         this.gameStateManager = new GameStateManager();
         this.gameStateManager.initializeState(initialState);
-        this.playerEntityKey = Object.keys(initialState.entities).find(k => initialState.entities[k].type === 'player_start');
+        this.playerEntityKey = Object.keys(initialState.entities).find(
+            (k) => initialState.entities[k].type === 'player_start'
+        );
         this.renderer.initialize(this.gameStateManager.getState());
 
         this.inputManager.on('action', (action) => this.handleAction(action));
@@ -86,7 +88,10 @@ export class GameScene extends BaseScene {
         this.isAnimating = true;
         this.renderer.animateItemPickup(state, () => {
             if (this.gameStateManager && state.interactionState.type === 'item_pickup') {
-                this.gameStateManager.dispatch({ type: 'PICK_UP_ITEM', payload: { itemId: state.interactionState.itemId } });
+                this.gameStateManager.dispatch({
+                    type: 'PICK_UP_ITEM',
+                    payload: { itemId: state.interactionState.itemId },
+                });
                 this.renderer.render(this.gameStateManager.getState());
             }
             this.isAnimating = false;
@@ -95,14 +100,22 @@ export class GameScene extends BaseScene {
 
     private handleBattle(state: GameState): void {
         if (!this.gameStateManager || !this.playerEntityKey) return;
-
+        // Narrow interactionState to the 'battle' variant so TS knows `turn` exists.
+        if (state.interactionState.type !== 'battle') return;
         const battleState = state.interactionState;
         if (battleState.turn === 'battle_end') {
             if (battleState.round > 8) {
-                this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId: null, reason: 'timeout' } });
+                this.gameStateManager.dispatch({
+                    type: 'END_BATTLE',
+                    payload: { winnerId: null, reason: 'timeout' },
+                });
             } else {
-                const winnerId = battleState.playerHp > 0 ? this.playerEntityKey : battleState.monsterId;
-                this.gameStateManager.dispatch({ type: 'END_BATTLE', payload: { winnerId, reason: 'hp_depleted' } });
+                const winnerId =
+                    battleState.playerHp > 0 ? this.playerEntityKey : battleState.monsterId;
+                this.gameStateManager.dispatch({
+                    type: 'END_BATTLE',
+                    payload: { winnerId, reason: 'hp_depleted' },
+                });
             }
             this.renderer.render(this.gameStateManager.getState());
             return;
@@ -119,20 +132,26 @@ export class GameScene extends BaseScene {
 
         const attacker = battleState.turn === 'player' ? player : monster;
         const defender = battleState.turn === 'player' ? monster : player;
-        const attackerId = battleState.turn === 'player' ? this.playerEntityKey : battleState.monsterId;
-        const defenderId = battleState.turn === 'player' ? battleState.monsterId : this.playerEntityKey;
+        const attackerId =
+            battleState.turn === 'player' ? this.playerEntityKey : battleState.monsterId;
+        const defenderId =
+            battleState.turn === 'player' ? battleState.monsterId : this.playerEntityKey;
 
         const damage = calculateDamage(attacker, defender);
 
         this.renderer.animateAttack(attackerId, defenderId, damage, () => {
             if (this.gameStateManager) {
-                this.gameStateManager.dispatch({ type: 'ATTACK', payload: { attackerId, defenderId } });
+                this.gameStateManager.dispatch({
+                    type: 'ATTACK',
+                    payload: { attackerId, defenderId },
+                });
                 const nextState = this.gameStateManager.getState();
                 this.renderer.render(nextState);
                 this.isAnimating = false;
 
+                const gsm = this.gameStateManager!;
                 setTimeout(() => {
-                    this.processInteraction(this.gameStateManager.getState());
+                    this.processInteraction(gsm.getState());
                 }, 0);
             }
         });

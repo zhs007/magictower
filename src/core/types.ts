@@ -16,7 +16,7 @@ export enum EquipmentSlot {
 // For weapons, to distinguish between one-handed and two-handed.
 export enum WeaponType {
     ONE_HANDED = 'one_handed',
-    TWO_HANDED = 'two_handed'
+    TWO_HANDED = 'two_handed',
 }
 
 // Represents a piece of equipment.
@@ -104,7 +104,7 @@ export enum EntityType {
     EQUIPMENT, // New entity type for equipment on the ground
     EMPTY,
     WALL,
-    DOOR
+    DOOR,
 }
 
 export type IEntity = (IPlayer | IMonster | IItem | IEquipment) & { type: string };
@@ -113,18 +113,18 @@ export type InteractionState =
     | { type: 'none' }
     | { type: 'item_pickup'; itemId: string }
     | {
-        type: 'battle';
-        monsterId: string;
-        turn: 'player' | 'monster' | 'battle_end';
-        playerHp: number;
-        monsterHp: number;
-        round: number;
-    };
+          type: 'battle';
+          monsterId: string;
+          turn: 'player' | 'monster' | 'battle_end';
+          playerHp: number;
+          monsterHp: number;
+          round: number;
+      };
 
 export interface IDoor {
     id: string;
     color: string;
-    condition?: { type: 'DEFEAT_MONSTER', monsterId: string };
+    condition?: { type: 'DEFEAT_MONSTER'; monsterId: string };
 }
 
 export interface GameState {
@@ -145,13 +145,16 @@ export type Action =
     | { type: 'PICK_UP_EQUIPMENT'; payload: { equipmentId: string } }
     | { type: 'OPEN_DOOR'; payload: { doorId: string } }
     | { type: 'START_BATTLE'; payload: { monsterId: string } }
-    | { type: 'ATTACK'; payload: { attackerId: string, defenderId: string } }
-    | { type: 'END_BATTLE'; payload: { winnerId: string | null, reason: 'hp_depleted' | 'timeout' } }
+    | { type: 'ATTACK'; payload: { attackerId: string; defenderId: string } }
+    | {
+          type: 'END_BATTLE';
+          payload: { winnerId: string | null; reason: 'hp_depleted' | 'timeout' };
+      }
     | { type: 'USE_BOMB'; payload: { monsterType: string } };
 
 export interface SaveData {
     timestamp: number;
     initialStateSeed: any; // Used to generate the initial game state
-    actions: Action[];     // All actions from game start to the save point
-    screenshot?: string;   // Optional screenshot for the save list display
+    actions: Action[]; // All actions from game start to the save point
+    screenshot?: string; // Optional screenshot for the save list display
 }

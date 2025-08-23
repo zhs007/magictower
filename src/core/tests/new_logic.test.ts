@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameState, IPlayer, IMonster, IItem } from '../types';
-import { handleMove, handlePickupItem, handleStartBattle, handleAttack, handleEndBattle } from '../logic';
+import {
+    handleMove,
+    handlePickupItem,
+    handleStartBattle,
+    handleAttack,
+    handleEndBattle,
+} from '../logic';
 
 describe('Game Logic with Interactions', () => {
     let gameState: GameState;
@@ -9,9 +15,41 @@ describe('Game Logic with Interactions', () => {
     const itemEntityKey = 'item_yellow_key_0_1';
 
     beforeEach(() => {
-        const player: IPlayer = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, speed: 10, x: 1, y: 1, direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } };
-        const monster: IMonster = { id: 'monster_green_slime', name: 'Green Slime', hp: 30, attack: 8, defense: 2, speed: 5, x: 2, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
-        const item: IItem = { id: 'item_yellow_key', name: 'Yellow Key', type: 'key', color: 'yellow' };
+        const player: IPlayer = {
+            id: 'player',
+            name: 'Hero',
+            hp: 100,
+            attack: 10,
+            defense: 5,
+            speed: 10,
+            x: 1,
+            y: 1,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+            keys: { yellow: 0, blue: 0, red: 0 },
+        };
+        const monster: IMonster = {
+            id: 'monster_green_slime',
+            name: 'Green Slime',
+            hp: 30,
+            attack: 8,
+            defense: 2,
+            speed: 5,
+            x: 2,
+            y: 1,
+            direction: 'left',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        const item: IItem = {
+            id: 'item_yellow_key',
+            name: 'Yellow Key',
+            type: 'key',
+            color: 'yellow',
+        };
 
         gameState = {
             currentFloor: 1,
@@ -27,10 +65,10 @@ describe('Game Logic with Interactions', () => {
                 [monsterEntityKey]: { ...monster, type: 'monster' },
             },
             monsters: {
-                [monsterEntityKey]: monster
+                [monsterEntityKey]: monster,
             },
             items: {
-                [itemEntityKey]: item
+                [itemEntityKey]: item,
             },
             equipments: {},
             doors: {},
@@ -59,7 +97,7 @@ describe('Game Logic with Interactions', () => {
         it('should correctly handle picking up an item', () => {
             const stateWithItemInteraction = {
                 ...gameState,
-                interactionState: { type: 'item_pickup', itemId: itemEntityKey }
+                interactionState: { type: 'item_pickup', itemId: itemEntityKey },
             } as GameState;
 
             const entity = stateWithItemInteraction.entities[itemEntityKey];

@@ -23,7 +23,6 @@ class MockScene extends BaseScene {
 vi.doMock('../start-scene', () => ({ StartScene: MockScene }));
 vi.doMock('../game-scene', () => ({ GameScene: MockScene }));
 
-
 describe('SceneManager', () => {
     let appMock: Application;
     let SceneManager: any;

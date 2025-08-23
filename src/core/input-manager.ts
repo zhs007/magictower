@@ -39,7 +39,7 @@ export class InputManager {
     private emit(event: string, data: Action): void {
         const eventListeners = this.listeners[event];
         if (eventListeners) {
-            eventListeners.forEach(callback => callback(data));
+            eventListeners.forEach((callback) => callback(data));
         }
     }
 

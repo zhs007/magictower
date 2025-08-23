@@ -32,7 +32,7 @@ export class Renderer {
         worldContainer.y = 200;
         worldContainer.addChild(this.floorContainer, this.mainContainer, this.topLayerContainer);
 
-        this.hud.y = (MAP_WIDTH_TILES * TILE_SIZE) + worldContainer.y;
+        this.hud.y = MAP_WIDTH_TILES * TILE_SIZE + worldContainer.y;
 
         this.stage.addChild(worldContainer, this.hud);
     }
@@ -88,7 +88,8 @@ export class Renderer {
                 floorSprite.height = TILE_SIZE;
                 this.floorContainer.addChild(floorSprite);
 
-                if (tileValue === 1) { // It's a wall
+                if (tileValue === 1) {
+                    // It's a wall
                     const wallSprite = new Sprite(Assets.get('wall'));
                     wallSprite.anchor.set(0.5, 1); // Bottom-center
                     wallSprite.x = x * TILE_SIZE + TILE_SIZE / 2;
@@ -159,7 +160,9 @@ export class Renderer {
     public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
         if (state.interactionState.type !== 'item_pickup') return;
 
-        const playerKey = Object.keys(state.entities).find(k => state.entities[k].type === 'player_start');
+        const playerKey = Object.keys(state.entities).find(
+            (k) => state.entities[k].type === 'player_start'
+        );
         if (!playerKey) return;
 
         const player = state.entities[playerKey];
@@ -172,7 +175,7 @@ export class Renderer {
         }
 
         const item = state.entities[state.interactionState.itemId];
-        if(!item) {
+        if (!item) {
             onComplete();
             return;
         }
@@ -196,27 +199,40 @@ export class Renderer {
                 jumpHeight = TILE_SIZE / 4;
                 peakY = playerSprite.y - jumpHeight; // Peak is relative to start
             }
-            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' })
-              .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
+            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }).to(
+                playerSprite,
+                { y: targetY, duration: duration / 2, ease: 'power1.in' }
+            );
         } else {
             // Horizontal or Diagonal Jumps (Symmetric Arc)
             const jumpHeight = TILE_SIZE / 2;
             const peakY = playerSprite.y - jumpHeight;
             tl.to(playerSprite, { x: targetX, duration: duration, ease: 'linear' }, 0);
-            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }, 0)
-              .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
+            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }, 0).to(
+                playerSprite,
+                { y: targetY, duration: duration / 2, ease: 'power1.in' }
+            );
         }
 
         // Item fade-out animation runs concurrently
-        tl.to(itemSprite, {
-            y: targetY - TILE_SIZE,
-            alpha: 0,
-            duration: duration,
-            ease: 'power1.in',
-        }, 0);
+        tl.to(
+            itemSprite,
+            {
+                y: targetY - TILE_SIZE,
+                alpha: 0,
+                duration: duration,
+                ease: 'power1.in',
+            },
+            0
+        );
     }
 
-    public async animateAttack(attackerId: string, defenderId: string, damage: number, onComplete: () => void): Promise<void> {
+    public async animateAttack(
+        attackerId: string,
+        defenderId: string,
+        damage: number,
+        onComplete: () => void
+    ): Promise<void> {
         const attackerSprite = this.entitySprites.get(attackerId);
         const defenderSprite = this.entitySprites.get(defenderId);
 
@@ -241,26 +257,40 @@ export class Renderer {
             repeat: 1,
         });
 
-        tl.to(defenderSprite, {
-            tint: 0xff0000,
-            duration: 0.1,
-            yoyo: true,
-            repeat: 1,
-        }, '-=0.1');
+        tl.to(
+            defenderSprite,
+            {
+                tint: 0xff0000,
+                duration: 0.1,
+                yoyo: true,
+                repeat: 1,
+            },
+            '-=0.1'
+        );
 
-        const damageText = new Text(`-${damage}`, { fontSize: 24, fill: 'red', fontWeight: 'bold' });
+        const damageText = new Text(`-${damage}`, {
+            fontSize: 24,
+            fill: 'red',
+            fontWeight: 'bold',
+        });
         damageText.x = defenderSprite.x;
         damageText.y = defenderSprite.y - TILE_SIZE; // Adjusted for new sprite height
         damageText.anchor.set(0.5);
         this.topLayerContainer.addChild(damageText); // Add to top layer
 
-        tl.to(damageText, {
-            y: damageText.y - 40,
-            alpha: 0,
-            duration: 1,
-            ease: 'power1.out',
-            onComplete: () => this.topLayerContainer.removeChild(damageText),
-        }, '-=0.1');
+        tl.to(
+            damageText,
+            {
+                y: damageText.y - 40,
+                alpha: 0,
+                duration: 1,
+                ease: 'power1.out',
+                onComplete: () => {
+                    this.topLayerContainer.removeChild(damageText);
+                },
+            },
+            '-=0.1'
+        );
     }
 
     public moveToTopLayer(sprite: Sprite): void {
