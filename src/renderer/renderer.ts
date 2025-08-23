@@ -182,20 +182,28 @@ export class Renderer {
 
         const tl = gsap.timeline({ onComplete });
         const duration = 0.3;
-        let jumpHeight = TILE_SIZE / 2;
 
         if (player.x === item.x) {
-            // Vertical jump
+            // Vertical Jumps
+            let jumpHeight;
+            let peakY;
             if (player.y > item.y) {
-                // Player is jumping up one tile, use a smaller hop
+                // Jumping UP (e.g. from y=2 to y=1)
                 jumpHeight = TILE_SIZE / 4;
+                peakY = targetY - jumpHeight; // Peak is relative to destination
+            } else {
+                // Jumping DOWN (e.g. from y=1 to y=2)
+                jumpHeight = TILE_SIZE / 4;
+                peakY = playerSprite.y - jumpHeight; // Peak is relative to start
             }
-            tl.to(playerSprite, { y: playerSprite.y - jumpHeight, duration: duration / 2, ease: 'power1.out' })
+            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' })
               .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
         } else {
-            // Horizontal or Diagonal jump (symmetric arc)
+            // Horizontal or Diagonal Jumps (Symmetric Arc)
+            const jumpHeight = TILE_SIZE / 2;
+            const peakY = playerSprite.y - jumpHeight;
             tl.to(playerSprite, { x: targetX, duration: duration, ease: 'linear' }, 0);
-            tl.to(playerSprite, { y: playerSprite.y - jumpHeight, duration: duration / 2, ease: 'power1.out' }, 0)
+            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }, 0)
               .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
         }
 
