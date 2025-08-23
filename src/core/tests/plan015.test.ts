@@ -129,8 +129,11 @@ describe('Plan 015: Speed and Equipment Overhaul', () => {
             const newItem = createMockEquipment('new_armor', { stat_mods: { defense: 10, speed: 1 } });
             const result = compareEquipment(player, newItem);
             expect(result.type).toBe('AUTO_EQUIP');
-            const oldItem = result.oldItem as IEquipment;
-            expect(oldItem.id).toBe('old_armor');
+            if (result.type === 'AUTO_EQUIP') {
+                const oldItem = result.oldItem as IEquipment;
+                expect(oldItem).toBeDefined();
+                expect(oldItem.id).toBe('old_armor');
+            }
         });
 
         it('should AUTO_DISCARD on a pure downgrade', () => {
