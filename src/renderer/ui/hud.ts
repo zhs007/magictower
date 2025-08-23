@@ -104,7 +104,10 @@ export class HUD extends Container {
         // Change background to red for debugging
         this.background.clear();
         this.background.rect(0, 0, HUD_WIDTH, HUD_HEIGHT).fill(0xff0000);
-        this.playerStatsText.text = 'DEBUG: Event Received!';
+
+        // Nuke it from orbit: create a new text object
+        const debugText = this.createText("NEW TEXT!", 100, 100);
+        this.addChild(debugText);
     }
 
     public destroy(options?: any): void {
