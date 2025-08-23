@@ -76,11 +76,11 @@ export class HUD extends Container {
     }
 
     private handleHpChange(payload: { entityId: string, newHp: number }): void {
-        if (!this.lastState) return;
-
         if (payload.entityId === 'player') {
-            this.playerStatsText.text = `勇者: HP ${payload.newHp}  ATK ${this.lastState.player.attack}  DEF ${this.lastState.player.defense}`;
+            this.playerStatsText.text = 'HP Changed!';
         } else {
+            // For monster, we can keep the old logic for now
+            if (!this.lastState) return;
             const monster = this.lastState.monsters[payload.entityId];
             if (monster) {
                 this.monsterStatsText.text = `${monster.name}: HP ${payload.newHp}  ATK ${monster.attack}  DEF ${monster.defense}`;
