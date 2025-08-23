@@ -1,5 +1,6 @@
 {
-    "id": "green_slime",
+    "id": "monster_green_slime",
+    "assetId": "monster_monster",
     "name": "Green Slime",
     "hp": 30,
     "attack": 10,

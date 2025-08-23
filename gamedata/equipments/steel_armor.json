@@ -1,5 +1,6 @@
 {
     "id": "steel_armor",
+    "assetId": "item_item",
     "name": "Steel Armor",
     "slot": "BODY",
     "stat_mods": {

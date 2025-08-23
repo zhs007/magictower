@@ -40,21 +40,24 @@ export class Renderer {
     public async loadAssets(): Promise<void> {
         await dataManager.loadAllData();
 
-        const assetManifest = {
-            bundles: [
-                {
-                    name: 'game-assets',
-                    assets: [
-                        { alias: 'player', src: 'assets/player.png' },
-                        { alias: 'wall', src: 'assets/map/wall.png' },
-                        { alias: 'floor', src: 'assets/map/floor.png' },
-                        { alias: 'monster_green_slime', src: 'assets/monster/monster.png' },
-                        { alias: 'item_yellow_key', src: 'assets/item/item.png' },
-                    ],
-                },
-            ],
-        };
+        // Auto-generate asset manifest: alias = <folder>_<filename> for files under subfolders,
+        // or filename for top-level assets (e.g. 'player'). Use import.meta.glob to get URLs.
+        const modules = import.meta.glob('/assets/**/*.{png,jpg,jpeg,webp}', {
+            eager: true,
+            as: 'url',
+        }) as Record<string, string>;
+        const assetsList: { alias: string; src: string }[] = [];
+        for (const p in modules) {
+            const url = modules[p];
+            const parts = p.split('/');
+            const filenameWithExt = parts[parts.length - 1];
+            const filename = filenameWithExt.replace(/\.[^.]+$/, '');
+            const folder = parts.length >= 3 ? parts[parts.length - 2] : '';
+            const alias = folder && folder !== 'assets' ? `${folder}_${filename}` : filename;
+            assetsList.push({ alias, src: url });
+        }
 
+        const assetManifest = { bundles: [{ name: 'game-assets', assets: assetsList }] };
         await Assets.init({ manifest: assetManifest });
         await Assets.loadBundle('game-assets');
     }
@@ -63,6 +66,16 @@ export class Renderer {
         this.drawMap(state);
         this.syncSprites(state);
         this.hud.update(state);
+    }
+
+    // Resolve texture alias: try <folder>_<base> then fallback to base.
+    private resolveTextureAlias(base: string, folder?: string) {
+        if (folder) {
+            const withFolder = `${folder}_${base}`;
+            const t = Assets.get(withFolder);
+            if (t) return t;
+        }
+        return Assets.get(base);
     }
 
     private wallSprites: Sprite[] = [];
@@ -81,7 +94,7 @@ export class Renderer {
                 const tileValue = state.map[y][x];
 
                 // Always draw a floor tile
-                const floorSprite = new Sprite(Assets.get('floor'));
+                const floorSprite = new Sprite(this.resolveTextureAlias('floor', 'map'));
                 floorSprite.x = x * TILE_SIZE;
                 floorSprite.y = y * TILE_SIZE;
                 floorSprite.width = TILE_SIZE;
@@ -90,7 +103,7 @@ export class Renderer {
 
                 if (tileValue === 1) {
                     // It's a wall
-                    const wallSprite = new Sprite(Assets.get('wall'));
+                    const wallSprite = new Sprite(this.resolveTextureAlias('wall', 'map'));
                     wallSprite.anchor.set(0.5, 1); // Bottom-center
                     wallSprite.x = x * TILE_SIZE + TILE_SIZE / 2;
                     wallSprite.y = (y + 1) * TILE_SIZE;
@@ -116,8 +129,16 @@ export class Renderer {
             if (!sprite) {
                 let textureAlias = '';
                 if (entity.type === 'player_start') textureAlias = 'player';
-                else if (entity.type === 'monster') textureAlias = entity.id;
-                else if (entity.type === 'item') textureAlias = entity.id;
+                else {
+                    const candidate = (entity as any).assetId ?? entity.id;
+                    if (
+                        entity.type === 'monster' ||
+                        entity.type === 'item' ||
+                        dataManager.getItemData(entity.id)
+                    ) {
+                        textureAlias = candidate;
+                    }
+                }
 
                 if (textureAlias) {
                     sprite = new Sprite(Assets.get(textureAlias));

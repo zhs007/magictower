@@ -1,5 +1,6 @@
 {
     "id": "broadsword",
+    "assetId": "item_item",
     "name": "Broadsword",
     "slot": "RIGHT_HAND",
     "weaponType": "ONE_HANDED",

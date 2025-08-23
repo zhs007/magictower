@@ -1,5 +1,6 @@
 {
   "id": "buff_life_saving",
+  "assetId": "item_item",
   "name": "Life Saving",
   "duration": -1,
   "charges": 1,

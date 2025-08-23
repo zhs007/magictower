@@ -1,5 +1,6 @@
 {
   "id": "item_yellow_key",
+  "assetId": "item_item",
   "name": "Yellow Key",
   "description": "Opens yellow doors."
 }

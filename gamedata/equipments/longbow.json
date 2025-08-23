@@ -1,5 +1,6 @@
 {
     "id": "longbow",
+    "assetId": "item_item",
     "name": "Longbow",
     "slot": ["LEFT_HAND", "RIGHT_HAND"],
     "weaponType": "TWO_HANDED",

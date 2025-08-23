@@ -45,7 +45,21 @@ export class DataManager {
                               : 'special';
                     }
                 }
+
+                // Register by declared id
                 targetMap.set(data.id, data);
+
+                // Also register by the JSON filename (without extension) as a fallback.
+                // Many map files reference entities by the filename (e.g. 'monster_green_slime').
+                try {
+                    const parts = path.split('/');
+                    const filename = parts[parts.length - 1].replace(/\.json$/i, '');
+                    if (filename && filename !== data.id) {
+                        targetMap.set(filename, data);
+                    }
+                } catch (e) {
+                    // ignore filename-derived registration failures
+                }
             }
         }
     }
