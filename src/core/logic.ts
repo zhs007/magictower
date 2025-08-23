@@ -57,6 +57,21 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     return newState;
 }
 
+export function handleChangeDirection(state: GameState, entityId: string, direction: 'left' | 'right'): GameState {
+    const newState = _.cloneDeep(state);
+    const entity = newState.entities[entityId];
+
+    if (entity && 'direction' in entity) {
+        entity.direction = direction;
+        // Also update the player object if the entity is the player
+        if (entity.type === 'player_start') {
+            newState.player.direction = direction;
+        }
+    }
+
+    return newState;
+}
+
 export function handleUseBomb(state: GameState, monsterType: string): GameState {
     const newState = _.cloneDeep(state);
 
