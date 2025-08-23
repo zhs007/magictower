@@ -13,7 +13,6 @@ export class HUD extends Container {
     private monsterStatsText: Text;
     private keysText: Text;
 
-    // Store last known state for comparison or full redraws
     private lastState: GameState | null = null;
 
     constructor() {
@@ -22,27 +21,26 @@ export class HUD extends Container {
         this.drawBackground();
         this.addChild(this.background);
 
+        // Create placeholder text objects to define position and initial style
         this.playerStatsText = this.createText('', PADDING, PADDING);
         this.monsterStatsText = this.createText('', PADDING, PADDING + FONT_SIZE * 2);
         this.keysText = this.createText('', PADDING, PADDING + FONT_SIZE * 4);
-        this.monsterStatsText.visible = false;
 
         this.addChild(this.playerStatsText, this.monsterStatsText, this.keysText);
+        this.monsterStatsText.visible = false;
 
-        // Register event listeners
         this.registerListeners();
     }
 
+    // --- Event Handlers ---
     private hpChangeHandler = (payload: any) => this.handleHpChange(payload);
     private keysChangeHandler = (payload: any) => this.handleKeysChange(payload);
     private battleEndHandler = (payload: any) => this.handleBattleEnd(payload);
-    private debugFlashHandler = () => this.handleDebugFlash();
 
     private registerListeners(): void {
         eventManager.on('HP_CHANGED', this.hpChangeHandler);
         eventManager.on('KEYS_CHANGED', this.keysChangeHandler);
         eventManager.on('BATTLE_ENDED', this.battleEndHandler);
-        eventManager.on('DEBUG_FLASH_RED', this.debugFlashHandler);
     }
 
     private createText(content: string, x: number, y: number): Text {
@@ -58,64 +56,65 @@ export class HUD extends Container {
     // Initial setup from GameState
     public update(state: GameState): void {
         this.lastState = state;
-        const player = state.player;
-
-        const playerHp = state.interactionState.type === 'battle' ? state.interactionState.playerHp : player.hp;
-        this.playerStatsText.text = `勇者: HP ${playerHp}  ATK ${player.attack}  DEF ${player.defense}`;
-        this.keysText.text = `钥匙: 黄 ${player.keys.yellow}  蓝 ${player.keys.blue}  红 ${player.keys.red}`;
+        this.updatePlayerStats(state.interactionState.type === 'battle' ? state.interactionState.playerHp : state.player.hp);
+        this.updateKeys(state.player.keys);
 
         if (state.interactionState.type === 'battle') {
-            const monster = state.monsters[state.interactionState.monsterId];
-            if (monster) {
-                this.monsterStatsText.text = `${monster.name}: HP ${state.interactionState.monsterHp}  ATK ${monster.attack}  DEF ${monster.defense}`;
-                this.monsterStatsText.visible = true;
-            }
+            this.updateMonsterStats(state.interactionState.monsterHp);
+            this.monsterStatsText.visible = true;
         } else {
             this.monsterStatsText.visible = false;
         }
     }
 
+    private updatePlayerStats(hp: number): void {
+        if (!this.lastState) return;
+        const newTextContent = `勇者: HP ${hp}  ATK ${this.lastState.player.attack}  DEF ${this.lastState.player.defense}`;
+        this.removeChild(this.playerStatsText);
+        this.playerStatsText = this.createText(newTextContent, PADDING, PADDING);
+        this.addChild(this.playerStatsText);
+    }
+
+    private updateMonsterStats(hp: number): void {
+        if (!this.lastState || this.lastState.interactionState.type !== 'battle') return;
+        const monster = this.lastState.monsters[this.lastState.interactionState.monsterId];
+        if (!monster) return;
+
+        const newTextContent = `${monster.name}: HP ${hp}  ATK ${monster.attack}  DEF ${monster.defense}`;
+        this.removeChild(this.monsterStatsText);
+        this.monsterStatsText = this.createText(newTextContent, PADDING, PADDING + FONT_SIZE * 2);
+        this.addChild(this.monsterStatsText);
+        this.monsterStatsText.visible = true;
+    }
+
+    private updateKeys(keys: { yellow: number, blue: number, red: number }): void {
+        const newTextContent = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
+        this.removeChild(this.keysText);
+        this.keysText = this.createText(newTextContent, PADDING, PADDING + FONT_SIZE * 4);
+        this.addChild(this.keysText);
+    }
+
     private handleHpChange(payload: { entityId: string, newHp: number }): void {
         if (payload.entityId === 'player') {
-            this.playerStatsText.text = 'HP Changed!';
+            this.updatePlayerStats(payload.newHp);
         } else {
-            // For monster, we can keep the old logic for now
-            if (!this.lastState) return;
-            const monster = this.lastState.monsters[payload.entityId];
-            if (monster) {
-                this.monsterStatsText.text = `${monster.name}: HP ${payload.newHp}  ATK ${monster.attack}  DEF ${monster.defense}`;
-            }
+            this.updateMonsterStats(payload.newHp);
         }
     }
 
     private handleKeysChange(payload: { keys: { yellow: number, blue: number, red: number } }): void {
-        this.keysText.text = `钥匙: 黄 ${payload.keys.yellow}  蓝 ${payload.keys.blue}  红 ${payload.keys.red}`;
+        this.updateKeys(payload.keys);
     }
 
     private handleBattleEnd(payload: { finalPlayerHp: number }): void {
         this.monsterStatsText.visible = false;
-        // After battle, player HP on the HUD should reflect the final state.
-        if (this.lastState) {
-            this.playerStatsText.text = `勇者: HP ${payload.finalPlayerHp}  ATK ${this.lastState.player.attack}  DEF ${this.lastState.player.defense}`;
-        }
-    }
-
-    private handleDebugFlash(): void {
-        // Change background to red for debugging
-        this.background.clear();
-        this.background.rect(0, 0, HUD_WIDTH, HUD_HEIGHT).fill(0xff0000);
-
-        // Nuke it from orbit: create a new text object
-        const debugText = this.createText("NEW TEXT!", 100, 100);
-        this.addChild(debugText);
+        this.updatePlayerStats(payload.finalPlayerHp);
     }
 
     public destroy(options?: any): void {
-        // Unregister listeners to prevent memory leaks
         eventManager.off('HP_CHANGED', this.hpChangeHandler);
         eventManager.off('KEYS_CHANGED', this.keysChangeHandler);
         eventManager.off('BATTLE_ENDED', this.battleEndHandler);
-        eventManager.off('DEBUG_FLASH_RED', this.debugFlashHandler);
         super.destroy(options);
     }
 }
