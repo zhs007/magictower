@@ -68,16 +68,21 @@ export interface IPlayer extends ICharacter {
         blue: number;
         red: number;
     };
+    hasMonsterManual?: boolean;
+    specialItems?: string[];
 }
 
 export interface IMonster extends ICharacter {
     // Monster-specific properties can be added here.
 }
 
+export type SpecialItemType = 'bomb' | 'monster_manual' | 'snowflake' | 'cross';
+
 export interface IItem extends IBaseObject {
-    type: 'key' | 'potion';
+    type: 'key' | 'potion' | 'special';
     color?: 'yellow'; // Example for a key
     value?: number; // Example for a potion
+    specialType?: SpecialItemType;
 }
 
 export enum EntityType {
@@ -104,6 +109,12 @@ export type InteractionState =
         round: number;
     };
 
+export interface IDoor {
+    id: string;
+    color: string;
+    condition?: { type: 'DEFEAT_MONSTER', monsterId: string };
+}
+
 export interface GameState {
     currentFloor: number;
     map: number[][];
@@ -112,7 +123,7 @@ export interface GameState {
     monsters: Record<string, IMonster>;
     items: Record<string, IItem>;
     equipments: Record<string, IEquipment>;
-    doors: Record<string, { id: string; color: string; }>;
+    doors: Record<string, IDoor>;
     interactionState: InteractionState;
 }
 
@@ -122,7 +133,8 @@ export type Action =
     | { type: 'OPEN_DOOR'; payload: { doorId: string } }
     | { type: 'START_BATTLE'; payload: { monsterId: string } }
     | { type: 'ATTACK'; payload: { attackerId: string, defenderId: string } }
-    | { type: 'END_BATTLE'; payload: { winnerId: string | null, reason: 'hp_depleted' | 'timeout' } };
+    | { type: 'END_BATTLE'; payload: { winnerId: string | null, reason: 'hp_depleted' | 'timeout' } }
+    | { type: 'USE_BOMB'; payload: { monsterType: string } };
 
 export interface SaveData {
     timestamp: number;

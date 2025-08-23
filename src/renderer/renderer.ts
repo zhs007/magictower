@@ -186,6 +186,13 @@ export class Renderer {
             repeat: 1,
         });
 
+        tl.to(defenderSprite, {
+            tint: 0xff0000,
+            duration: 0.1,
+            yoyo: true,
+            repeat: 1,
+        }, '-=0.1');
+
         const damageText = new Text(`-${damage}`, { fontSize: 24, fill: 'red', fontWeight: 'bold' });
         damageText.x = defenderSprite.x;
         damageText.y = defenderSprite.y - TILE_SIZE / 2;
