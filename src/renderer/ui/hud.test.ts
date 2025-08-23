@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HUD } from './hud';
 import { GameState } from '../../core/types';
+import { eventManager } from '../../core/event-manager';
 
 // Mock PIXI.js classes
 vi.mock('pixi.js', async () => {
@@ -13,6 +14,7 @@ vi.mock('pixi.js', async () => {
         ...original,
         Container: class {
             addChild = vi.fn();
+            destroy() {} // Make it a real empty function
         },
         Text: vi.fn(mockText),
         Graphics: vi.fn(() => ({
@@ -22,54 +24,60 @@ vi.mock('pixi.js', async () => {
     };
 });
 
+// Mock EventManager
+vi.mock('../../core/event-manager', () => ({
+    eventManager: {
+        on: vi.fn(),
+        off: vi.fn(),
+        dispatch: vi.fn(),
+    },
+}));
+
 describe('HUD', () => {
-    it('should display player stats and hide monster stats when not in battle', () => {
-        const hud = new HUD();
-        const mockState: GameState = {
+    let hud: HUD;
+    let mockState: GameState;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        hud = new HUD();
+        mockState = {
             player: {
                 hp: 100, attack: 10, defense: 5,
                 keys: { yellow: 1, blue: 2, red: 3 },
                 id: 'p1', name: 'player', x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: []
             },
+            monsters: {},
             interactionState: { type: 'none' },
         } as GameState;
-
-        hud.update(mockState);
-
-        expect(hud.playerStatsText.text).toBe('勇者: HP 100  ATK 10  DEF 5');
-        expect(hud.keysText.text).toBe('钥匙: 黄 1  蓝 2  红 3');
-        expect(hud.monsterStatsText.visible).toBe(false);
+        hud.update(mockState); // Set initial state
     });
 
-    it('should display all stats including monster stats during battle', () => {
-        const hud = new HUD();
-        const mockState: GameState = {
-            player: {
-                hp: 100, attack: 10, defense: 5,
-                keys: { yellow: 1, blue: 2, red: 3 },
-                id: 'p1', name: 'player', x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: []
-            },
-            monsters: {
-                'm1': {
-                    id: 'm1', name: 'Slime', hp: 50, attack: 8, defense: 2,
-                    x: 1, y: 1, equipment: {}, backupEquipment: [], buffs: []
-                }
-            },
-            interactionState: {
-                type: 'battle',
-                monsterId: 'm1',
-                playerHp: 88,
-                monsterHp: 42,
-                round: 2,
-                turn: 'player'
-            },
-        } as GameState;
+    it('should register listeners on creation', () => {
+        expect(eventManager.on).toHaveBeenCalledWith('HP_CHANGED', expect.any(Function));
+        expect(eventManager.on).toHaveBeenCalledWith('KEYS_CHANGED', expect.any(Function));
+        expect(eventManager.on).toHaveBeenCalledWith('BATTLE_ENDED', expect.any(Function));
+    });
 
-        hud.update(mockState);
+    it('should update HP on HP_CHANGED event', () => {
+        hud['handleHpChange']({ entityId: 'player', newHp: 80 });
+        expect(hud.playerStatsText.text).toBe('勇者: HP 80  ATK 10  DEF 5');
+    });
 
-        expect(hud.playerStatsText.text).toBe('勇者: HP 88  ATK 10  DEF 5');
-        expect(hud.keysText.text).toBe('钥匙: 黄 1  蓝 2  红 3');
-        expect(hud.monsterStatsText.visible).toBe(true);
-        expect(hud.monsterStatsText.text).toBe('Slime: HP 42  ATK 8  DEF 2');
+    it('should update keys on KEYS_CHANGED event', () => {
+        hud['handleKeysChange']({ keys: { yellow: 2, blue: 2, red: 3 } });
+        expect(hud.keysText.text).toBe('钥匙: 黄 2  蓝 2  红 3');
+    });
+
+    it('should hide monster stats and update player HP on BATTLE_ENDED event', () => {
+        hud['handleBattleEnd']({ finalPlayerHp: 75 });
+        expect(hud.monsterStatsText.visible).toBe(false);
+        expect(hud.playerStatsText.text).toBe('勇者: HP 75  ATK 10  DEF 5');
+    });
+
+    it('should unregister listeners on destroy', () => {
+        hud.destroy();
+        expect(eventManager.off).toHaveBeenCalledWith('HP_CHANGED', expect.any(Function));
+        expect(eventManager.off).toHaveBeenCalledWith('KEYS_CHANGED', expect.any(Function));
+        expect(eventManager.off).toHaveBeenCalledWith('BATTLE_ENDED', expect.any(Function));
     });
 });

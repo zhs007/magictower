@@ -1,6 +1,7 @@
 import { GameState, IPlayer, IMonster, ICharacter, EquipmentSlot, Action } from './types';
 import * as _ from 'lodash';
 import { AudioManager } from './audio-manager';
+import { eventManager } from './event-manager';
 
 const MAX_COMBAT_ROUNDS = 8;
 
@@ -126,13 +127,19 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     if (!attacker || !defender) return state;
 
     const damage = calculateDamage(attacker, defender);
+    let hpChangedPayload;
 
     if (defenderId === playerEntityKey) {
+        const oldHp = newState.interactionState.playerHp;
         newState.interactionState.playerHp -= damage;
+        hpChangedPayload = { entityId: 'player', newHp: newState.interactionState.playerHp, oldHp };
     } else {
+        const oldHp = newState.interactionState.monsterHp;
         newState.interactionState.monsterHp -= damage;
+        hpChangedPayload = { entityId: defenderId, newHp: newState.interactionState.monsterHp, oldHp };
     }
 
+    eventManager.dispatch('HP_CHANGED', hpChangedPayload);
     AudioManager.getInstance().playSound('attack');
 
     if (newState.interactionState.playerHp <= 0 || newState.interactionState.monsterHp <= 0) {
@@ -159,27 +166,35 @@ export function handleEndBattle(state: GameState, winnerId: string | null, reaso
     const monsterEntityKey = newState.interactionState.monsterId;
     const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
 
-    if (reason === 'hp_depleted' && winnerId === playerEntityKey) {
-        newState.player.hp = newState.interactionState.playerHp;
-        const defeatedMonsterId = newState.monsters[monsterEntityKey].id;
-        delete newState.entities[monsterEntityKey];
-        delete newState.monsters[monsterEntityKey];
+    // Always update player HP to the final battle state HP, unless they lost.
+    newState.player.hp = newState.interactionState.playerHp;
 
-        // Check for special door conditions
-        for (const doorId in newState.doors) {
-            const door = newState.doors[doorId];
-            if (door.condition?.type === 'DEFEAT_MONSTER' && door.condition.monsterId === defeatedMonsterId) {
-                const doorEntityKey = Object.keys(newState.entities).find(k => k === doorId);
-                if (doorEntityKey) {
-                    delete newState.entities[doorEntityKey];
+    if (reason === 'hp_depleted') {
+        if (winnerId === playerEntityKey) {
+            // Player wins, monster is removed
+            const defeatedMonsterId = newState.monsters[monsterEntityKey].id;
+            delete newState.entities[monsterEntityKey];
+            delete newState.monsters[monsterEntityKey];
+
+            // Check for special door conditions
+            for (const doorId in newState.doors) {
+                const door = newState.doors[doorId];
+                if (door.condition?.type === 'DEFEAT_MONSTER' && door.condition.monsterId === defeatedMonsterId) {
+                    const doorEntityKey = Object.keys(newState.entities).find(k => k === doorId);
+                    if (doorEntityKey) {
+                        delete newState.entities[doorEntityKey];
+                    }
+                    delete newState.doors[doorId];
                 }
-                delete newState.doors[doorId];
             }
+        } else if (winnerId === monsterEntityKey) {
+            // Player loses, HP is set to 0
+            newState.player.hp = 0;
         }
-    } else if (reason === 'hp_depleted' && winnerId === monsterEntityKey) {
-        newState.player.hp = 0;
     }
+    // If reason is timeout, player HP is already updated to its final battle value.
 
+    eventManager.dispatch('BATTLE_ENDED', { winnerId, reason, finalPlayerHp: newState.player.hp });
     newState.interactionState = { type: 'none' };
     return newState;
 }
@@ -201,6 +216,7 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
     if (item.type === 'key') {
         if (item.color === 'yellow') {
             newState.player.keys.yellow++;
+            eventManager.dispatch('KEYS_CHANGED', { keys: newState.player.keys });
         }
     } else if (item.type === 'special') {
         switch (item.specialType) {
