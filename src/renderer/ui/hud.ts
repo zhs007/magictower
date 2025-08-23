@@ -1,77 +1,96 @@
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { GameState, IPlayer } from '../../core/types';
+import { Container, Graphics, Text } from 'pixi.js';
+import { GameState } from '../../core/types';
+import { eventManager } from '../../core/event-manager';
 
-const FONT_STYLE = new TextStyle({
-    fill: 'white',
-    fontSize: 42,
-    fontFamily: '"Courier New", Courier, monospace',
-    fontWeight: 'bold',
-});
-
-const LABEL_STYLE = new TextStyle({
-    ...FONT_STYLE,
-    fill: '#cccccc',
-});
+const HUD_WIDTH = 1080;
+const HUD_HEIGHT = 400;
+const PADDING = 20;
+const FONT_SIZE = 48;
 
 export class HUD extends Container {
-    public floorText: Text;
-    public hpText: Text;
-    public atkText: Text;
-    public defText: Text;
-    public yellowKeyText: Text;
-    public blueKeyText: Text;
-    public redKeyText: Text;
+    private background: Graphics;
+    private playerStatsText: Text;
+    private monsterStatsText: Text;
+    private keysText: Text;
 
     constructor() {
         super();
+        this.background = new Graphics();
         this.drawBackground();
+        this.addChild(this.background);
 
-        // --- Stats Display ---
-        this.floorText = this.addStat('Floor:', 100, 50);
-        this.hpText = this.addStat('HP:', 100, 120);
-        this.atkText = this.addStat('ATK:', 100, 190);
-        this.defText = this.addStat('DEF:', 100, 260);
+        this.playerStatsText = this.createText('', PADDING, PADDING);
+        this.monsterStatsText = this.createText('', PADDING, PADDING + FONT_SIZE * 2);
+        this.keysText = this.createText('', PADDING, PADDING + FONT_SIZE * 4);
 
-        // --- Key Display ---
-        // For now, we will use text. Sprites can be added later.
-        this.yellowKeyText = this.addStat('Yellow Keys:', 550, 120);
-        this.blueKeyText = this.addStat('Blue Keys:', 550, 190);
-        this.redKeyText = this.addStat('Red Keys:', 550, 260);
+        this.addChild(this.playerStatsText, this.monsterStatsText, this.keysText);
+        this.monsterStatsText.visible = false;
+
+        this.registerListeners();
+    }
+
+    // --- Event Handlers ---
+    private hpChangeHandler = (payload: any) => this.handleHpChange(payload);
+    private keysChangeHandler = (payload: any) => this.handleKeysChange(payload);
+    private battleEndHandler = (payload: any) => this.handleBattleEnd(payload);
+
+    private registerListeners(): void {
+        eventManager.on('HP_CHANGED', this.hpChangeHandler);
+        eventManager.on('KEYS_CHANGED', this.keysChangeHandler);
+        eventManager.on('BATTLE_ENDED', this.battleEndHandler);
+    }
+
+    private createText(content: string, x: number, y: number): Text {
+        const text = new Text({ text: content, style: { fontFamily: 'Arial', fontSize: FONT_SIZE, fill: 0xffffff, align: 'left' } });
+        text.position.set(x, y);
+        return text;
     }
 
     private drawBackground(): void {
-        const hudBackground = new Graphics();
-        hudBackground.fill({ color: 0x000000, alpha: 0.7 });
-        hudBackground.drawRect(0, 0, 1080, 400); // Simple semi-transparent bar for HUD
-        hudBackground.fill();
-        this.addChild(hudBackground);
+        this.background.rect(0, 0, HUD_WIDTH, HUD_HEIGHT).fill(0x333333);
     }
 
-    private addStat(label: string, x: number, y: number): Text {
-        const labelText = new Text(label, LABEL_STYLE);
-        labelText.x = x;
-        labelText.y = y;
-        this.addChild(labelText);
-
-        const valueText = new Text('0', FONT_STYLE);
-        valueText.x = x + labelText.width + 20;
-        valueText.y = y;
-        this.addChild(valueText);
-
-        return valueText;
-    }
-
+    // This method is for the very first draw.
     public update(state: GameState): void {
-        this.floorText.text = `${state.currentFloor}`;
-        this.hpText.text = `${state.player.hp}`;
-        this.atkText.text = `${state.player.attack}`;
-        this.defText.text = `${state.player.defense}`;
+        this.updatePlayerStats(state.player.hp, state.player.attack, state.player.defense);
+        this.updateKeys(state.player.keys);
+        this.monsterStatsText.visible = false;
+    }
 
-        // Assuming player state has a 'keys' property like this:
-        // state.player.keys: { yellow: 1, blue: 0, red: 2 }
-        const keys = (state.player as any).keys || { yellow: 0, blue: 0, red: 0 };
-        this.yellowKeyText.text = `${keys.yellow}`;
-        this.blueKeyText.text = `${keys.blue}`;
-        this.redKeyText.text = `${keys.red}`;
+    private updatePlayerStats(hp: number, attack: number, defense: number): void {
+        this.playerStatsText.text = `勇者: HP ${hp}  ATK ${attack}  DEF ${defense}`;
+    }
+
+    private updateMonsterStats(name: string, hp: number, attack: number, defense: number): void {
+        this.monsterStatsText.text = `${name}: HP ${hp}  ATK ${attack}  DEF ${defense}`;
+    }
+
+    private updateKeys(keys: { yellow: number, blue: number, red: number }): void {
+        this.keysText.text = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
+    }
+
+    private handleHpChange(payload: { entityId: string, name?: string, newHp: number, attack: number, defense: number }): void {
+        if (payload.entityId === 'player') {
+            this.updatePlayerStats(payload.newHp, payload.attack, payload.defense);
+        } else if (payload.name) {
+            this.monsterStatsText.visible = true;
+            this.updateMonsterStats(payload.name, payload.newHp, payload.attack, payload.defense);
+        }
+    }
+
+    private handleKeysChange(payload: { keys: { yellow: number, blue: number, red: number } }): void {
+        this.updateKeys(payload.keys);
+    }
+
+    private handleBattleEnd(payload: { finalPlayerHp: number, finalPlayerAtk: number, finalPlayerDef: number }): void {
+        this.monsterStatsText.visible = false;
+        this.updatePlayerStats(payload.finalPlayerHp, payload.finalPlayerAtk, payload.finalPlayerDef);
+    }
+
+    public destroy(options?: any): void {
+        eventManager.off('HP_CHANGED', this.hpChangeHandler);
+        eventManager.off('KEYS_CHANGED', this.keysChangeHandler);
+        eventManager.off('BATTLE_ENDED', this.battleEndHandler);
+        super.destroy(options);
     }
 }
