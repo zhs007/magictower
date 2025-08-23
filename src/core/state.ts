@@ -32,7 +32,7 @@ export class GameStateManager {
         let player: IPlayer | null = null;
         let playerKey: string | null = null;
 
-        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } };
+        const playerTemplate = { id: 'player', name: 'Hero', hp: 100, attack: 10, defense: 5, equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 }, direction: 'right' as 'left' | 'right' };
 
         if (mapData.entities) {
             for (const entityKey of Object.keys(mapData.entities)) {
@@ -44,7 +44,7 @@ export class GameStateManager {
                 } else if (entityInfo.type === 'monster') {
                     const monsterData = dataManager.getMonsterData(entityInfo.id);
                     if (monsterData) {
-                        const monster = { ...monsterData, ...entityInfo, equipment: {}, backupEquipment: [], buffs: [] };
+                        const monster = { ...monsterData, ...entityInfo, equipment: {}, backupEquipment: [], buffs: [], direction: 'right' as 'left' | 'right' };
                         monsters[entityKey] = monster;
                         entities[entityKey] = monster;
                     }

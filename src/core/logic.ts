@@ -7,20 +7,47 @@ const MAX_COMBAT_ROUNDS = 8;
 
 export function handleMove(state: GameState, dx: number, dy: number): GameState {
     const newState = _.cloneDeep(state);
-    const newX = newState.player.x + dx;
-    const newY = newState.player.y + dy;
+    const player = newState.player;
 
-    if (newX < 0 || newX >= newState.map[0].length || newY < 0 || newY >= newState.map.length || newState.map[newY][newX] === 1) {
-        return state;
+    let moveDirection: 'left' | 'right' | 'none' = 'none';
+    if (dx > 0) moveDirection = 'right';
+    if (dx < 0) moveDirection = 'left';
+
+    // Handle turning in place if necessary
+    if (moveDirection !== 'none' && player.direction !== moveDirection) {
+        player.direction = moveDirection;
+        const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
+        if (playerEntityKey) {
+            newState.entities[playerEntityKey].direction = moveDirection;
+        }
+        return newState; // Return after only turning
     }
 
-    const destinationEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].x === newX && newState.entities[k].y === newY);
+    // If we are here, the player is already facing the correct direction or moving vertically.
+    // Proceed with movement/interaction.
+    const newX = player.x + dx;
+    const newY = player.y + dy;
 
+    // Check for collision
+    if (newX < 0 || newX >= newState.map[0].length || newY < 0 || newY >= newState.map.length || newState.map[newY][newX] === 1) {
+        return state; // No change in position or direction
+    }
+
+    // Check for entity interaction at the destination
+    const destinationEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].x === newX && newState.entities[k].y === newY);
     if (destinationEntityKey) {
         const destinationEntity = newState.entities[destinationEntityKey];
         if (destinationEntity.type === 'item') {
             newState.interactionState = { type: 'item_pickup', itemId: destinationEntityKey };
         } else if (destinationEntity.type === 'monster') {
+            const monster = newState.monsters[destinationEntityKey];
+            if (monster) {
+                if (newState.player.x < monster.x) {
+                    monster.direction = 'left';
+                } else if (newState.player.x > monster.x) {
+                    monster.direction = 'right';
+                }
+            }
             newState.interactionState = {
                 type: 'battle',
                 monsterId: destinationEntityKey,

@@ -10,27 +10,31 @@ const MAP_OFFSET_X = 20;
 
 export class Renderer {
     private stage: Container;
-    private mapContainer: Container;
-    private entityContainer: Container;
+    private floorContainer: Container;
+    private mainContainer: Container;
+    private topLayerContainer: Container;
     private hud: HUD;
 
     private entitySprites: Map<string, Sprite> = new Map();
 
     constructor(stage: Container) {
         this.stage = stage;
-        this.mapContainer = new Container();
-        this.entityContainer = new Container();
+        this.floorContainer = new Container();
+        this.mainContainer = new Container();
+        this.topLayerContainer = new Container();
         this.hud = new HUD();
 
-        this.mapContainer.x = MAP_OFFSET_X;
-        this.mapContainer.y = 200;
+        this.mainContainer.sortableChildren = true;
+        this.topLayerContainer.sortableChildren = true;
 
-        this.entityContainer.x = this.mapContainer.x;
-        this.entityContainer.y = this.mapContainer.y;
+        const worldContainer = new Container();
+        worldContainer.x = MAP_OFFSET_X;
+        worldContainer.y = 200;
+        worldContainer.addChild(this.floorContainer, this.mainContainer, this.topLayerContainer);
 
-        this.hud.y = (MAP_WIDTH_TILES * TILE_SIZE) + this.mapContainer.y;
+        this.hud.y = (MAP_WIDTH_TILES * TILE_SIZE) + worldContainer.y;
 
-        this.stage.addChild(this.mapContainer, this.entityContainer, this.hud);
+        this.stage.addChild(worldContainer, this.hud);
     }
 
     public async loadAssets(): Promise<void> {
@@ -61,29 +65,53 @@ export class Renderer {
         this.hud.update(state);
     }
 
+    private wallSprites: Sprite[] = [];
+
     private drawMap(state: GameState): void {
-        this.mapContainer.removeChildren();
+        this.floorContainer.removeChildren();
+
+        // Clear previous wall sprites
+        for (const sprite of this.wallSprites) {
+            this.mainContainer.removeChild(sprite);
+        }
+        this.wallSprites = [];
+
         for (let y = 0; y < state.map.length; y++) {
             for (let x = 0; x < state.map[y].length; x++) {
                 const tileValue = state.map[y][x];
-                const tileSprite = new Sprite(Assets.get(tileValue === 1 ? 'wall' : 'floor'));
-                tileSprite.x = x * TILE_SIZE;
-                tileSprite.y = y * TILE_SIZE;
-                tileSprite.width = TILE_SIZE;
-                tileSprite.height = TILE_SIZE;
-                this.mapContainer.addChild(tileSprite);
+
+                // Always draw a floor tile
+                const floorSprite = new Sprite(Assets.get('floor'));
+                floorSprite.x = x * TILE_SIZE;
+                floorSprite.y = y * TILE_SIZE;
+                floorSprite.width = TILE_SIZE;
+                floorSprite.height = TILE_SIZE;
+                this.floorContainer.addChild(floorSprite);
+
+                if (tileValue === 1) { // It's a wall
+                    const wallSprite = new Sprite(Assets.get('wall'));
+                    wallSprite.anchor.set(0.5, 1); // Bottom-center
+                    wallSprite.x = x * TILE_SIZE + TILE_SIZE / 2;
+                    wallSprite.y = (y + 1) * TILE_SIZE;
+                    wallSprite.zIndex = y;
+                    this.mainContainer.addChild(wallSprite);
+                    this.wallSprites.push(wallSprite);
+                }
             }
         }
     }
 
     public syncSprites(state: GameState): void {
-        const allEntityIds = Object.keys(state.entities);
+        const allEntityIds = new Set(Object.keys(state.entities));
+        const processedSpriteIds = new Set();
 
         for (const entityId of allEntityIds) {
             const entity = state.entities[entityId];
             if (!entity) continue;
 
+            processedSpriteIds.add(entityId);
             let sprite = this.entitySprites.get(entityId);
+
             if (!sprite) {
                 let textureAlias = '';
                 if (entity.type === 'player_start') textureAlias = 'player';
@@ -92,24 +120,33 @@ export class Renderer {
 
                 if (textureAlias) {
                     sprite = new Sprite(Assets.get(textureAlias));
-                    sprite.width = TILE_SIZE;
-                    sprite.height = TILE_SIZE;
-                    sprite.anchor.set(0.5);
+                    sprite.anchor.set(0.5, 1); // Bottom-center alignment
                     this.entitySprites.set(entityId, sprite);
-                    this.entityContainer.addChild(sprite);
+                    this.mainContainer.addChild(sprite);
                 }
             }
 
             if (sprite) {
                 sprite.x = entity.x * TILE_SIZE + TILE_SIZE / 2;
-                sprite.y = entity.y * TILE_SIZE + TILE_SIZE / 2;
+                sprite.y = (entity.y + 1) * TILE_SIZE;
+                sprite.zIndex = entity.y;
                 sprite.visible = true;
+
+                // Handle direction for characters
+                if ('direction' in entity) {
+                    sprite.scale.x = entity.direction === 'left' ? -1 : 1;
+                    sprite.scale.y = 1;
+                }
             }
         }
 
+        // Hide or remove sprites for entities that no longer exist
         for (const [entityId, sprite] of this.entitySprites.entries()) {
-            if (!state.entities[entityId]) {
+            if (!allEntityIds.has(entityId)) {
                 sprite.visible = false;
+                // Optional: remove from container and map if they won't reappear
+                // this.mainContainer.removeChild(sprite);
+                // this.entitySprites.delete(entityId);
             }
         }
     }
@@ -125,6 +162,7 @@ export class Renderer {
         const playerKey = Object.keys(state.entities).find(k => state.entities[k].type === 'player_start');
         if (!playerKey) return;
 
+        const player = state.entities[playerKey];
         const playerSprite = this.entitySprites.get(playerKey);
         const itemSprite = this.entitySprites.get(state.interactionState.itemId);
 
@@ -140,25 +178,42 @@ export class Renderer {
         }
 
         const targetX = item.x * TILE_SIZE + TILE_SIZE / 2;
-        const targetY = item.y * TILE_SIZE + TILE_SIZE / 2;
+        const targetY = (item.y + 1) * TILE_SIZE;
 
         const tl = gsap.timeline({ onComplete });
+        const duration = 0.3;
 
-        tl.to(playerSprite, {
-            x: targetX,
-            y: targetY,
-            duration: 0.3,
-            ease: 'power1.inOut',
-        });
+        if (player.x === item.x) {
+            // Vertical Jumps
+            let jumpHeight;
+            let peakY;
+            if (player.y > item.y) {
+                // Jumping UP (e.g. from y=2 to y=1)
+                jumpHeight = TILE_SIZE / 4;
+                peakY = targetY - jumpHeight; // Peak is relative to destination
+            } else {
+                // Jumping DOWN (e.g. from y=1 to y=2)
+                jumpHeight = TILE_SIZE / 4;
+                peakY = playerSprite.y - jumpHeight; // Peak is relative to start
+            }
+            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' })
+              .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
+        } else {
+            // Horizontal or Diagonal Jumps (Symmetric Arc)
+            const jumpHeight = TILE_SIZE / 2;
+            const peakY = playerSprite.y - jumpHeight;
+            tl.to(playerSprite, { x: targetX, duration: duration, ease: 'linear' }, 0);
+            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }, 0)
+              .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
+        }
 
+        // Item fade-out animation runs concurrently
         tl.to(itemSprite, {
             y: targetY - TILE_SIZE,
             alpha: 0,
-            width: itemSprite.width * 0.5,
-            height: itemSprite.height * 0.5,
-            duration: 0.5,
+            duration: duration,
             ease: 'power1.in',
-        }, '-=0.2');
+        }, 0);
     }
 
     public async animateAttack(attackerId: string, defenderId: string, damage: number, onComplete: () => void): Promise<void> {
@@ -195,16 +250,30 @@ export class Renderer {
 
         const damageText = new Text(`-${damage}`, { fontSize: 24, fill: 'red', fontWeight: 'bold' });
         damageText.x = defenderSprite.x;
-        damageText.y = defenderSprite.y - TILE_SIZE / 2;
+        damageText.y = defenderSprite.y - TILE_SIZE; // Adjusted for new sprite height
         damageText.anchor.set(0.5);
-        this.entityContainer.addChild(damageText);
+        this.topLayerContainer.addChild(damageText); // Add to top layer
 
         tl.to(damageText, {
             y: damageText.y - 40,
             alpha: 0,
             duration: 1,
             ease: 'power1.out',
-            onComplete: () => this.entityContainer.removeChild(damageText),
+            onComplete: () => this.topLayerContainer.removeChild(damageText),
         }, '-=0.1');
+    }
+
+    public moveToTopLayer(sprite: Sprite): void {
+        if (sprite.parent === this.mainContainer) {
+            this.mainContainer.removeChild(sprite);
+            this.topLayerContainer.addChild(sprite);
+        }
+    }
+
+    public moveToMainLayer(sprite: Sprite): void {
+        if (sprite.parent === this.topLayerContainer) {
+            this.topLayerContainer.removeChild(sprite);
+            this.mainContainer.addChild(sprite);
+        }
     }
 }

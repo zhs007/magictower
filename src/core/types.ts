@@ -50,6 +50,7 @@ export interface ICharacter extends IBaseObject {
     defense: number;
     x: number;
     y: number;
+    direction: 'left' | 'right';
     equipment: {
         [EquipmentSlot.HEAD]?: IEquipment;
         [EquipmentSlot.BODY]?: IEquipment;
