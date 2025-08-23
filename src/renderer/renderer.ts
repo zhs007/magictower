@@ -162,6 +162,7 @@ export class Renderer {
         const playerKey = Object.keys(state.entities).find(k => state.entities[k].type === 'player_start');
         if (!playerKey) return;
 
+        const player = state.entities[playerKey];
         const playerSprite = this.entitySprites.get(playerKey);
         const itemSprite = this.entitySprites.get(state.interactionState.itemId);
 
@@ -183,20 +184,16 @@ export class Renderer {
         const duration = 0.3;
         const jumpHeight = TILE_SIZE / 2;
 
-        // 1. Jump up and over to the target X
-        tl.to(playerSprite, {
-            x: targetX,
-            y: playerSprite.y - jumpHeight,
-            duration: duration * 0.7,
-            ease: 'power1.out',
-        });
-
-        // 2. Drop down onto the target Y
-        tl.to(playerSprite, {
-            y: targetY,
-            duration: duration * 0.3,
-            ease: 'power1.in',
-        });
+        if (player.x === item.x) {
+            // Vertical jump
+            tl.to(playerSprite, { y: playerSprite.y - jumpHeight, duration: duration / 2, ease: 'power1.out' })
+              .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
+        } else {
+            // Horizontal or Diagonal jump (symmetric arc)
+            tl.to(playerSprite, { x: targetX, duration: duration, ease: 'linear' }, 0);
+            tl.to(playerSprite, { y: playerSprite.y - jumpHeight, duration: duration / 2, ease: 'power1.out' }, 0)
+              .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
+        }
 
         // Item fade-out animation runs concurrently
         tl.to(itemSprite, {
