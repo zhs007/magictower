@@ -27,6 +27,14 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         if (destinationEntity.type === 'item') {
             newState.interactionState = { type: 'item_pickup', itemId: destinationEntityKey };
         } else if (destinationEntity.type === 'monster') {
+            const monster = newState.monsters[destinationEntityKey];
+            if (monster) {
+                if (newState.player.x < monster.x) {
+                    monster.direction = 'left';
+                } else if (newState.player.x > monster.x) {
+                    monster.direction = 'right';
+                }
+            }
             newState.interactionState = {
                 type: 'battle',
                 monsterId: destinationEntityKey,
