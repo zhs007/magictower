@@ -181,19 +181,30 @@ export class Renderer {
 
         const tl = gsap.timeline({ onComplete });
         const duration = 0.3;
+        const jumpHeight = TILE_SIZE / 2;
 
-        // Player jump animation
-        tl.to(playerSprite, { x: targetX, duration: duration, ease: 'linear' }, 0);
-        tl.to(playerSprite, { y: playerSprite.y - TILE_SIZE / 2, duration: duration / 2, ease: 'power1.out' }, 0)
-          .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
+        // 1. Jump up and over to the target X
+        tl.to(playerSprite, {
+            x: targetX,
+            y: playerSprite.y - jumpHeight,
+            duration: duration * 0.7,
+            ease: 'power1.out',
+        });
 
-        // Item fade-out animation
+        // 2. Drop down onto the target Y
+        tl.to(playerSprite, {
+            y: targetY,
+            duration: duration * 0.3,
+            ease: 'power1.in',
+        });
+
+        // Item fade-out animation runs concurrently
         tl.to(itemSprite, {
             y: targetY - TILE_SIZE,
             alpha: 0,
-            duration: 0.3,
+            duration: duration,
             ease: 'power1.in',
-        }, 0); // Start at the same time as the jump
+        }, 0);
     }
 
     public async animateAttack(attackerId: string, defenderId: string, damage: number, onComplete: () => void): Promise<void> {
