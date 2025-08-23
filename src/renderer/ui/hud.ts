@@ -13,15 +13,12 @@ export class HUD extends Container {
     private monsterStatsText: Text;
     private keysText: Text;
 
-    private lastState: GameState | null = null;
-
     constructor() {
         super();
         this.background = new Graphics();
         this.drawBackground();
         this.addChild(this.background);
 
-        // Create placeholder text objects to define position and initial style
         this.playerStatsText = this.createText('', PADDING, PADDING);
         this.monsterStatsText = this.createText('', PADDING, PADDING + FONT_SIZE * 2);
         this.keysText = this.createText('', PADDING, PADDING + FONT_SIZE * 4);
@@ -53,35 +50,27 @@ export class HUD extends Container {
         this.background.rect(0, 0, HUD_WIDTH, HUD_HEIGHT).fill(0x333333);
     }
 
-    // Initial setup from GameState
+    // This method is now only for the very first draw.
     public update(state: GameState): void {
-        this.lastState = state;
-        this.updatePlayerStats(state.interactionState.type === 'battle' ? state.interactionState.playerHp : state.player.hp);
+        this.updatePlayerStats(state.player.hp, state.player.attack, state.player.defense);
         this.updateKeys(state.player.keys);
-
-        if (state.interactionState.type === 'battle') {
-            this.updateMonsterStats(state.interactionState.monsterHp);
-            this.monsterStatsText.visible = true;
-        } else {
-            this.monsterStatsText.visible = false;
-        }
+        this.monsterStatsText.visible = false;
     }
 
-    private updatePlayerStats(hp: number): void {
-        if (!this.lastState) return;
-        const newTextContent = `勇者: HP ${hp}  ATK ${this.lastState.player.attack}  DEF ${this.lastState.player.defense}`;
-        this.removeChild(this.playerStatsText);
+    private updatePlayerStats(hp: number, attack: number, defense: number): void {
+        const newTextContent = `勇者: HP ${hp}  ATK ${attack}  DEF ${defense}`;
+        if (this.playerStatsText) {
+            this.removeChild(this.playerStatsText);
+        }
         this.playerStatsText = this.createText(newTextContent, PADDING, PADDING);
         this.addChild(this.playerStatsText);
     }
 
-    private updateMonsterStats(hp: number): void {
-        if (!this.lastState || this.lastState.interactionState.type !== 'battle') return;
-        const monster = this.lastState.monsters[this.lastState.interactionState.monsterId];
-        if (!monster) return;
-
-        const newTextContent = `${monster.name}: HP ${hp}  ATK ${monster.attack}  DEF ${monster.defense}`;
-        this.removeChild(this.monsterStatsText);
+    private updateMonsterStats(name: string, hp: number, attack: number, defense: number): void {
+        const newTextContent = `${name}: HP ${hp}  ATK ${attack}  DEF ${defense}`;
+        if (this.monsterStatsText) {
+            this.removeChild(this.monsterStatsText);
+        }
         this.monsterStatsText = this.createText(newTextContent, PADDING, PADDING + FONT_SIZE * 2);
         this.addChild(this.monsterStatsText);
         this.monsterStatsText.visible = true;
@@ -89,16 +78,18 @@ export class HUD extends Container {
 
     private updateKeys(keys: { yellow: number, blue: number, red: number }): void {
         const newTextContent = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
-        this.removeChild(this.keysText);
+        if (this.keysText) {
+            this.removeChild(this.keysText);
+        }
         this.keysText = this.createText(newTextContent, PADDING, PADDING + FONT_SIZE * 4);
         this.addChild(this.keysText);
     }
 
-    private handleHpChange(payload: { entityId: string, newHp: number }): void {
+    private handleHpChange(payload: { entityId: string, name?: string, newHp: number, attack: number, defense: number }): void {
         if (payload.entityId === 'player') {
-            this.updatePlayerStats(payload.newHp);
-        } else {
-            this.updateMonsterStats(payload.newHp);
+            this.updatePlayerStats(payload.newHp, payload.attack, payload.defense);
+        } else if (payload.name) {
+            this.updateMonsterStats(payload.name, payload.newHp, payload.attack, payload.defense);
         }
     }
 
@@ -106,9 +97,9 @@ export class HUD extends Container {
         this.updateKeys(payload.keys);
     }
 
-    private handleBattleEnd(payload: { finalPlayerHp: number }): void {
+    private handleBattleEnd(payload: { finalPlayerHp: number, finalPlayerAtk: number, finalPlayerDef: number }): void {
         this.monsterStatsText.visible = false;
-        this.updatePlayerStats(payload.finalPlayerHp);
+        this.updatePlayerStats(payload.finalPlayerHp, payload.finalPlayerAtk, payload.finalPlayerDef);
     }
 
     public destroy(options?: any): void {

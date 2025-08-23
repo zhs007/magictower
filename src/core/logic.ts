@@ -132,11 +132,25 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     if (defenderId === playerEntityKey) {
         const oldHp = newState.interactionState.playerHp;
         newState.interactionState.playerHp -= damage;
-        hpChangedPayload = { entityId: 'player', newHp: newState.interactionState.playerHp, oldHp };
+        hpChangedPayload = {
+            entityId: 'player',
+            newHp: newState.interactionState.playerHp,
+            attack: newState.player.attack,
+            defense: newState.player.defense,
+            oldHp
+        };
     } else {
+        const monster = newState.monsters[defenderId];
         const oldHp = newState.interactionState.monsterHp;
         newState.interactionState.monsterHp -= damage;
-        hpChangedPayload = { entityId: defenderId, newHp: newState.interactionState.monsterHp, oldHp };
+        hpChangedPayload = {
+            entityId: defenderId,
+            name: monster.name,
+            newHp: newState.interactionState.monsterHp,
+            attack: monster.attack,
+            defense: monster.defense,
+            oldHp
+        };
     }
 
     eventManager.dispatch('HP_CHANGED', hpChangedPayload);
@@ -194,7 +208,13 @@ export function handleEndBattle(state: GameState, winnerId: string | null, reaso
     }
     // If reason is timeout, player HP is already updated to its final battle value.
 
-    eventManager.dispatch('BATTLE_ENDED', { winnerId, reason, finalPlayerHp: newState.player.hp });
+    eventManager.dispatch('BATTLE_ENDED', {
+        winnerId,
+        reason,
+        finalPlayerHp: newState.player.hp,
+        finalPlayerAtk: newState.player.attack,
+        finalPlayerDef: newState.player.defense,
+    });
     newState.interactionState = { type: 'none' };
     return newState;
 }
