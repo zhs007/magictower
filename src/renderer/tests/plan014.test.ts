@@ -98,29 +98,27 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
         expect(renderer['topLayerContainer'].sortableChildren).toBe(true);
     });
 
-    it('should create wall sprites with correct properties', () => {
+    it('should create wall sprites with default scale', () => {
         renderer.initialize(gameState);
         const wallSprites = renderer['wallSprites'];
         expect(wallSprites.length).toBe(1);
 
         const wallSprite = wallSprites[0];
-        const expectedScale = TILE_SIZE / wallSprite.texture.width;
-        expect(wallSprite.scale.x).toBe(expectedScale);
-        expect(wallSprite.scale.y).toBe(expectedScale);
+        expect(wallSprite.scale.x).toBe(1);
+        expect(wallSprite.scale.y).toBe(1);
         expect(wallSprite.anchor._x).toBe(0.5);
         expect(wallSprite.anchor._y).toBe(1);
         expect(wallSprite.zIndex).toBe(0); // y-coordinate of the wall
     });
 
-    it('should create entity sprites with correct properties', () => {
+    it('should create entity sprites with default scale', () => {
         renderer.initialize(gameState);
         const playerSprite = renderer['entitySprites'].get('player1');
         const monsterSprite = renderer['entitySprites'].get('monster1');
 
         expect(playerSprite).toBeDefined();
-        const expectedScale = TILE_SIZE / playerSprite.texture.width;
-        expect(playerSprite.scale.x).toBe(expectedScale);
-        expect(playerSprite.scale.y).toBe(expectedScale);
+        expect(playerSprite.scale.x).toBe(1);
+        expect(playerSprite.scale.y).toBe(1);
         expect(playerSprite.anchor._x).toBe(0.5);
         expect(playerSprite.anchor._y).toBe(1);
         expect(playerSprite.zIndex).toBe(1); // player y = 1
@@ -150,21 +148,5 @@ describe('Renderer Z-Ordering and Sizing (Plan014)', () => {
         expect(wallSprite.zIndex).toBe(0);
         expect(playerSprite.zIndex).toBe(1);
         expect(monsterSprite.zIndex).toBe(2);
-    });
-
-    it('should scale sprites proportionally', () => {
-        // Override the mock for this specific test
-        vi.spyOn(Assets, 'get').mockImplementation((key: any) => ({
-            texture: key,
-            width: 130, // Use a different width to test scaling
-            height: 260,
-        }));
-
-        renderer.initialize(gameState);
-        const playerSprite = renderer['entitySprites'].get('player1');
-
-        const expectedScale = TILE_SIZE / 130; // 65 / 130 = 0.5
-        expect(playerSprite.scale.x).toBe(expectedScale);
-        expect(playerSprite.scale.y).toBe(expectedScale);
     });
 });

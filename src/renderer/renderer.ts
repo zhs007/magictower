@@ -93,8 +93,6 @@ export class Renderer {
                     wallSprite.anchor.set(0.5, 1); // Bottom-center
                     wallSprite.x = x * TILE_SIZE + TILE_SIZE / 2;
                     wallSprite.y = (y + 1) * TILE_SIZE;
-                    const scale = TILE_SIZE / wallSprite.texture.width;
-                    wallSprite.scale.set(scale);
                     wallSprite.zIndex = y;
                     this.mainContainer.addChild(wallSprite);
                     this.wallSprites.push(wallSprite);
@@ -129,9 +127,6 @@ export class Renderer {
             }
 
             if (sprite) {
-                const scale = TILE_SIZE / sprite.texture.width;
-                sprite.scale.set(scale);
-
                 sprite.x = entity.x * TILE_SIZE + TILE_SIZE / 2;
                 sprite.y = (entity.y + 1) * TILE_SIZE;
                 sprite.zIndex = entity.y;
@@ -139,7 +134,8 @@ export class Renderer {
 
                 // Handle direction for characters
                 if ('direction' in entity) {
-                    sprite.scale.x = entity.direction === 'left' ? -scale : scale;
+                    sprite.scale.x = entity.direction === 'left' ? -1 : 1;
+                    sprite.scale.y = 1;
                 }
             }
         }
