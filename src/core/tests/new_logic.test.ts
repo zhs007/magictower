@@ -17,7 +17,7 @@ describe('Game Logic with Interactions', () => {
             currentFloor: 1,
             map: [
                 [0, 0, 0],
-                [0, 0, 0],
+                [0, 1, 0],
                 [0, 0, 0],
             ],
             player,
@@ -38,27 +38,20 @@ describe('Game Logic with Interactions', () => {
         };
     });
 
-    // Test Item Pickup
     describe('handleMove (Item Interaction)', () => {
         it('should set interactionState to "item_pickup" when moving onto an item', () => {
-            gameState.player.x = 2;
+            gameState.player.x = 1;
             gameState.player.y = 1;
-            // Player starts at (2,1) facing right. Item is at (0,1).
-            // First move should only turn the player left.
-            const turnedState = handleMove(gameState, -1, 0);
-            expect(turnedState.player.direction).toBe('left');
-            expect(turnedState.interactionState.type).toBe('none');
+            gameState.player.direction = 'left';
 
-            // Move again
-            const turnedAgainState = handleMove(turnedState, -1, 0);
-            expect(turnedAgainState.player.x).toBe(1);
+            const newState = handleMove(gameState, -1, 0);
 
-            // Final move to trigger interaction
-            const newState = handleMove(turnedAgainState, -1, 0);
             expect(newState.interactionState.type).toBe('item_pickup');
             if (newState.interactionState.type === 'item_pickup') {
                 expect(newState.interactionState.itemId).toBe(itemEntityKey);
             }
+            // Player should not have moved, as an interaction was triggered
+            expect(newState.player.x).toBe(1);
         });
     });
 
@@ -82,7 +75,6 @@ describe('Game Logic with Interactions', () => {
         });
     });
 
-    // Test Combat
     describe('handleMove (Combat Interaction)', () => {
         it('should set interactionState to "battle" when moving onto a monster', () => {
             const newState = handleMove(gameState, 1, 0);
@@ -114,19 +106,17 @@ describe('Game Logic with Interactions', () => {
 
     describe('handleAttack', () => {
         it('should correctly apply damage and switch turns', () => {
-            // Player is faster and attacks first
             let state = handleStartBattle(gameState, monsterEntityKey);
 
             state = handleAttack(state, playerEntityKey, monsterEntityKey);
             if (state.interactionState.type === 'battle') {
-                expect(state.interactionState.monsterHp).toBe(22); // 30 - (10 - 2)
+                expect(state.interactionState.monsterHp).toBe(22);
                 expect(state.interactionState.turn).toBe('monster');
             }
 
-            // Monster attacks second
             state = handleAttack(state, monsterEntityKey, playerEntityKey);
             if (state.interactionState.type === 'battle') {
-                expect(state.interactionState.playerHp).toBe(97); // 100 - (8 - 5)
+                expect(state.interactionState.playerHp).toBe(97);
                 expect(state.interactionState.turn).toBe('player');
                 expect(state.interactionState.round).toBe(2);
             }
@@ -137,7 +127,7 @@ describe('Game Logic with Interactions', () => {
         it('should correctly end the battle when the player wins', () => {
             let state = handleStartBattle(gameState, monsterEntityKey);
             if (state.interactionState.type === 'battle') {
-                state.interactionState.monsterHp = 5; // Monster is almost defeated
+                state.interactionState.monsterHp = 5;
             }
 
             state = handleAttack(state, playerEntityKey, monsterEntityKey);

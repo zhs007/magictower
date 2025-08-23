@@ -18,40 +18,32 @@ function getStatChanges(originalStats: Record<CalculableStats, number>, newStats
 
 export function compareEquipment(character: ICharacter, newEquipment: IEquipment): EquipmentComparisonResult {
     const originalStats = calculateFinalStats(character);
-    const tempChar = _.cloneDeep(character);
 
-    // --- Determine what's currently equipped in the target slots ---
-    const targetSlots = Array.isArray(newEquipment.slot) ? newEquipment.slot : [newEquipment.slot];
-    const oldItems = targetSlots
-        .map(slot => character.equipment[slot])
-        .filter((item): item is IEquipment => !!item);
-
-    const uniqueOldItems = _.uniq(oldItems);
-
-    // --- Handle Special Case: Weapon Swaps (1H vs 2H) ---
     const isNewItemWeapon = !!newEquipment.weaponType;
-    if (isNewItemWeapon) {
-        const rightHandWeapon = character.equipment.RIGHT_HAND?.weaponType ? character.equipment.RIGHT_HAND : undefined;
-        const leftHandWeapon = character.equipment.LEFT_HAND?.weaponType ? character.equipment.LEFT_HAND : undefined;
-        const isCurrentlyTwoHanded = rightHandWeapon && leftHandWeapon && rightHandWeapon.id === leftHandWeapon.id;
+    const rightHandItem = character.equipment[EquipmentSlot.RIGHT_HAND];
+    const leftHandItem = character.equipment[EquipmentSlot.LEFT_HAND];
+    const isCurrentlyTwoHanded = rightHandItem?.weaponType === WeaponType.TWO_HANDED;
 
+    // --- Special Case: Weapon Swaps ---
+    if (isNewItemWeapon || rightHandItem?.weaponType || leftHandItem?.weaponType) {
+        const tempChar = _.cloneDeep(character);
         const isNewItemTwoHanded = newEquipment.weaponType === WeaponType.TWO_HANDED;
 
-        // Case 1: Going from 1H (or two different 1H) to 2H
-        if (isNewItemTwoHanded && (rightHandWeapon || leftHandWeapon) && !isCurrentlyTwoHanded) {
-            const oldWeapons = [rightHandWeapon, leftHandWeapon].filter((i): i is IEquipment => !!i);
-            tempChar.equipment.LEFT_HAND = newEquipment;
-            tempChar.equipment.RIGHT_HAND = newEquipment;
-            const newStats = calculateFinalStats(tempChar);
-            const statChanges = getStatChanges(originalStats, newStats);
-            return { type: 'PROMPT_SWAP', statChanges, oldItems: _.uniq(oldWeapons) };
+        // Case 1: Swapping to a 2H weapon
+        if (isNewItemTwoHanded) {
+             const oldWeapons = [leftHandItem, rightHandItem].filter(item => item?.weaponType) as IEquipment[];
+             tempChar.equipment[EquipmentSlot.LEFT_HAND] = newEquipment;
+             tempChar.equipment[EquipmentSlot.RIGHT_HAND] = newEquipment;
+             const newStats = calculateFinalStats(tempChar);
+             const statChanges = getStatChanges(originalStats, newStats);
+             return { type: 'PROMPT_SWAP', statChanges, oldItems: _.uniq(oldWeapons) };
         }
-        // Case 2: Going from 2H to 1H
+        // Case 2: Swapping from 2H to 1H
         if (!isNewItemTwoHanded && isCurrentlyTwoHanded) {
-            const oldWeapon = character.equipment.RIGHT_HAND!;
+            const oldWeapon = rightHandItem!;
             // Assume new 1H weapon goes to the right hand, freeing the left.
-            delete tempChar.equipment.LEFT_HAND;
-            tempChar.equipment.RIGHT_HAND = newEquipment;
+            delete tempChar.equipment[EquipmentSlot.LEFT_HAND];
+            tempChar.equipment[EquipmentSlot.RIGHT_HAND] = newEquipment;
             const newStats = calculateFinalStats(tempChar);
             const statChanges = getStatChanges(originalStats, newStats);
             return { type: 'PROMPT_SWAP', statChanges, oldItems: [oldWeapon] };
@@ -59,22 +51,19 @@ export function compareEquipment(character: ICharacter, newEquipment: IEquipment
     }
 
     // --- Standard Case: Regular swaps or equipping to empty slots ---
+    const tempChar = _.cloneDeep(character);
+    const targetSlots = Array.isArray(newEquipment.slot) ? newEquipment.slot : [newEquipment.slot];
+    const oldItems = targetSlots
+        .map(slot => character.equipment[slot as keyof typeof character.equipment])
+        .filter((item): item is IEquipment => !!item);
+    const uniqueOldItems = _.uniq(oldItems);
+
     if (uniqueOldItems.length === 0) {
-        return { type: 'AUTO_EQUIP' }; // Empty slot
+        return { type: 'AUTO_EQUIP', oldItem: undefined };
     }
 
-    // Simulate the swap
     for (const slot of targetSlots) {
-        tempChar.equipment[slot] = newEquipment;
-    }
-    // If equipping a 1H weapon, ensure the other hand is not a 2H weapon
-    if (newEquipment.weaponType === WeaponType.ONE_HANDED) {
-         if (targetSlots.includes(EquipmentSlot.RIGHT_HAND) && tempChar.equipment.LEFT_HAND?.weaponType === WeaponType.TWO_HANDED) {
-            delete tempChar.equipment.LEFT_HAND;
-         }
-         if (targetSlots.includes(EquipmentSlot.LEFT_HAND) && tempChar.equipment.RIGHT_HAND?.weaponType === WeaponType.TWO_HANDED) {
-            delete tempChar.equipment.RIGHT_HAND;
-         }
+        tempChar.equipment[slot as keyof typeof tempChar.equipment] = newEquipment;
     }
 
     const newStats = calculateFinalStats(tempChar);
@@ -84,14 +73,14 @@ export function compareEquipment(character: ICharacter, newEquipment: IEquipment
     const decreases = Object.values(statChanges).filter(v => v < 0).length;
 
     if (decreases === 0 && increases > 0) {
-        return { type: 'AUTO_EQUIP', oldItem: uniqueOldItems.length > 1 ? uniqueOldItems : uniqueOldItems[0] }; // Pure upgrade
-    } else if (increases === 0 && decreases > 0) {
-        return { type: 'AUTO_DISCARD' }; // Pure downgrade
-    } else if (increases > 0 && decreases > 0) {
-        return { type: 'PROMPT_SWAP', statChanges, oldItems: uniqueOldItems }; // Mixed results
-    } else {
-        // No effective change, or only zero-value changes. Treat as an upgrade but don't bother swapping.
-        // For simplicity, we can call it a discard, or auto-equip if you want the item to change. Let's say discard.
+        return { type: 'AUTO_EQUIP', oldItem: uniqueOldItems.length > 1 ? uniqueOldItems : uniqueOldItems[0] };
+    }
+    if (increases === 0 && decreases > 0) {
         return { type: 'AUTO_DISCARD' };
     }
+    if (increases > 0 && decreases > 0) {
+        return { type: 'PROMPT_SWAP', statChanges, oldItems: uniqueOldItems };
+    }
+
+    return { type: 'AUTO_DISCARD' };
 }
