@@ -83,7 +83,7 @@ describe('Plan 015: Speed and Equipment Overhaul', () => {
 
         it('should give player the first turn if they are faster', () => {
             const player = createMockPlayer({ speed: 20 });
-            const monster = { id: 'm1', speed: 10, equipment: {} } as IMonster;
+            const monster: IMonster = { id: 'm1', name: 'm', hp: 1, attack: 1, defense: 1, speed: 10, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
             const state = createMockState(player, monster);
             const newState = handleStartBattle(state, 'm1');
             expect(newState.interactionState.type).toBe('battle');
@@ -94,7 +94,7 @@ describe('Plan 015: Speed and Equipment Overhaul', () => {
 
         it('should give monster the first turn if they are faster', () => {
             const player = createMockPlayer({ speed: 5 });
-            const monster = { id: 'm1', speed: 15, equipment: {} } as IMonster;
+            const monster: IMonster = { id: 'm1', name: 'm', hp: 1, attack: 1, defense: 1, speed: 15, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
             const state = createMockState(player, monster);
             const newState = handleStartBattle(state, 'm1');
             expect(newState.interactionState.type).toBe('battle');
@@ -105,7 +105,7 @@ describe('Plan 015: Speed and Equipment Overhaul', () => {
 
         it('should give player the first turn in a speed tie', () => {
             const player = createMockPlayer({ speed: 10 });
-            const monster = { id: 'm1', speed: 10, equipment: {} } as IMonster;
+            const monster: IMonster = { id: 'm1', name: 'm', hp: 1, attack: 1, defense: 1, speed: 10, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
             const state = createMockState(player, monster);
             const newState = handleStartBattle(state, 'm1');
             expect(newState.interactionState.type).toBe('battle');

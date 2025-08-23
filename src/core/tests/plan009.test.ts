@@ -15,8 +15,10 @@ describe('plan009 features', () => {
                 hp: 100,
                 attack: 10,
                 defense: 5,
+                speed: 10,
                 x: 0,
                 y: 0,
+                direction: 'right',
                 equipment: {},
                 backupEquipment: [],
                 buffs: [],
@@ -47,9 +49,9 @@ describe('plan009 features', () => {
 
     it('should use a magic bomb to destroy all slimes', () => {
         baseState.player.specialItems = ['bomb'];
-        const slime1: IMonster = { id: 'slime1', name: 'Slime', hp: 20, attack: 5, defense: 2, x: 1, y: 0, equipment: {}, backupEquipment: [], buffs: [] };
-        const slime2: IMonster = { id: 'slime2', name: 'Slime', hp: 20, attack: 5, defense: 2, x: 1, y: 1, equipment: {}, backupEquipment: [], buffs: [] };
-        const bat: IMonster = { id: 'bat1', name: 'Bat', hp: 15, attack: 6, defense: 1, x: 0, y: 1, equipment: {}, backupEquipment: [], buffs: [] };
+        const slime1: IMonster = { id: 'slime1', name: 'Slime', hp: 20, attack: 5, defense: 2, speed: 5, x: 1, y: 0, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
+        const slime2: IMonster = { id: 'slime2', name: 'Slime', hp: 20, attack: 5, defense: 2, speed: 5, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
+        const bat: IMonster = { id: 'bat1', name: 'Bat', hp: 15, attack: 6, defense: 1, speed: 8, x: 0, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
 
         baseState.monsters = { 'slime1': slime1, 'slime2': slime2, 'bat1': bat };
         baseState.entities['slime1'] = { id: 'slime1', type: 'monster', ...slime1 };
@@ -86,7 +88,7 @@ describe('plan009 features', () => {
     });
 
     it('should open a special door after defeating the required monster', () => {
-        const boss: IMonster = { id: 'boss1', name: 'Boss', hp: 100, attack: 20, defense: 10, x: 1, y: 1, equipment: {}, backupEquipment: [], buffs: [] };
+        const boss: IMonster = { id: 'boss1', name: 'Boss', hp: 100, attack: 20, defense: 10, speed: 12, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
         baseState.monsters['boss_1'] = boss;
         baseState.entities['boss_1'] = { id: 'boss1', type: 'monster', ...boss };
 
