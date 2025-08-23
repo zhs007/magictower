@@ -182,10 +182,14 @@ export class Renderer {
 
         const tl = gsap.timeline({ onComplete });
         const duration = 0.3;
-        const jumpHeight = TILE_SIZE / 2;
+        let jumpHeight = TILE_SIZE / 2;
 
         if (player.x === item.x) {
             // Vertical jump
+            if (player.y > item.y) {
+                // Player is jumping up one tile, use a smaller hop
+                jumpHeight = TILE_SIZE / 4;
+            }
             tl.to(playerSprite, { y: playerSprite.y - jumpHeight, duration: duration / 2, ease: 'power1.out' })
               .to(playerSprite, { y: targetY, duration: duration / 2, ease: 'power1.in' });
         } else {
