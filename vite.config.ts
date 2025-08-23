@@ -10,5 +10,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true, // Use to have global api like expect, it, etc.
+    onConsoleLog: () => true,
   },
 });

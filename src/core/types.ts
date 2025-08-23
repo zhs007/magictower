@@ -23,8 +23,18 @@ export enum WeaponType {
 export interface IEquipment extends IBaseObject {
     slot: EquipmentSlot | EquipmentSlot[]; // A single slot, or multiple for things like two-handed weapons
     weaponType?: WeaponType;
-    attackBonus?: number;
-    defenseBonus?: number;
+    stat_mods?: {
+        hp?: number;
+        attack?: number;
+        defense?: number;
+        speed?: number;
+    };
+    percent_mods?: {
+        hp?: number;
+        attack?: number;
+        defense?: number;
+        speed?: number;
+    };
 }
 
 // Defines when a buff can be triggered.
@@ -48,6 +58,7 @@ export interface ICharacter extends IBaseObject {
     hp: number;
     attack: number;
     defense: number;
+    speed: number;
     x: number;
     y: number;
     direction: 'left' | 'right';
@@ -131,6 +142,7 @@ export interface GameState {
 export type Action =
     | { type: 'MOVE'; payload: { dx: number; dy: number } }
     | { type: 'PICK_UP_ITEM'; payload: { itemId: string } }
+    | { type: 'PICK_UP_EQUIPMENT'; payload: { equipmentId: string } }
     | { type: 'OPEN_DOOR'; payload: { doorId: string } }
     | { type: 'START_BATTLE'; payload: { monsterId: string } }
     | { type: 'ATTACK'; payload: { attackerId: string, defenderId: string } }

@@ -107,12 +107,12 @@ describe('Renderer', () => {
 
 function createMockGameState(): GameState {
     const player: IPlayer = {
-        id: 'player', name: 'Player', hp: 100, attack: 10, defense: 5, x: 1, y: 1,
-        equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 }
+        id: 'player', name: 'Player', hp: 100, attack: 10, defense: 5, speed: 10, x: 1, y: 1,
+        direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 }
     };
     const monster: IMonster = {
-        id: 'monster_green_slime', name: 'Green Slime', hp: 10, attack: 3, defense: 1, x: 0, y: 1,
-        equipment: {}, backupEquipment: [], buffs: []
+        id: 'monster_green_slime', name: 'Green Slime', hp: 10, attack: 3, defense: 1, speed: 5, x: 0, y: 1,
+        direction: 'left', equipment: {}, backupEquipment: [], buffs: []
     };
     const item: IItem = {
         id: 'item_yellow_key', name: 'Yellow Key', type: 'key', color: 'yellow'

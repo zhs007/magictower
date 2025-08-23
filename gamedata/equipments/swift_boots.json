@@ -1,6 +1,12 @@
 {
-  "id": "eq_swift_boots",
-  "name": "Swift Boots",
-  "slot": "feet",
-  "defenseBonus": 30
+    "id": "swift_boots",
+    "name": "Swift Boots",
+    "slot": "FEET",
+    "stat_mods": {
+        "defense": 5,
+        "speed": 15
+    },
+    "percent_mods": {
+        "attack": 0.1
+    }
 }

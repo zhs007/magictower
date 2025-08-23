@@ -1,7 +1,10 @@
 {
-  "id": "eq_longbow",
-  "name": "Longbow",
-  "slot": ["left_hand", "right_hand"],
-  "weaponType": "two_handed",
-  "attackBonus": 35
+    "id": "longbow",
+    "name": "Longbow",
+    "slot": ["LEFT_HAND", "RIGHT_HAND"],
+    "weaponType": "TWO_HANDED",
+    "stat_mods": {
+        "attack": 20,
+        "speed": -8
+    }
 }

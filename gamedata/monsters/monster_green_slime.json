@@ -1,8 +1,14 @@
 {
-  "id": "monster_green_slime",
-  "name": "Green Slime",
-  "hp": 10,
-  "attack": 3,
-  "defense": 1,
-  "gold": 1
+    "id": "green_slime",
+    "name": "Green Slime",
+    "hp": 30,
+    "attack": 10,
+    "defense": 5,
+    "speed": 5,
+    "x": 0,
+    "y": 0,
+    "direction": "left",
+    "equipment": {},
+    "backupEquipment": [],
+    "buffs": []
 }

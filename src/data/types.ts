@@ -10,6 +10,7 @@ export interface MonsterData {
     hp: number;
     attack: number;
     defense: number;
+    speed: number;
     gold: number;
     assetId?: string;
 }
@@ -32,8 +33,18 @@ export interface EquipmentData {
     name: string;
     slot: EquipmentSlot | EquipmentSlot[];
     weaponType?: WeaponType;
-    attackBonus?: number;
-    defenseBonus?: number;
+    stat_mods?: {
+        hp?: number;
+        attack?: number;
+        defense?: number;
+        speed?: number;
+    };
+    percent_mods?: {
+        hp?: number;
+        attack?: number;
+        defense?: number;
+        speed?: number;
+    };
     assetId?: string;
 }
 
