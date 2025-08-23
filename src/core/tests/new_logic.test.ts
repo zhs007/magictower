@@ -41,7 +41,14 @@ describe('Game Logic with Interactions', () => {
     // Test Item Pickup
     describe('handleMove (Item Interaction)', () => {
         it('should set interactionState to "item_pickup" when moving onto an item', () => {
-            const newState = handleMove(gameState, -1, 0);
+            // Player starts at (2,1) facing right. Item is at (1,1).
+            // First move should only turn the player left.
+            const turnedState = handleMove(gameState, -1, 0);
+            expect(turnedState.player.direction).toBe('left');
+            expect(turnedState.interactionState.type).toBe('none');
+
+            // Second move should trigger the interaction.
+            const newState = handleMove(turnedState, -1, 0);
             expect(newState.interactionState.type).toBe('item_pickup');
             if (newState.interactionState.type === 'item_pickup') {
                 expect(newState.interactionState.itemId).toBe(itemEntityKey);
@@ -67,7 +74,14 @@ describe('Game Logic with Interactions', () => {
     // Test Combat
     describe('handleMove (Combat Interaction)', () => {
         it('should set interactionState to "battle" when moving onto a monster', () => {
-            const newState = handleMove(gameState, 1, 0);
+            // Player starts at (0,1) facing left. Monster is at (1,1).
+            // First move should only turn the player right.
+            const turnedState = handleMove(gameState, 1, 0);
+            expect(turnedState.player.direction).toBe('right');
+            expect(turnedState.interactionState.type).toBe('none');
+
+            // Second move should trigger the battle.
+            const newState = handleMove(turnedState, 1, 0);
             expect(newState.interactionState.type).toBe('battle');
             if (newState.interactionState.type === 'battle') {
                 expect(newState.interactionState.monsterId).toBe(monsterEntityKey);

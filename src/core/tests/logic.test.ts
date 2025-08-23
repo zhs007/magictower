@@ -63,6 +63,9 @@ describe('handleMove', () => {
         // Player is at x=2, monster is at x=1. Player moves left to engage. Monster should turn right.
         gameState.player.x = 2;
         gameState.entities['player_start_0_0'].x = 2;
+        gameState.player.direction = 'left'; // Player must be facing the direction of movement
+        gameState.entities['player_start_0_0'].direction = 'left';
+
         const monster = { id: 'm1', name: 'M', hp: 10, attack: 1, defense: 1, x: 1, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
         gameState.monsters = { 'm1_key': monster };
         gameState.entities['m1_key'] = { ...monster, type: 'monster' };
@@ -73,20 +76,48 @@ describe('handleMove', () => {
         expect(newState.monsters['m1_key'].direction).toBe('right');
     });
 
-    it('should change player direction even when moving into a wall', () => {
-        // Player is at (1,1) facing right, wall is at (2,1)
-        gameState.map[1][2] = 1;
+    it('should only turn player on first press in a new direction', () => {
+        // Player is at (1,1) facing left.
         gameState.player.direction = 'left';
 
-        // Attempt to move right into the wall
+        // Attempt to move right.
         const newState = handleMove(gameState, 1, 0);
 
-        // Player should not have moved
+        // Player should not have moved.
         expect(newState.player.x).toBe(1);
         expect(newState.player.y).toBe(1);
 
-        // Player should have turned right
+        // Player should have turned right.
         expect(newState.player.direction).toBe('right');
+    });
+
+    it('should move player on second press in the same direction', () => {
+        // Player is at (1,1) facing right.
+        gameState.player.direction = 'right';
+
+        // Attempt to move right.
+        const newState = handleMove(gameState, 1, 0);
+
+        // Player should have moved.
+        expect(newState.player.x).toBe(2);
+        expect(newState.player.y).toBe(1);
+        expect(newState.player.direction).toBe('right');
+    });
+
+    it('should turn, then do nothing when moving into a wall', () => {
+        // Player is at (1,1) facing left, wall is at (2,1)
+        gameState.map[1][2] = 1;
+        gameState.player.direction = 'left';
+
+        // First press: turn right
+        const turnedState = handleMove(gameState, 1, 0);
+        expect(turnedState.player.direction).toBe('right');
+        expect(turnedState.player.x).toBe(1); // Did not move
+
+        // Second press: attempt to move into wall
+        const wallState = handleMove(turnedState, 1, 0);
+        expect(wallState.player.x).toBe(1); // Still did not move
+        expect(wallState.player.direction).toBe('right'); // Direction is unchanged
     });
 });
 
