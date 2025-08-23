@@ -26,7 +26,14 @@ vi.mock('pixi.js', async () => {
             anchor: { set: vi.fn() },
             visible: true,
         })),
-        Text: vi.fn(() => ({ __type: 'Text', x: 0, y: 0, anchor: { set: vi.fn() } })),
+        Text: vi.fn(() => ({
+            __type: 'Text',
+            x: 0, y: 0,
+            anchor: { set: vi.fn() },
+            position: { set: vi.fn() },
+            text: '',
+            visible: true,
+        })),
     };
 });
 

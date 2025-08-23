@@ -5,82 +5,71 @@ import { GameState } from '../../core/types';
 // Mock PIXI.js classes
 vi.mock('pixi.js', async () => {
     const original = await vi.importActual('pixi.js');
+    const mockText = () => ({
+        x: 0, y: 0, text: '', visible: true,
+        position: { set: vi.fn() },
+    });
     return {
         ...original,
         Container: class {
-            constructor() {
-                this.x = 0;
-                this.y = 0;
-            }
             addChild = vi.fn();
-            removeChild = vi.fn();
         },
-        Text: vi.fn(() => ({
-            x: 0,
-            y: 0,
-            text: '',
-            width: 100, // Mock width
-            addChild: vi.fn(),
-        })),
+        Text: vi.fn(mockText),
         Graphics: vi.fn(() => ({
+            rect: vi.fn().mockReturnThis(),
             fill: vi.fn().mockReturnThis(),
-            drawRect: vi.fn().mockReturnThis(),
-            addChild: vi.fn(),
         })),
-        TextStyle: vi.fn(),
     };
 });
 
 describe('HUD', () => {
-    it('should update all text fields based on game state', () => {
-        // 1. Arrange
+    it('should display player stats and hide monster stats when not in battle', () => {
         const hud = new HUD();
         const mockState: GameState = {
-            currentFloor: 5,
             player: {
-                hp: 85,
-                attack: 15,
-                defense: 7,
-                keys: { yellow: 2, blue: 1, red: 0 },
-                // Other IPlayer properties are not needed for this test
-                id: 'player', name: 'tester', x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: []
+                hp: 100, attack: 10, defense: 5,
+                keys: { yellow: 1, blue: 2, red: 3 },
+                id: 'p1', name: 'player', x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: []
             },
-            // Other GameState properties are not needed for this test
-            map: [], entities: {}, monsters: {}, items: {}, equipments: {}, doors: {}
-        };
+            interactionState: { type: 'none' },
+        } as GameState;
 
-        // 2. Act
         hud.update(mockState);
 
-        // 3. Assert
-        expect(hud.floorText.text).toBe('5');
-        expect(hud.hpText.text).toBe('85');
-        expect(hud.atkText.text).toBe('15');
-        expect(hud.defText.text).toBe('7');
-        expect(hud.yellowKeyText.text).toBe('2');
-        expect(hud.blueKeyText.text).toBe('1');
-        expect(hud.redKeyText.text).toBe('0');
+        expect(hud.playerStatsText.text).toBe('勇者: HP 100  ATK 10  DEF 5');
+        expect(hud.keysText.text).toBe('钥匙: 黄 1  蓝 2  红 3');
+        expect(hud.monsterStatsText.visible).toBe(false);
     });
 
-    it('should handle missing keys property gracefully', () => {
-        // 1. Arrange
+    it('should display all stats including monster stats during battle', () => {
         const hud = new HUD();
-        const mockState = {
-            currentFloor: 1,
+        const mockState: GameState = {
             player: {
-                hp: 100,
-                attack: 10,
-                defense: 5,
-                // no 'keys' property
+                hp: 100, attack: 10, defense: 5,
+                keys: { yellow: 1, blue: 2, red: 3 },
+                id: 'p1', name: 'player', x: 0, y: 0, equipment: {}, backupEquipment: [], buffs: []
             },
-        } as GameState; // Cast to bypass TypeScript check for the test
+            monsters: {
+                'm1': {
+                    id: 'm1', name: 'Slime', hp: 50, attack: 8, defense: 2,
+                    x: 1, y: 1, equipment: {}, backupEquipment: [], buffs: []
+                }
+            },
+            interactionState: {
+                type: 'battle',
+                monsterId: 'm1',
+                playerHp: 88,
+                monsterHp: 42,
+                round: 2,
+                turn: 'player'
+            },
+        } as GameState;
 
-        // 2. Act
         hud.update(mockState);
 
-        // 3. Assert
-        expect(hud.yellowKeyText.text).toBe('0');
-        expect(hud.blueKeyText.text).toBe('0');
-        expect(hud.redKeyText.text).toBe('0');
+        expect(hud.playerStatsText.text).toBe('勇者: HP 88  ATK 10  DEF 5');
+        expect(hud.keysText.text).toBe('钥匙: 黄 1  蓝 2  红 3');
+        expect(hud.monsterStatsText.visible).toBe(true);
+        expect(hud.monsterStatsText.text).toBe('Slime: HP 42  ATK 8  DEF 2');
     });
 });
