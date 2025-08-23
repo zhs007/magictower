@@ -140,6 +140,7 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     }
 
     eventManager.dispatch('HP_CHANGED', hpChangedPayload);
+    eventManager.dispatch('DEBUG_FLASH_RED'); // DEBUG
     AudioManager.getInstance().playSound('attack');
 
     if (newState.interactionState.playerHp <= 0 || newState.interactionState.monsterHp <= 0) {

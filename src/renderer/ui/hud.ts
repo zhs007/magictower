@@ -36,11 +36,13 @@ export class HUD extends Container {
     private hpChangeHandler = (payload: any) => this.handleHpChange(payload);
     private keysChangeHandler = (payload: any) => this.handleKeysChange(payload);
     private battleEndHandler = (payload: any) => this.handleBattleEnd(payload);
+    private debugFlashHandler = () => this.handleDebugFlash();
 
     private registerListeners(): void {
         eventManager.on('HP_CHANGED', this.hpChangeHandler);
         eventManager.on('KEYS_CHANGED', this.keysChangeHandler);
         eventManager.on('BATTLE_ENDED', this.battleEndHandler);
+        eventManager.on('DEBUG_FLASH_RED', this.debugFlashHandler);
     }
 
     private createText(content: string, x: number, y: number): Text {
@@ -98,11 +100,18 @@ export class HUD extends Container {
         }
     }
 
+    private handleDebugFlash(): void {
+        // Change background to red for debugging
+        this.background.clear();
+        this.background.rect(0, 0, HUD_WIDTH, HUD_HEIGHT).fill(0xff0000);
+    }
+
     public destroy(options?: any): void {
         // Unregister listeners to prevent memory leaks
         eventManager.off('HP_CHANGED', this.hpChangeHandler);
         eventManager.off('KEYS_CHANGED', this.keysChangeHandler);
         eventManager.off('BATTLE_ENDED', this.battleEndHandler);
+        eventManager.off('DEBUG_FLASH_RED', this.debugFlashHandler);
         super.destroy(options);
     }
 }
