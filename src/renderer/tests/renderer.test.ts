@@ -13,6 +13,7 @@ vi.mock('pixi.js', async () => {
             y = 0;
             children: any[] = [];
             addChild = vi.fn((child) => this.children.push(child));
+            removeChild = vi.fn();
             removeChildren = vi.fn(() => { this.children = []; });
         },
         Assets: {

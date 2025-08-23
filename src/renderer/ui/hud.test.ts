@@ -6,14 +6,15 @@ import { eventManager } from '../../core/event-manager';
 // Mock PIXI.js classes
 vi.mock('pixi.js', async () => {
     const original = await vi.importActual('pixi.js');
-    const mockText = () => ({
-        x: 0, y: 0, text: '', visible: true,
+    const mockText = (config: { text: string }) => ({
+        x: 0, y: 0, text: config.text || '', visible: true,
         position: { set: vi.fn() },
     });
     return {
         ...original,
         Container: class {
             addChild = vi.fn();
+            removeChild = vi.fn();
             destroy() {} // Make it a real empty function
         },
         Text: vi.fn(mockText),
@@ -59,7 +60,7 @@ describe('HUD', () => {
     });
 
     it('should update HP on HP_CHANGED event', () => {
-        hud['handleHpChange']({ entityId: 'player', newHp: 80 });
+        hud['handleHpChange']({ entityId: 'player', newHp: 80, attack: 10, defense: 5 });
         expect(hud.playerStatsText.text).toBe('勇者: HP 80  ATK 10  DEF 5');
     });
 
@@ -69,7 +70,7 @@ describe('HUD', () => {
     });
 
     it('should hide monster stats and update player HP on BATTLE_ENDED event', () => {
-        hud['handleBattleEnd']({ finalPlayerHp: 75 });
+        hud['handleBattleEnd']({ finalPlayerHp: 75, finalPlayerAtk: 10, finalPlayerDef: 5 });
         expect(hud.monsterStatsText.visible).toBe(false);
         expect(hud.playerStatsText.text).toBe('勇者: HP 75  ATK 10  DEF 5');
     });

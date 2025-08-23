@@ -87,7 +87,8 @@ function getCharacterTotalStats(character: ICharacter): { totalAttack: number; t
 export function calculateDamage(attacker: ICharacter, defender: ICharacter): number {
     const attackerStats = getCharacterTotalStats(attacker);
     const defenderStats = getCharacterTotalStats(defender);
-    return Math.max(0, attackerStats.totalAttack - defenderStats.totalDefense);
+    const damage = attackerStats.totalAttack - defenderStats.totalDefense;
+    return damage <= 0 ? 1 : damage;
 }
 
 export function handleStartBattle(state: GameState, monsterEntityKey: string): GameState {
