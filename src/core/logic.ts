@@ -1,5 +1,6 @@
 import { GameState, IPlayer, IMonster, ICharacter, EquipmentSlot, Action } from './types';
 import * as _ from 'lodash';
+import { AudioManager } from './audio-manager';
 
 const MAX_COMBAT_ROUNDS = 8;
 
@@ -35,6 +36,34 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         if (playerEntityKey) {
             newState.entities[playerEntityKey].x = newX;
             newState.entities[playerEntityKey].y = newY;
+        }
+    }
+
+    return newState;
+}
+
+export function handleUseBomb(state: GameState, monsterType: string): GameState {
+    const newState = _.cloneDeep(state);
+
+    // Find and remove the bomb from the player's special items
+    const bombIndex = newState.player.specialItems?.indexOf('bomb');
+    if (bombIndex === undefined || bombIndex === -1) {
+        return state; // No bomb to use
+    }
+    newState.player.specialItems?.splice(bombIndex, 1);
+
+    // Find all monsters of the specified type and remove them
+    const monstersToRemove = Object.keys(newState.monsters).filter(
+        (monsterId) => newState.monsters[monsterId].name === monsterType
+    );
+
+    for (const monsterId of monstersToRemove) {
+        delete newState.monsters[monsterId];
+        const entityKey = Object.keys(newState.entities).find(
+            (k) => newState.entities[k].id === monsterId
+        );
+        if (entityKey) {
+            delete newState.entities[entityKey];
         }
     }
 
@@ -104,6 +133,8 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
         newState.interactionState.monsterHp -= damage;
     }
 
+    AudioManager.getInstance().playSound('attack');
+
     if (newState.interactionState.playerHp <= 0 || newState.interactionState.monsterHp <= 0) {
         newState.interactionState.turn = 'battle_end';
     } else {
@@ -130,8 +161,21 @@ export function handleEndBattle(state: GameState, winnerId: string | null, reaso
 
     if (reason === 'hp_depleted' && winnerId === playerEntityKey) {
         newState.player.hp = newState.interactionState.playerHp;
+        const defeatedMonsterId = newState.monsters[monsterEntityKey].id;
         delete newState.entities[monsterEntityKey];
         delete newState.monsters[monsterEntityKey];
+
+        // Check for special door conditions
+        for (const doorId in newState.doors) {
+            const door = newState.doors[doorId];
+            if (door.condition?.type === 'DEFEAT_MONSTER' && door.condition.monsterId === defeatedMonsterId) {
+                const doorEntityKey = Object.keys(newState.entities).find(k => k === doorId);
+                if (doorEntityKey) {
+                    delete newState.entities[doorEntityKey];
+                }
+                delete newState.doors[doorId];
+            }
+        }
     } else if (reason === 'hp_depleted' && winnerId === monsterEntityKey) {
         newState.player.hp = 0;
     }
@@ -142,25 +186,57 @@ export function handleEndBattle(state: GameState, winnerId: string | null, reaso
 
 export function handlePickupItem(state: GameState, itemEntityKey: string): GameState {
     const newState = _.cloneDeep(state);
-    const item = newState.entities[itemEntityKey];
+    const item = newState.items[itemEntityKey];
     if (!item) return state;
 
-    newState.player.x = item.x;
-    newState.player.y = item.y;
+    const itemEntity = newState.entities[itemEntityKey];
+    newState.player.x = itemEntity.x;
+    newState.player.y = itemEntity.y;
     const playerEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].type === 'player_start');
     if (playerEntityKey) {
-        newState.entities[playerEntityKey].x = item.x;
-        newState.entities[playerEntityKey].y = item.y;
+        newState.entities[playerEntityKey].x = itemEntity.x;
+        newState.entities[playerEntityKey].y = itemEntity.y;
     }
 
-    switch (item.id) {
-        case 'item_yellow_key':
+    if (item.type === 'key') {
+        if (item.color === 'yellow') {
             newState.player.keys.yellow++;
-            break;
+        }
+    } else if (item.type === 'special') {
+        switch (item.specialType) {
+            case 'monster_manual':
+                // This is a permanent unlock, so we'll need a way to store it.
+                // For now, let's assume a flag on the player object.
+                newState.player.hasMonsterManual = true;
+                break;
+            case 'snowflake':
+                newState.player.buffs.push({
+                    id: 'first_strike',
+                    name: 'First Strike',
+                    duration: -1,
+                    charges: 2,
+                    triggers: ['on_battle_start']
+                });
+                break;
+            case 'cross':
+                newState.player.attack += 10;
+                newState.player.defense += 10;
+                break;
+            case 'bomb':
+                // Add to inventory, assuming an inventory system exists.
+                // For now, let's add it to a simple array on the player.
+                if (!newState.player.specialItems) {
+                    newState.player.specialItems = [];
+                }
+                newState.player.specialItems.push('bomb');
+                break;
+        }
     }
 
     delete newState.entities[itemEntityKey];
     delete newState.items[itemEntityKey];
+
+    AudioManager.getInstance().playSound('pickup');
 
     newState.interactionState = { type: 'none' };
     return newState;
@@ -171,11 +247,13 @@ export function handleOpenDoor(state: GameState, doorId: string): GameState {
     const door = newState.doors[doorId];
     if (!door) return state;
 
-    delete newState.doors[doorId];
-    const doorEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].id === doorId);
+    const doorEntityKey = Object.keys(newState.entities).find(k => k === doorId);
     if (doorEntityKey) {
         delete newState.entities[doorEntityKey];
     }
+    delete newState.doors[doorId];
+
+    AudioManager.getInstance().playSound('door');
 
     return newState;
 }

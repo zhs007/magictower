@@ -1,6 +1,7 @@
 import './style.css';
 import { Application, Ticker } from 'pixi.js';
 import { SceneManager } from './scenes/scene-manager';
+import { AudioManager } from './core/audio-manager';
 
 /**
  * The main entry point of the application.
@@ -32,6 +33,10 @@ async function main() {
     Ticker.shared.add((ticker) => {
         sceneManager.update(ticker.deltaTime);
     });
+
+    // Initialize the audio manager and load sounds
+    const audioManager = AudioManager.getInstance();
+    audioManager.loadSounds();
 
     // Go to the start scene
     sceneManager.goTo('start');
