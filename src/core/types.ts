@@ -135,8 +135,7 @@ export type Action =
     | { type: 'START_BATTLE'; payload: { monsterId: string } }
     | { type: 'ATTACK'; payload: { attackerId: string, defenderId: string } }
     | { type: 'END_BATTLE'; payload: { winnerId: string | null, reason: 'hp_depleted' | 'timeout' } }
-    | { type: 'USE_BOMB'; payload: { monsterType: string } }
-    | { type: 'CHANGE_DIRECTION'; payload: { entityId: string, direction: 'left' | 'right' } };
+    | { type: 'USE_BOMB'; payload: { monsterType: string } };
 
 export interface SaveData {
     timestamp: number;

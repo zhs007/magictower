@@ -72,6 +72,22 @@ describe('handleMove', () => {
         expect(newState.interactionState.type).toBe('battle');
         expect(newState.monsters['m1_key'].direction).toBe('right');
     });
+
+    it('should change player direction even when moving into a wall', () => {
+        // Player is at (1,1) facing right, wall is at (2,1)
+        gameState.map[1][2] = 1;
+        gameState.player.direction = 'left';
+
+        // Attempt to move right into the wall
+        const newState = handleMove(gameState, 1, 0);
+
+        // Player should not have moved
+        expect(newState.player.x).toBe(1);
+        expect(newState.player.y).toBe(1);
+
+        // Player should have turned right
+        expect(newState.player.direction).toBe('right');
+    });
 });
 
 describe('handleOpenDoor', () => {

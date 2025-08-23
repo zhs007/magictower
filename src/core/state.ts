@@ -1,5 +1,5 @@
 import { GameState, Action, IPlayer, IMonster, IItem } from './types';
-import { handleMove, handlePickupItem, handleOpenDoor, handleStartBattle, handleAttack, handleEndBattle, handleChangeDirection } from './logic';
+import { handleMove, handlePickupItem, handleOpenDoor, handleStartBattle, handleAttack, handleEndBattle } from './logic';
 import { dataManager } from '../data/data-manager';
 
 export class GameStateManager {
@@ -110,9 +110,6 @@ export class GameStateManager {
                 break;
             case 'END_BATTLE':
                 newState = handleEndBattle(this.currentState, action.payload.winnerId, action.payload.reason);
-                break;
-            case 'CHANGE_DIRECTION':
-                newState = handleChangeDirection(this.currentState, action.payload.entityId, action.payload.direction);
                 break;
             default:
                 newState = this.currentState;

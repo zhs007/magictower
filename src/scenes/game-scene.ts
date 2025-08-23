@@ -66,28 +66,13 @@ export class GameScene extends BaseScene {
     }
 
     private processInteraction(state: GameState): void {
-        if (this.isAnimating || !this.gameStateManager) {
+        if (this.isAnimating) {
             return;
         }
 
         switch (state.interactionState.type) {
             case 'item_pickup':
-                const player = state.entities[this.playerEntityKey!];
-                const item = state.entities[state.interactionState.itemId];
-                if (!player || !item) {
-                    this.handleItemPickup(state); // Proceed anyway
-                    return;
-                }
-
-                const requiredDirection = item.x > player.x ? 'right' : (item.x < player.x ? 'left' : player.direction);
-                if (player.direction !== requiredDirection) {
-                    this.gameStateManager.dispatch({ type: 'CHANGE_DIRECTION', payload: { entityId: this.playerEntityKey!, direction: requiredDirection } });
-                    const newState = this.gameStateManager.getState();
-                    this.renderer.render(newState);
-                    setTimeout(() => this.handleItemPickup(newState), 50); // Animate after a short delay
-                } else {
-                    this.handleItemPickup(state);
-                }
+                this.handleItemPickup(state);
                 break;
             case 'battle':
                 this.handleBattle(state);
