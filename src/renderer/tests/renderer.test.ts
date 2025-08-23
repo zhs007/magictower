@@ -70,10 +70,10 @@ describe('Renderer', () => {
         const gameState = createMockGameState();
         renderer.initialize(gameState);
 
-        // 4 map tiles
-        expect(renderer.mapContainer.addChild).toHaveBeenCalledTimes(4);
-        // 3 entities
-        expect(renderer.entityContainer.addChild).toHaveBeenCalledTimes(3);
+        // 4 floor tiles are always added
+        expect(renderer['floorContainer'].addChild).toHaveBeenCalledTimes(4);
+        // 1 wall + 3 entities are added to the main container
+        expect(renderer['mainContainer'].addChild).toHaveBeenCalledTimes(4);
 
         const PIXI = await import('pixi.js');
         expect(PIXI.Assets.get).toHaveBeenCalledWith('wall');
@@ -88,17 +88,19 @@ describe('Renderer', () => {
         renderer.initialize(gameState); // Use initialize to create sprites
 
         const TILE_SIZE = 65;
-        const addedSprites = renderer.entityContainer.children;
+        const addedSprites = renderer['mainContainer'].children;
 
+        // Note: The mock player from createMockGameState is at x:1, y:1
         const playerSprite = addedSprites.find(s => s.texture.texture === 'player');
         expect(playerSprite).toBeDefined();
         expect(playerSprite.x).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
-        expect(playerSprite.y).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
+        expect(playerSprite.y).toBe((1 + 1) * TILE_SIZE); // New Y calculation
 
+        // Note: The mock monster is at x:0, y:1
         const monsterSprite = addedSprites.find(s => s.texture.texture === 'monster_green_slime');
         expect(monsterSprite).toBeDefined();
         expect(monsterSprite.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
-        expect(monsterSprite.y).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
+        expect(monsterSprite.y).toBe((1 + 1) * TILE_SIZE); // New Y calculation
     });
 });
 

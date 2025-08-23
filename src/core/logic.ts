@@ -14,6 +14,12 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         return state;
     }
 
+    if (dx > 0) {
+        newState.player.direction = 'right';
+    } else if (dx < 0) {
+        newState.player.direction = 'left';
+    }
+
     const destinationEntityKey = Object.keys(newState.entities).find(k => newState.entities[k].x === newX && newState.entities[k].y === newY);
 
     if (destinationEntityKey) {
