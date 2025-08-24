@@ -56,9 +56,7 @@ describe('Renderer plan018 tests', () => {
     it('should fall back to old logic when tileAssets is not provided', () => {
         const gameState: GameState = {
             currentFloor: 1,
-            map: [
-                [1, 0],
-            ],
+            map: [[1, 0]],
             player: {} as any,
             entities: {},
             monsters: {},

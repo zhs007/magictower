@@ -1,4 +1,4 @@
-import { Container, Assets, Sprite, Text } from 'pixi.js';
+import { Container, Assets, Sprite, Text, Texture } from 'pixi.js';
 import { GameState } from '../core/types';
 import { dataManager } from '../data/data-manager';
 import { HUD } from './ui/hud';
