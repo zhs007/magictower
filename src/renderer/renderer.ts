@@ -3,6 +3,7 @@ import { GameState } from '../core/types';
 import { dataManager } from '../data/data-manager';
 import { HUD } from './ui/hud';
 import { gsap } from 'gsap';
+import { FloatingTextManager } from './ui/floating-text-manager';
 
 const TILE_SIZE = 65;
 const MAP_WIDTH_TILES = 16;
@@ -14,6 +15,7 @@ export class Renderer {
     private mainContainer: Container;
     private topLayerContainer: Container;
     private hud: HUD;
+    private floatingTextManager: FloatingTextManager;
 
     private entitySprites: Map<string, Sprite> = new Map();
 
@@ -23,6 +25,7 @@ export class Renderer {
         this.mainContainer = new Container();
         this.topLayerContainer = new Container();
         this.hud = new HUD();
+        this.floatingTextManager = new FloatingTextManager(this.topLayerContainer);
 
         this.mainContainer.sortableChildren = true;
         this.topLayerContainer.sortableChildren = true;
@@ -324,32 +327,22 @@ export class Renderer {
             '-=0.1'
         );
 
-        const damageText = new Text({
-            text: `-${damage}`,
-            style: {
-                fontSize: 24,
-                fill: 'red',
-                fontWeight: 'bold',
-            },
+        this.floatingTextManager.add(`-${damage}`, 'DAMAGE', {
+            x: defenderSprite.x,
+            y: defenderSprite.y - TILE_SIZE,
         });
-        damageText.x = defenderSprite.x;
-        damageText.y = defenderSprite.y - TILE_SIZE; // Adjusted for new sprite height
-        damageText.anchor.set(0.5);
-        this.topLayerContainer.addChild(damageText); // Add to top layer
+    }
 
-        tl.to(
-            damageText,
-            {
-                y: damageText.y - 40,
-                alpha: 0,
-                duration: 1,
-                ease: 'power1.out',
-                onComplete: () => {
-                    this.topLayerContainer.removeChild(damageText);
-                },
-            },
-            '-=0.1'
+    public showPlayerFloatingText(text: string, type: 'ITEM_GAIN' | 'STAT_INCREASE' | 'HEAL'): void {
+        const playerSprite = Array.from(this.entitySprites.values()).find(
+            (s: any) => s.texture.texture === 'player'
         );
+        if (playerSprite) {
+            this.floatingTextManager.add(text, type, {
+                x: playerSprite.x,
+                y: playerSprite.y - TILE_SIZE,
+            });
+        }
     }
 
     public moveToTopLayer(sprite: Sprite): void {

@@ -128,4 +128,36 @@
 - **gamedata 优先字段**：`gamedata` 中新增 `assetId` 字段，渲染与校验逻辑优先使用 `assetId`；若缺失则回退到 `id` 字段。
 - **map 贴图映射**: `mapdata` 中的 JSON 文件现在包含 `tileAssets` 字段，该字段将 `layout` 中的数字直接映射到 `assetId`。这取代了旧的基于别名的回退逻辑，使得地图渲染更加明确和可维护。
 
+## 11. 浮动文字系统 (Floating Text System)
+
+为了统一处理游戏中的浮动文字效果（如伤害、治疗、道具拾取等），项目引入了 `FloatingTextManager`。
+
+### 11.1 设计目标
+- **集中管理**: 所有浮动文字的创建和动画都由该管理器负责。
+- **队列机制**: 自动处理多个文字同时触发的情况，按顺序播放动画，避免重叠。
+- **样式统一**: 通过预设的类型来控制文字的样式（颜色、大小等），方便统一修改和扩展。
+
+### 11.2 如何使用
+
+`FloatingTextManager` 已在 `Renderer` 中实例化。在游戏的其他部分（如 `GameScene`）中，可以通过 `Renderer` 的公共方法来调用。
+
+**主要方法**:
+1.  `renderer.showPlayerFloatingText(text, type)`: 在玩家头顶显示浮动文字。
+2.  `renderer.floatingTextManager.add(text, type, position)`: 在指定位置显示浮动文字（主要用于对敌人造成伤害等情况）。
+
+**类型 (`FloatingTextType`)**:
+-   `'DAMAGE'`: 红色，用于伤害数值。
+-   `'HEAL'`: 绿色，用于恢复效果。
+-   `'ITEM_GAIN'`: 黄色，用于道具/钥匙获取。
+-   `'STAT_INCREASE'`: 橙色，用于永久属性提升。
+
+**示例: 在 `GameScene` 中显示道具获取信息**
+```typescript
+// 当玩家拾取道具后
+const item = state.items[itemId];
+if (item) {
+    this.renderer.showPlayerFloatingText(`+1 ${item.name}`, 'ITEM_GAIN');
+}
+```
+
 在开始下一个任务之前，请验证当前代码库的稳定性和功能完整性。
