@@ -56,8 +56,12 @@ export class FloatingTextManager {
     }
 
     private createAndAnimateText(request: FloatingTextRequest): void {
+        console.log(`[FloatingTextManager] Processing request for entityId: ${request.entityId}`);
+        console.log(`[FloatingTextManager] Available sprite keys:`, Array.from(this.entitySprites.keys()));
         const sprite = this.entitySprites.get(request.entityId);
+
         if (!sprite) {
+            console.error(`[FloatingTextManager] Sprite not found for entityId: ${request.entityId}. Skipping text animation.`);
             // If sprite is not found (e.g., entity was removed), skip this request
             this.processQueue();
             return;
