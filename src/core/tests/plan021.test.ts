@@ -87,12 +87,17 @@ describe('Plan 021: Leveling and Experience System', () => {
         };
 
         const initialState: GameState = {
+            currentFloor: 1,
+            map: [[]],
             player,
             monsters: { monster_1: monster },
             entities: {
                 player_start: { ...player, type: 'player_start' },
                 monster_1: { ...monster, type: 'monster' },
             },
+            items: {},
+            equipments: {},
+            doors: {},
             interactionState: {
                 type: 'battle',
                 monsterId: 'monster_1',
@@ -101,7 +106,7 @@ describe('Plan 021: Leveling and Experience System', () => {
                 round: 2,
                 turn: 'battle_end',
             },
-        } as GameState;
+        };
 
         const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted');
 
@@ -148,12 +153,17 @@ describe('Plan 021: Leveling and Experience System', () => {
         };
 
         const initialState: GameState = {
+            currentFloor: 1,
+            map: [[]],
             player,
             monsters: { monster_1: monster },
             entities: {
                 player_start: { ...player, type: 'player_start' },
                 monster_1: { ...monster, type: 'monster' },
             },
+            items: {},
+            equipments: {},
+            doors: {},
             interactionState: {
                 type: 'battle',
                 monsterId: 'monster_1',
@@ -162,7 +172,7 @@ describe('Plan 021: Leveling and Experience System', () => {
                 round: 2,
                 turn: 'battle_end',
             },
-        } as GameState;
+        };
 
         // EXP gain is 25, total EXP will be 115, which is > 100 (for level 2)
         const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted');
@@ -217,12 +227,17 @@ describe('Plan 021: Leveling and Experience System', () => {
         };
 
         const initialState: GameState = {
+            currentFloor: 1,
+            map: [[]],
             player,
             monsters: { monster_1: monster },
             entities: {
                 player_start: { ...player, type: 'player_start' },
                 monster_1: { ...monster, type: 'monster' },
             },
+            items: {},
+            equipments: {},
+            doors: {},
             interactionState: {
                 type: 'battle',
                 monsterId: 'monster_1',
@@ -231,7 +246,7 @@ describe('Plan 021: Leveling and Experience System', () => {
                 round: 2,
                 turn: 'battle_end',
             },
-        } as GameState;
+        };
 
         // EXP gain = 2000/10 + 100 + 50 + 50 = 200 + 100 + 50 + 50 = 400
         // This is enough for level 3 (exp_needed: 250)

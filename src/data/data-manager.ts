@@ -37,10 +37,10 @@ export class DataManager {
         }
 
         // Load single data files
-        const playerDataModule = (await import('/gamedata/playerdata.json')).default;
+        const playerDataModule = (await import('../../gamedata/playerdata.json')).default;
         this.playerData = playerDataModule as PlayerData;
 
-        const levelDataModule = (await import('/gamedata/leveldata.json')).default;
+        const levelDataModule = (await import('../../gamedata/leveldata.json')).default;
         this.levelData = levelDataModule as LevelData[];
     }
 

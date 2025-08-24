@@ -5,7 +5,7 @@ import { EquipmentSlot, WeaponType, BuffTrigger } from '../core/types';
  * This is the template from which monster instances are created.
  */
 export interface MonsterData {
-    id:string;
+    id: string;
     name: string;
     level: number;
     hp: number;

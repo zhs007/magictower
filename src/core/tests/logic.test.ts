@@ -16,7 +16,10 @@ describe('handleMove', () => {
             player: {
                 id: 'player',
                 name: 'Hero',
+                level: 1,
+                exp: 0,
                 hp: 100,
+                maxhp: 100,
                 attack: 10,
                 defense: 5,
                 speed: 5,
@@ -72,7 +75,9 @@ describe('handleMove', () => {
         const monster: any = {
             id: 'm1',
             name: 'M',
+            level: 1,
             hp: 10,
+            maxhp: 10,
             attack: 1,
             defense: 1,
             speed: 2,
@@ -102,7 +107,9 @@ describe('handleMove', () => {
         const monster: any = {
             id: 'm1',
             name: 'M',
+            level: 1,
             hp: 10,
+            maxhp: 10,
             attack: 1,
             defense: 1,
             speed: 2,
@@ -229,7 +236,10 @@ describe('handleOpenDoor', () => {
             player: {
                 id: 'player',
                 name: 'Hero',
+                level: 1,
+                exp: 0,
                 hp: 100,
+                maxhp: 100,
                 attack: 10,
                 defense: 5,
                 speed: 5,

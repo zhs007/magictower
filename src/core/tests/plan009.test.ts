@@ -15,7 +15,10 @@ describe('plan009 features', () => {
             player: {
                 id: 'player',
                 name: 'Player',
+                level: 1,
+                exp: 0,
                 hp: 100,
+                maxhp: 100,
                 attack: 10,
                 defense: 5,
                 speed: 10,
@@ -65,7 +68,9 @@ describe('plan009 features', () => {
         const slime1: IMonster = {
             id: 'slime1',
             name: 'Slime',
+            level: 1,
             hp: 20,
+            maxhp: 20,
             attack: 5,
             defense: 2,
             speed: 5,
@@ -79,7 +84,9 @@ describe('plan009 features', () => {
         const slime2: IMonster = {
             id: 'slime2',
             name: 'Slime',
+            level: 1,
             hp: 20,
+            maxhp: 20,
             attack: 5,
             defense: 2,
             speed: 5,
@@ -93,7 +100,9 @@ describe('plan009 features', () => {
         const bat: IMonster = {
             id: 'bat1',
             name: 'Bat',
+            level: 1,
             hp: 15,
+            maxhp: 15,
             attack: 6,
             defense: 1,
             speed: 8,
@@ -163,7 +172,9 @@ describe('plan009 features', () => {
         const boss: IMonster = {
             id: 'boss1',
             name: 'Boss',
+            level: 1,
             hp: 100,
+            maxhp: 100,
             attack: 20,
             defense: 10,
             speed: 12,

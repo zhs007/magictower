@@ -51,7 +51,9 @@ describe('GameStateManager', () => {
             const mockMonsterData = {
                 id: 'monster_green_slime',
                 name: 'Green Slime',
+                level: 1,
                 hp: 20,
+                maxhp: 20,
                 attack: 5,
                 defense: 2,
                 speed: 3,

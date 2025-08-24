@@ -78,7 +78,10 @@ function createMockGameState(): GameState {
     const player: IPlayer = {
         id: 'player',
         name: 'Player',
+        level: 1,
+        exp: 0,
         hp: 100,
+        maxhp: 100,
         attack: 10,
         defense: 5,
         speed: 10,
@@ -93,7 +96,9 @@ function createMockGameState(): GameState {
     const monster: IMonster = {
         id: 'monster_1',
         name: 'Test Monster',
+        level: 1,
         hp: 10,
+        maxhp: 10,
         attack: 3,
         defense: 1,
         speed: 5,

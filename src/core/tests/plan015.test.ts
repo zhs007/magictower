@@ -9,7 +9,10 @@ import * as _ from 'lodash';
 const createMockPlayer = (stats: Partial<IPlayer> = {}): IPlayer => ({
     id: 'player',
     name: 'Hero',
+    level: 1,
+    exp: 0,
     hp: 100,
+    maxhp: 100,
     attack: 10,
     defense: 10,
     speed: 10,
@@ -101,7 +104,9 @@ describe('Plan 015: Speed and Equipment Overhaul', () => {
             const monster: IMonster = {
                 id: 'm1',
                 name: 'm',
+                level: 1,
                 hp: 1,
+                maxhp: 1,
                 attack: 1,
                 defense: 1,
                 speed: 10,
@@ -125,7 +130,9 @@ describe('Plan 015: Speed and Equipment Overhaul', () => {
             const monster: IMonster = {
                 id: 'm1',
                 name: 'm',
+                level: 1,
                 hp: 1,
+                maxhp: 1,
                 attack: 1,
                 defense: 1,
                 speed: 15,
@@ -149,7 +156,9 @@ describe('Plan 015: Speed and Equipment Overhaul', () => {
             const monster: IMonster = {
                 id: 'm1',
                 name: 'm',
+                level: 1,
                 hp: 1,
+                maxhp: 1,
                 attack: 1,
                 defense: 1,
                 speed: 10,
