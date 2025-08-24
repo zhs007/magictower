@@ -96,18 +96,19 @@
 
 ## 8. 当前开发状态
 
-项目已完成所有计划的开发任务，包括核心玩法、UI、存档、特殊道具和效果等。游戏功能已全部实现。
+项目已完成大部分计划的开发任务，包括核心玩法、UI、存档、特殊道具和效果等。
 
 - **已完成**:
     - `plan001` - `plan015`: 全部开发计划均已完成。
+    - `plan017` - `plan018`: 已完成。
 
 - **下一个任务建议**:
-    - **项目收尾**: 所有开发计划已完成。建议进行最终的全面测试、打包构建，并准备部署。
+    - `plan016`: "优化 Renderer 渲染性能".
 
 - **未开始**:
-    - (暂无)
+    - `plan016`
 
-整体开发已完成，项目进入最终测试和部署准备阶段。
+开发仍在进行中。
 
 ## 9. Assets 规则
 
@@ -125,7 +126,6 @@
 - **资源别名规则**：`<type>_<filename>` 或 顶层 `filename`（例如：`monster_monster`, `item_item`, `player`）。
 - **renderer 使用**：`import.meta.glob` 自动生成 manifest，alias 按上述规则生成。
 - **gamedata 优先字段**：`gamedata` 中新增 `assetId` 字段，渲染与校验逻辑优先使用 `assetId`；若缺失则回退到 `id` 字段。
-
-注意：目前 `map` 的贴图处理使用的是一个临时方案（`renderer` 中加入了 `resolveTextureAlias` 并尝试 `map_floor` 等别名）；后续计划将 `map` JSON 扩展一个字段，用于把 `layout` 中的数字映射到 `assetId`（而 `assets/map` 下的图片仍按 `map_<filename>` 的规则命名）。该变更计划已编入 `jules/plan018.md`，准备在后续迭代中实施。
+- **map 贴图映射**: `mapdata` 中的 JSON 文件现在包含 `tileAssets` 字段，该字段将 `layout` 中的数字直接映射到 `assetId`。这取代了旧的基于别名的回退逻辑，使得地图渲染更加明确和可维护。
 
 在开始下一个任务之前，请验证当前代码库的稳定性和功能完整性。

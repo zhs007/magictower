@@ -8,7 +8,7 @@ describe('DataManager', () => {
 
     it('should load all monster data from files', () => {
         expect(dataManager.monsters.size).toBeGreaterThan(0);
-        const monster = dataManager.getMonsterData('green_slime'); // Correct ID
+        const monster = dataManager.getMonsterData('monster_green_slime'); // Correct ID
         expect(monster).toBeDefined();
         expect(monster?.name).toBe('Green Slime');
     });

@@ -103,6 +103,7 @@ export class GameStateManager {
         return {
             currentFloor: floor,
             map,
+            tileAssets: mapData.tileAssets,
             player,
             entities,
             monsters,

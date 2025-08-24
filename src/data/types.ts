@@ -68,6 +68,7 @@ export interface BuffData {
 export interface MapLayout {
     floor: number;
     layout: (number | string)[][];
+    tileAssets?: Record<string, string>;
     entities?: {
         [id: string]: {
             type: 'monster' | 'item' | 'equipment' | 'door' | 'player_start';
