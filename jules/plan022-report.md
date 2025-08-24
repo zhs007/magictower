@@ -2,39 +2,37 @@
 
 ## 1. Task Summary
 
-This task involved implementing a completely new map generation tool (v2) based on a template-matching algorithm. The previous generator used a recursive partitioning method, while the new one builds maps by intelligently placing pre-designed room templates onto a grid.
+This task involved creating a new, template-based map generator (v2). The project went through several major iterations based on user feedback, evolving from a simple generator into a sophisticated tool for creating "layout maps" intended for a two-stage design process.
 
-## 2. Work Completed
+## 2. Final Work Completed
 
-### a. Implementation (`scripts/gen-map-v2.ts`)
+The final version of the generator includes the following features and logic:
 
--   **New Algorithm:** A new generator function, `generateMapV2`, was created from scratch.
--   **Template Library:** A small, hardcoded library of room templates was defined. Each template consists of a 2D array with values for floors (`0`), walls (`1`), empty space (`-1`), and door candidates (`-2`).
--   **Placement Logic:** The core of the algorithm iterates multiple times, finding all possible valid placements for all templates on the map. A placement is valid if its walls overlap with existing map walls.
--   **Weighted Selection:** Each valid placement is assigned a weight based on whether its walls align with the map's outer border or inner walls. A (template, position) pair is then selected using a weighted random algorithm, promoting more integrated-looking layouts.
--   **Door Generation:** The system places "door candidates" (`-2`). In a finalization step, these are resolved into actual doors (floor tiles) or walls, based on a configurable `doorDensity` parameter.
--   **Constraints:** The generator respects a `forceFloorPos` parameter, ensuring specific tiles are always walkable.
+### a. Core Philosophy: Layout Map Generation
 
-### b. Testing (`scripts/gen-map-v2.test.ts`)
+-   **Two-Stage Design**: The tool's final purpose is to generate a "layout map", not a finished map. It produces a grid with rooms and a maximum number of potential connection points.
+-   **Preserved Door Candidates (`-2`)**: The generator's main output is a layout where all non-outer-wall potential doors (`-2`) are preserved. This allows a level designer to later decide which doors to open and which to seal, completing the map in a second stage. The previous `doorDensity` logic was removed.
 
--   A new test suite was created specifically for the v2 generator.
--   Tests were written to verify:
-    -   Correct map dimensions and wall borders.
-    -   Deterministic output for a given seed.
-    -   Adherence to the `forceFloorPos` constraint.
-    -   The functionality of the `doorDensity` parameter.
--   An initial brittle test was identified and replaced with a more robust, property-based test to ensure reliability. All tests now pass.
+### b. Algorithm and Placement Logic
 
-### c. Execution (`scripts/run-gen-map-v2.ts` and `package.json`)
+-   **External Template Library (`genmap2-templates.json`)**: All room templates are defined in an external JSON file for easy editing. Templates were updated to have potential doors on all four sides to maximize connectivity.
+-   **Constraint-Driven Generation**: The generation process is driven by an array of `templateData` constraints. For each constraint, the algorithm filters the template library by size and `roomNum`, and then attempts to place one matching template.
+-   **Strict Placement Rules**: To ensure high-quality layouts, several strict rules were implemented for a placement to be considered valid:
+    1.  **No Adjacent Walls**: Prevents placing templates where a new wall would be created right next to an existing one.
+    2.  **Minimum Wall Overlap**: Requires that the number of overlapping wall/door tiles between a template and the map is greater than 40% of the template's total wall/door tiles. This ensures rooms are well-connected.
+    3.  **Wall Counting**: The wall counting logic for the overlap rule was fixed to correctly include door candidates (`-2`) as functional walls.
+    4.  **Door Placement**: The logic for placing door candidates was simplified to ensure they correctly overwrite existing walls and are preserved for the final layout.
 
--   A runner script was created to execute the generator with a sample configuration.
--   A new npm script, `npm run gen-map:v2`, was added to `package.json` for easy execution from the command line.
+### c. Technical and Usability Fixes
 
-### d. Verification
+-   **JSON Output Formatting**: After a lengthy debugging process, a custom JSON formatting function was implemented to ensure the output `layout` array is formatted with each map row on a single line, as specifically requested for human readability.
+-   **Script Stability**: A low-level, un-catchable error in the runner script was traced to an unstable file path resolution method and fixed by adopting the standard `fileURLToPath` API for ES Modules.
+-   **Command-Line Warnings**: The `ExperimentalWarning` from Node.js when running the script was suppressed by updating the `npm` script command in `package.json`.
 
--   All unit tests were run successfully.
--   A sample map was generated and its output JSON file was manually inspected to confirm its correctness and plausibility.
+### d. Testing
+
+-   A full suite of unit tests was created and maintained throughout the iterative development process. Tests were updated to reflect the final "layout map" logic, including removing obsolete tests and adding new ones to verify that door candidates (`-2`) are preserved in the output.
 
 ## 3. Conclusion
 
-The Map Generator v2 has been successfully implemented, tested, and integrated into the project's script ecosystem. It provides a powerful and flexible new way to create game maps. All requirements of the task have been met.
+The Map Generator v2 is now a robust and flexible tool that successfully fulfills the user's final design requirements. It has been through multiple major revisions, each incorporating detailed feedback to significantly improve the output quality and align with the intended design workflow. All known bugs have been addressed, and the documentation has been updated to reflect the final state of the tool.
