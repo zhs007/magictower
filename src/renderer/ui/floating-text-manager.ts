@@ -1,25 +1,29 @@
-import { Container, Text } from 'pixi.js';
+import { Container, Sprite, Text } from 'pixi.js';
 import { gsap } from 'gsap';
 
 export type FloatingTextType = 'DAMAGE' | 'HEAL' | 'ITEM_GAIN' | 'STAT_INCREASE';
 
+const TILE_SIZE = 65; // This should be consistent with renderer's TILE_SIZE
+
 interface FloatingTextRequest {
     text: string;
     type: FloatingTextType;
-    position: { x: number; y: number };
+    entityId: string;
 }
 
 export class FloatingTextManager {
     private parent: Container;
+    private entitySprites: Map<string, Sprite>;
     private queue: FloatingTextRequest[] = [];
     private isAnimating: boolean = false;
 
-    constructor(parent: Container) {
+    constructor(parent: Container, entitySprites: Map<string, Sprite>) {
         this.parent = parent;
+        this.entitySprites = entitySprites;
     }
 
-    public add(text: string, type: FloatingTextType, position: { x: number; y: number }): void {
-        this.queue.push({ text, type, position });
+    public add(text: string, type: FloatingTextType, entityId: string): void {
+        this.queue.push({ text, type, entityId });
         if (!this.isAnimating) {
             this.processQueue();
         }
@@ -52,13 +56,20 @@ export class FloatingTextManager {
     }
 
     private createAndAnimateText(request: FloatingTextRequest): void {
+        const sprite = this.entitySprites.get(request.entityId);
+        if (!sprite) {
+            // If sprite is not found (e.g., entity was removed), skip this request
+            this.processQueue();
+            return;
+        }
+
         const style = this.getStyle(request.type);
         const damageText = new Text({
             text: request.text,
             style: style,
         });
-        damageText.x = request.position.x;
-        damageText.y = request.position.y;
+        damageText.x = sprite.x;
+        damageText.y = sprite.y - TILE_SIZE; // Spawn above the sprite
         damageText.anchor.set(0.5);
         this.parent.addChild(damageText);
 
@@ -72,7 +83,7 @@ export class FloatingTextManager {
                 // Wait a bit before processing the next item in the queue
                 setTimeout(() => {
                     this.processQueue();
-                }, 200); // 200ms delay between texts
+                }, 100); // 100ms delay between texts
             },
         });
     }

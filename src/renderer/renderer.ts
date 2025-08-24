@@ -25,7 +25,10 @@ export class Renderer {
         this.mainContainer = new Container();
         this.topLayerContainer = new Container();
         this.hud = new HUD();
-        this.floatingTextManager = new FloatingTextManager(this.topLayerContainer);
+        this.floatingTextManager = new FloatingTextManager(
+            this.topLayerContainer,
+            this.entitySprites
+        );
 
         this.mainContainer.sortableChildren = true;
         this.topLayerContainer.sortableChildren = true;
@@ -327,10 +330,7 @@ export class Renderer {
             '-=0.1'
         );
 
-        this.floatingTextManager.add(`-${damage}`, 'DAMAGE', {
-            x: defenderSprite.x,
-            y: defenderSprite.y - TILE_SIZE,
-        });
+        this.floatingTextManager.add(`-${damage}`, 'DAMAGE', defenderId);
     }
 
     public showFloatingTextOnEntity(
