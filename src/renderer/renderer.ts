@@ -209,7 +209,8 @@ export class Renderer {
 
     public render(state: GameState): void {
         this.syncSprites(state);
-        this.hud.update(state);
+        // The HUD is now event-driven and does not need a manual render call.
+        // this.hud.update(state);
     }
 
     public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {

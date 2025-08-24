@@ -72,15 +72,13 @@ describe('Renderer', () => {
         renderer = new Renderer(mockStage);
     });
 
-    it('should call syncSprites and update HUD on render', () => {
+    it('should call syncSprites on render', () => {
         const gameState = createMockGameState();
         const syncSpritesSpy = vi.spyOn(renderer, 'syncSprites');
-        const hudUpdateSpy = vi.spyOn((renderer as any).hud, 'update');
 
         renderer.render(gameState);
 
         expect(syncSpritesSpy).toHaveBeenCalledWith(gameState);
-        expect(hudUpdateSpy).toHaveBeenCalledWith(gameState);
     });
 
     it('should render map tiles and entities correctly on initialize', async () => {
