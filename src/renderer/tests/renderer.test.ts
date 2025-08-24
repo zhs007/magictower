@@ -58,6 +58,7 @@ vi.mock('gsap', () => ({
             to: vi.fn().mockReturnThis(),
             vars, // Store vars to access onComplete
         })),
+        to: vi.fn(),
     },
 }));
 
@@ -143,6 +144,22 @@ describe('Renderer', () => {
         }
 
         expect(onComplete).toHaveBeenCalled();
+    });
+
+    it('should show floating text on an entity', () => {
+        const gameState = createMockGameState();
+        renderer.initialize(gameState); // To populate entitySprites
+
+        const textManagerAddSpy = vi.spyOn((renderer as any).floatingTextManager, 'add');
+        const playerEntityKey = 'player_start_0_0';
+
+        renderer.showFloatingTextOnEntity('Test Text', 'ITEM_GAIN', playerEntityKey);
+
+        expect(textManagerAddSpy).toHaveBeenCalledWith(
+            'Test Text',
+            'ITEM_GAIN',
+            expect.any(Object)
+        );
     });
 });
 

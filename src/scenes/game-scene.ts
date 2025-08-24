@@ -95,8 +95,12 @@ export class GameScene extends BaseScene {
                     payload: { itemId: itemId },
                 });
                 this.renderer.render(this.gameStateManager.getState());
-                if (item) {
-                    this.renderer.showPlayerFloatingText(`+1 ${item.name}`, 'ITEM_GAIN');
+                if (item && this.playerEntityKey) {
+                    this.renderer.showFloatingTextOnEntity(
+                        `+1 ${item.name}`,
+                        'ITEM_GAIN',
+                        this.playerEntityKey
+                    );
                 }
             }
             this.isAnimating = false;

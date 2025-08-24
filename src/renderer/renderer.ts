@@ -333,14 +333,16 @@ export class Renderer {
         });
     }
 
-    public showPlayerFloatingText(text: string, type: 'ITEM_GAIN' | 'STAT_INCREASE' | 'HEAL'): void {
-        const playerSprite = Array.from(this.entitySprites.values()).find(
-            (s: any) => s.texture.texture === 'player'
-        );
-        if (playerSprite) {
+    public showFloatingTextOnEntity(
+        text: string,
+        type: 'ITEM_GAIN' | 'STAT_INCREASE' | 'HEAL',
+        entityId: string
+    ): void {
+        const sprite = this.entitySprites.get(entityId);
+        if (sprite) {
             this.floatingTextManager.add(text, type, {
-                x: playerSprite.x,
-                y: playerSprite.y - TILE_SIZE,
+                x: sprite.x,
+                y: sprite.y - TILE_SIZE,
             });
         }
     }
