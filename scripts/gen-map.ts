@@ -1,12 +1,8 @@
 /**
  * @fileoverview Map generator script.
  *
- * This script generates a map layout based on specified parameters.
- * It can be used to create complex procedural maps for the game.
- *
- * The core of the generator is a recursive partitioning algorithm that divides
- * the map into a specified number of areas, with constraints on area size
- * and required tile positions.
+ * This script provides the core logic for generating a map layout.
+ * It is intended to be used as a library by a runner script.
  */
 
 import * as fs from 'fs';
@@ -69,48 +65,78 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         return;
     }
 
-    // Recursive step: Split the area and indices
-    // --- Constraint-aware splitting logic ---
+    // Recursive step: Try to find a valid way to split the areas and the rectangle
+    const splitVertical = rect.width > rect.height;
 
-    const splitVertical = rect.width >= rect.height;
-
-    // Try to find a valid split point
-    for (let i = 1; i < areaIndices.length; i++) {
-        const groupA_indices = areaIndices.slice(0, i);
-        const groupB_indices = areaIndices.slice(i);
-
-        // This is still a simplified split position, but it's a start.
-        // A truly robust solution would try multiple splitX/splitY values.
+    // Iterate through possible split points of the rectangle
+    const mainAxisLength = splitVertical ? rect.width : rect.height;
+    for (let splitOffset = 1; splitOffset < mainAxisLength -1; splitOffset++) {
+        let rectA: Rect, rectB: Rect;
         if (splitVertical) {
-            const splitX = rect.x + Math.floor(rect.width * (i / areaIndices.length));
-            if (splitX <= rect.x || splitX >= rect.x + rect.width) continue;
-
-            const rectA: Rect = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
-            const rectB: Rect = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
-
-            if (canSatisfyConstraints(rectA, groupA_indices, params) && canSatisfyConstraints(rectB, groupB_indices, params)) {
-                recursivePartition(areaGrid, rectA, groupA_indices, params);
-                recursivePartition(areaGrid, rectB, groupB_indices, params);
-                return;
-            }
+            const splitX = rect.x + splitOffset;
+            rectA = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
+            rectB = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
         } else {
-            const splitY = rect.y + Math.floor(rect.height * (i / areaIndices.length));
-            if (splitY <= rect.y || splitY >= rect.y + rect.height) continue;
+            const splitY = rect.y + splitOffset;
+            rectA = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
+            rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
+        }
 
-            const rectA: Rect = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
-            const rectB: Rect = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
+        // Given the split rectangles, classify which areas MUST go into which rectangle
+        const mustGoInA: number[] = [];
+        const mustGoInB: number[] = [];
+        const canGoAnywhere: number[] = [];
 
-            if (canSatisfyConstraints(rectA, groupA_indices, params) && canSatisfyConstraints(rectB, groupB_indices, params)) {
-                recursivePartition(areaGrid, rectA, groupA_indices, params);
-                recursivePartition(areaGrid, rectB, groupB_indices, params);
-                return;
+        let possible = true;
+        for (const areaIndex of areaIndices) {
+            const requiredPos = params.mapAreaPos[areaIndex] || [];
+            const isInA = requiredPos.every(p => isPointInRect(p, rectA));
+            const isInB = requiredPos.every(p => isPointInRect(p, rectB));
+
+            if (isInA && !isInB) {
+                mustGoInA.push(areaIndex);
+            } else if (!isInA && isInB) {
+                mustGoInB.push(areaIndex);
+            } else if (!isInA && !isInB && requiredPos.length > 0) {
+                possible = false; // This split is impossible, required points are in neither child
+                break;
+            } else {
+                canGoAnywhere.push(areaIndex);
+            }
+        }
+        if (!possible) continue; // Try next split point
+
+        // Now, try to distribute the "anywhere" areas to find a valid partition
+        const remainingCount = canGoAnywhere.length;
+        for (let i = 0; i < (1 << remainingCount); i++) { // Iterate through all subsets of canGoAnywhere
+            const groupA_extra: number[] = [];
+            const groupB_extra: number[] = [];
+
+            for (let j = 0; j < remainingCount; j++) {
+                if ((i & (1 << j)) > 0) {
+                    groupA_extra.push(canGoAnywhere[j]);
+                } else {
+                    groupB_extra.push(canGoAnywhere[j]);
+                }
+            }
+
+            const groupA = [...mustGoInA, ...groupA_extra];
+            const groupB = [...mustGoInB, ...groupB_extra];
+
+            if (groupA.length === 0 || groupB.length === 0) continue;
+
+            if (canSatisfyConstraints(rectA, groupA, params) && canSatisfyConstraints(rectB, groupB, params)) {
+                // Found a valid split! Recurse.
+                recursivePartition(areaGrid, rectA, groupA, params);
+                recursivePartition(areaGrid, rectB, groupB, params);
+                return; // Exit after finding the first valid split
             }
         }
     }
 
+
     // Fallback if no valid split is found (e.g., constraints are too tight)
     // This just stuffs all remaining areas into the current rect, which is not ideal.
-    // A better implementation might throw an error.
     const areaIndex = areaIndices[0];
     for (let y = rect.y; y < rect.y + rect.height; y++) {
         for (let x = rect.x; x < rect.x + rect.width; x++) {
@@ -146,27 +172,11 @@ function canSatisfyConstraints(rect: Rect, areaIndices: number[], params: GenMap
         }
     }
 
-    // Check minAreaSize constraint
-    // This is a simplified check. It ensures the rect is large enough for each individual
-    // min size, but not necessarily for all of them combined. A more complex check
-    // would sum the minimum required areas.
-    for (const areaIndex of areaIndices) {
-        const minSize = params.minAreaSize[areaIndex];
-        if (minSize) {
-            if (rect.width < minSize[0] || rect.height < minSize[1]) {
-                // This check is too simple. It assumes the area gets the whole rect.
-                // A better approach is needed for multiple areas.
-            }
-        }
-    }
-
     // A simple heuristic: check if the total minimum area is smaller than the rect area.
     let totalMinArea = 0;
     for (const areaIndex of areaIndices) {
-        const minSize = params.minAreaSize[areaIndex];
-        if (minSize) {
-            totalMinArea += minSize[0] * minSize[1];
-        }
+        const minSize = params.minAreaSize[areaIndex] || [1, 1];
+        totalMinArea += minSize[0] * minSize[1];
     }
 
     if (rect.width * rect.height < totalMinArea) {
@@ -242,48 +252,6 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
   return { layout, areaGrid };
 }
 
-/**
- * Main function to run the map generator.
- */
-export function main() {
-  // Example parameters (hardcoded for now)
-  const exampleParams: GenMapParams = {
-    Width: 32,
-    Height: 32,
-    AreaNum: 4,
-    LinkData: [[0, 1], [1, 2], [2, 3]],
-    minAreaSize: {
-      0: [4, 4],
-    },
-    mapAreaPos: {
-      1: [[10, 10]],
-    },
-    outputFilename: 'generated_map.json',
-  };
-
-  console.log('Starting map generation with parameters:');
-  console.log(JSON.stringify(exampleParams, null, 2));
-
-  const { layout } = generateMapLayout(exampleParams);
-
-  const output = {
-    tileAssets: {
-      '0': 'map_floor',
-      '1': 'map_wall',
-    },
-    layout: layout,
-  };
-
-  const outputPath = path.join('mapdata', exampleParams.outputFilename);
-  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
-
-  console.log(`Map successfully generated and saved to ${outputPath}`);
-}
-
-import { fileURLToPath } from 'url';
-
-// Export functions for testing
+// Consolidate all exports here
 export { generateMapLayout, TILE_FLOOR, TILE_WALL };
-
-// The main function is exported for use in a separate runner script.
 export type { GenMapParams, Vec2 };
