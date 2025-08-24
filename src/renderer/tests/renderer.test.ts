@@ -52,6 +52,15 @@ vi.mock('../../data/data-manager', () => ({
     },
 }));
 
+vi.mock('gsap', () => ({
+    gsap: {
+        timeline: vi.fn((vars) => ({
+            to: vi.fn().mockReturnThis(),
+            vars, // Store vars to access onComplete
+        })),
+    },
+}));
+
 describe('Renderer', () => {
     let renderer: Renderer;
     let mockStage: any;
@@ -113,6 +122,29 @@ describe('Renderer', () => {
         expect(monsterSprite).toBeDefined();
         expect(monsterSprite!.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
         expect(monsterSprite!.y).toBe((1 + 1) * TILE_SIZE); // New Y calculation
+    });
+
+    it('should call onComplete callback after item pickup animation', async () => {
+        const gameState = createMockGameState();
+        // Set interaction state for item pickup
+        gameState.interactionState = { type: 'item_pickup', itemId: 'item_1' };
+
+        // Initialize renderer to create sprites
+        renderer.initialize(gameState);
+
+        const onComplete = vi.fn();
+        await renderer.animateItemPickup(gameState, onComplete);
+
+        // Manually trigger the onComplete of the mocked timeline
+        const gsap = await import('gsap');
+        const mockedTimeline = (gsap.gsap.timeline as any).mock.results[0].value;
+
+        // Check if onComplete is actually a function before calling it.
+        if (typeof mockedTimeline.vars.onComplete === 'function') {
+            mockedTimeline.vars.onComplete();
+        }
+
+        expect(onComplete).toHaveBeenCalled();
     });
 });
 
