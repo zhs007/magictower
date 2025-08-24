@@ -37,6 +37,15 @@ vi.mock('../../core/event-manager', () => ({
     },
 }));
 
+vi.mock('../../data/data-manager', () => ({
+    dataManager: {
+        getLevelData: vi.fn().mockReturnValue([
+            { level: 1, exp_needed: 0 },
+            { level: 2, exp_needed: 100 },
+        ]),
+    },
+}));
+
 describe('HUD', () => {
     let hud: HUD;
     let mockState: GameState;
@@ -46,9 +55,13 @@ describe('HUD', () => {
         hud = new HUD();
         mockState = {
             player: {
+                level: 1,
+                exp: 25,
                 hp: 100,
+                maxhp: 100,
                 attack: 10,
                 defense: 5,
+                speed: 10,
                 keys: { yellow: 1, blue: 2, red: 3 },
                 id: 'p1',
                 name: 'player',
@@ -68,11 +81,24 @@ describe('HUD', () => {
         expect(eventManager.on).toHaveBeenCalledWith('HP_CHANGED', expect.any(Function));
         expect(eventManager.on).toHaveBeenCalledWith('KEYS_CHANGED', expect.any(Function));
         expect(eventManager.on).toHaveBeenCalledWith('BATTLE_ENDED', expect.any(Function));
+        expect(eventManager.on).toHaveBeenCalledWith('PLAYER_LEVELED_UP', expect.any(Function));
     });
 
-    it('should update HP on HP_CHANGED event', () => {
-        hud['handleHpChange']({ entityId: 'player', newHp: 80, attack: 10, defense: 5 });
-        expect((hud as any).playerStatsText.text).toBe('勇者: HP 80  ATK 10  DEF 5');
+    it('should update player info on playerUpdate event', () => {
+        const payload = {
+            entityId: 'player',
+            newHp: 80,
+            maxHp: 100,
+            level: 1,
+            exp: 30,
+            attack: 10,
+            defense: 5,
+            speed: 10,
+        };
+        hud['handlePlayerUpdate'](payload);
+        expect((hud as any).playerStatsText.text).toBe('HP 80/100  ATK 10  DEF 5  SPD 10');
+        expect((hud as any).levelText.text).toBe('Level: 1');
+        expect((hud as any).expText.text).toBe('EXP: 30 / 100');
     });
 
     it('should update keys on KEYS_CHANGED event', () => {
@@ -80,10 +106,19 @@ describe('HUD', () => {
         expect((hud as any).keysText.text).toBe('钥匙: 黄 2  蓝 2  红 3');
     });
 
-    it('should hide monster stats and update player HP on BATTLE_ENDED event', () => {
-        hud['handleBattleEnd']({ finalPlayerHp: 75, finalPlayerAtk: 10, finalPlayerDef: 5 });
+    it('should hide monster stats and update player info on BATTLE_ENDED event', () => {
+        const payload = {
+            finalPlayerHp: 75,
+            finalPlayerMaxHp: 120,
+            finalPlayerLevel: 2,
+            finalPlayerExp: 115,
+            finalPlayerAtk: 12,
+            finalPlayerDef: 6,
+            finalPlayerSpeed: 11,
+        };
+        hud['handleBattleEnd'](payload);
         expect((hud as any).monsterStatsText.visible).toBe(false);
-        expect((hud as any).playerStatsText.text).toBe('勇者: HP 75  ATK 10  DEF 5');
+        expect((hud as any).playerStatsText.text).toBe('HP 75/120  ATK 12  DEF 6  SPD 11');
     });
 
     it('should unregister listeners on destroy', () => {
@@ -91,5 +126,6 @@ describe('HUD', () => {
         expect(eventManager.off).toHaveBeenCalledWith('HP_CHANGED', expect.any(Function));
         expect(eventManager.off).toHaveBeenCalledWith('KEYS_CHANGED', expect.any(Function));
         expect(eventManager.off).toHaveBeenCalledWith('BATTLE_ENDED', expect.any(Function));
+        expect(eventManager.off).toHaveBeenCalledWith('PLAYER_LEVELED_UP', expect.any(Function));
     });
 });

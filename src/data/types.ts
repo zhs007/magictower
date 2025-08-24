@@ -7,7 +7,9 @@ import { EquipmentSlot, WeaponType, BuffTrigger } from '../core/types';
 export interface MonsterData {
     id: string;
     name: string;
+    level: number;
     hp: number;
+    maxhp: number;
     attack: number;
     defense: number;
     speed: number;
@@ -77,4 +79,36 @@ export interface MapLayout {
             y: number;
         };
     };
+}
+
+/**
+ * Represents the raw data for the player, loaded from a JSON file.
+ */
+export interface PlayerData {
+    id: string;
+    name: string;
+    level: number;
+    exp: number;
+    hp: number;
+    maxhp: number;
+    attack: number;
+    defense: number;
+    speed: number;
+    keys: {
+        yellow: number;
+        blue: number;
+        red: number;
+    };
+}
+
+/**
+ * Represents the structure of a single level entry in the level-up table.
+ */
+export interface LevelData {
+    level: number;
+    exp_needed: number;
+    hp: number;
+    attack: number;
+    defense: number;
+    speed: number;
 }

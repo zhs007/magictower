@@ -11,6 +11,19 @@ vi.mock('../../data/data-manager', () => ({
         getMapLayout: vi.fn(),
         getMonsterData: vi.fn(),
         getItemData: vi.fn(),
+        getPlayerData: vi.fn().mockReturnValue({
+            id: 'player',
+            name: 'Hero',
+            level: 1,
+            exp: 0,
+            hp: 100,
+            maxhp: 100,
+            attack: 10,
+            defense: 10,
+            speed: 10,
+            keys: { yellow: 0, blue: 0, red: 0 },
+        }),
+        getLevelData: vi.fn().mockReturnValue([]),
     },
 }));
 
@@ -38,7 +51,9 @@ describe('GameStateManager', () => {
             const mockMonsterData = {
                 id: 'monster_green_slime',
                 name: 'Green Slime',
+                level: 1,
                 hp: 20,
+                maxhp: 20,
                 attack: 5,
                 defense: 2,
                 speed: 3,

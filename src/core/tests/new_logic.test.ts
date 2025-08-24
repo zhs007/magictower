@@ -18,7 +18,10 @@ describe('Game Logic with Interactions', () => {
         const player: IPlayer = {
             id: 'player',
             name: 'Hero',
+            level: 1,
+            exp: 0,
             hp: 100,
+            maxhp: 100,
             attack: 10,
             defense: 5,
             speed: 10,
@@ -33,7 +36,9 @@ describe('Game Logic with Interactions', () => {
         const monster: IMonster = {
             id: 'monster_green_slime',
             name: 'Green Slime',
+            level: 1,
             hp: 30,
+            maxhp: 30,
             attack: 8,
             defense: 2,
             speed: 5,

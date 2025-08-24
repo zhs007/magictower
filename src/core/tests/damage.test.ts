@@ -6,7 +6,9 @@ describe('calculateDamage', () => {
     const mockPlayer: ICharacter = {
         id: 'player',
         name: 'Player',
+        level: 1,
         hp: 100,
+        maxhp: 100,
         attack: 10,
         defense: 5,
         x: 0,
@@ -21,7 +23,9 @@ describe('calculateDamage', () => {
     const mockMonster: ICharacter = {
         id: 'monster',
         name: 'Monster',
+        level: 1,
         hp: 50,
+        maxhp: 50,
         attack: 8,
         defense: 2,
         x: 1,

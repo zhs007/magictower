@@ -4,6 +4,7 @@
     "module": "ESNext",
     "strict": true,
     "moduleResolution": "node",
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
   "types": ["vitest/globals", "vite/client"]

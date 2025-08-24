@@ -1,4 +1,12 @@
-import { MonsterData, ItemData, EquipmentData, BuffData, MapLayout } from './types';
+import {
+    MonsterData,
+    ItemData,
+    EquipmentData,
+    BuffData,
+    MapLayout,
+    PlayerData,
+    LevelData,
+} from './types';
 
 export class DataManager {
     public monsters: Map<string, MonsterData> = new Map();
@@ -6,6 +14,8 @@ export class DataManager {
     public equipments: Map<string, EquipmentData> = new Map();
     public buffs: Map<string, BuffData> = new Map();
     public maps: Map<number, MapLayout> = new Map();
+    public playerData: PlayerData | null = null;
+    public levelData: LevelData[] = [];
 
     public async loadAllData(): Promise<void> {
         // Using import.meta.glob to dynamically import all JSON files from a directory.
@@ -25,6 +35,13 @@ export class DataManager {
             const mapData = (mapModules[path] as any).default as MapLayout;
             this.maps.set(mapData.floor, mapData);
         }
+
+        // Load single data files
+        const playerDataModule = (await import('../../gamedata/playerdata.json')).default;
+        this.playerData = playerDataModule as PlayerData;
+
+        const levelDataModule = (await import('../../gamedata/leveldata.json')).default;
+        this.levelData = levelDataModule as LevelData[];
     }
 
     private loadDataFromModules(
@@ -82,6 +99,14 @@ export class DataManager {
 
     public getMapLayout(floor: number): MapLayout | undefined {
         return this.maps.get(floor);
+    }
+
+    public getPlayerData(): PlayerData | null {
+        return this.playerData;
+    }
+
+    public getLevelData(): LevelData[] {
+        return this.levelData;
     }
 }
 

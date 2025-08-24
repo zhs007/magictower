@@ -12,6 +12,8 @@ import { AudioManager } from './audio-manager';
 import { eventManager } from './event-manager';
 import { calculateFinalStats } from './stat-calculator';
 import { compareEquipment } from './equipment-manager';
+import { dataManager } from '../data/data-manager';
+import { LevelData } from '../data/types';
 
 const MAX_COMBAT_ROUNDS = 8;
 
@@ -257,11 +259,15 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     if (defenderId === playerEntityKey) {
         const oldHp = newState.interactionState.playerHp;
         newState.interactionState.playerHp -= damage;
+        const playerStats = calculateFinalStats(newState.player);
         hpChangedPayload = {
             entityId: 'player',
             newHp: newState.interactionState.playerHp,
-            attack: calculateFinalStats(newState.player).attack,
-            defense: calculateFinalStats(newState.player).defense,
+            maxHp: playerStats.maxhp,
+            level: playerStats.level,
+            exp: playerStats.exp,
+            attack: playerStats.attack,
+            defense: playerStats.defense,
             oldHp,
         };
     } else {
@@ -299,12 +305,67 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
     return newState;
 }
 
+function applyLevelUp(player: IPlayer, newLevelData: LevelData): IPlayer {
+    const updatedPlayer = _.cloneDeep(player);
+
+    // Calculate stat gains for event dispatching
+    const statGains = {
+        maxhp: newLevelData.hp - updatedPlayer.maxhp,
+        attack: newLevelData.attack - updatedPlayer.attack,
+        defense: newLevelData.defense - updatedPlayer.defense,
+        speed: newLevelData.speed - updatedPlayer.speed,
+    };
+
+    // Apply new base stats from level data
+    updatedPlayer.level = newLevelData.level;
+    updatedPlayer.maxhp = newLevelData.hp;
+    updatedPlayer.attack = newLevelData.attack;
+    updatedPlayer.defense = newLevelData.defense;
+    updatedPlayer.speed = newLevelData.speed;
+
+    // Restore HP to the new maxHP
+    updatedPlayer.hp = updatedPlayer.maxhp;
+
+    eventManager.dispatch('PLAYER_LEVELED_UP', {
+        newLevel: updatedPlayer.level,
+        statGains,
+    });
+
+    return updatedPlayer;
+}
+
+export function checkForLevelUp(state: GameState): GameState {
+    let newState = _.cloneDeep(state);
+    const levelData = dataManager.getLevelData();
+    if (!levelData || levelData.length === 0) {
+        return newState;
+    }
+
+    let leveledUp = false;
+    let nextLevel = newState.player.level + 1;
+    let nextLevelData = levelData.find((ld) => ld.level === nextLevel);
+
+    // Loop in case of multiple level-ups
+    while (nextLevelData && newState.player.exp >= nextLevelData.exp_needed) {
+        const oldLevel = newState.player.level;
+        newState.player = applyLevelUp(newState.player, nextLevelData);
+        leveledUp = true;
+
+        console.log(`Player leveled up from ${oldLevel} to ${newState.player.level}!`);
+
+        nextLevel = newState.player.level + 1;
+        nextLevelData = levelData.find((ld) => ld.level === nextLevel);
+    }
+
+    return newState;
+}
+
 export function handleEndBattle(
     state: GameState,
     winnerId: string | null,
     reason: 'hp_depleted' | 'timeout'
 ): GameState {
-    const newState = _.cloneDeep(state);
+    let newState = _.cloneDeep(state);
     if (newState.interactionState.type !== 'battle') return state;
 
     const monsterEntityKey = newState.interactionState.monsterId;
@@ -317,10 +378,23 @@ export function handleEndBattle(
 
     if (reason === 'hp_depleted') {
         if (winnerId === playerEntityKey) {
+            const defeatedMonster = newState.monsters[monsterEntityKey];
             // Player wins, monster is removed
-            const defeatedMonsterId = newState.monsters[monsterEntityKey].id;
+            const defeatedMonsterId = defeatedMonster.id;
+
+            // Calculate and award experience
+            const rewardExp =
+                Math.floor(defeatedMonster.maxhp / 10) +
+                defeatedMonster.attack +
+                defeatedMonster.defense +
+                defeatedMonster.speed;
+            newState.player.exp += rewardExp;
+
             delete newState.entities[monsterEntityKey];
             delete newState.monsters[monsterEntityKey];
+
+            // Check for level up
+            newState = checkForLevelUp(newState);
 
             // Check for special door conditions
             for (const doorId in newState.doors) {
@@ -347,6 +421,9 @@ export function handleEndBattle(
         winnerId,
         reason,
         finalPlayerHp: newState.player.hp,
+        finalPlayerMaxHp: finalPlayerStats.maxhp,
+        finalPlayerLevel: finalPlayerStats.level,
+        finalPlayerExp: finalPlayerStats.exp,
         finalPlayerAtk: finalPlayerStats.attack,
         finalPlayerDef: finalPlayerStats.defense,
     });

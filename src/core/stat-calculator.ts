@@ -7,9 +7,11 @@ export type CalculableStats = 'hp' | 'attack' | 'defense' | 'speed';
  * Calculates the final stats of a character, applying all equipment modifiers.
  *
  * @param character The character whose stats are to be calculated.
- * @returns A record containing the final calculated stats.
+ * @returns A record containing the final calculated stats, plus non-calculable stats.
  */
-export function calculateFinalStats(character: ICharacter): Record<CalculableStats, number> {
+export function calculateFinalStats(
+    character: ICharacter
+): Record<CalculableStats, number> & { maxhp: number; level: number; exp: number } {
     const baseStats = {
         hp: character.hp,
         attack: character.attack,
@@ -64,5 +66,13 @@ export function calculateFinalStats(character: ICharacter): Record<CalculableSta
         finalStats[key] = finalValue;
     }
 
-    return finalStats;
+    // Also include non-calculable stats in the final returned object
+    const finalStatsWithExtras = {
+        ...finalStats,
+        maxhp: character.maxhp,
+        level: character.level,
+        exp: (character as any).exp ?? 0, // Monsters don't have exp, so default to 0
+    };
+
+    return finalStatsWithExtras;
 }

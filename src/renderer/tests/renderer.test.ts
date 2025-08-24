@@ -49,6 +49,22 @@ vi.mock('pixi.js', async () => {
 vi.mock('../../data/data-manager', () => ({
     dataManager: {
         loadAllData: vi.fn().mockResolvedValue(undefined),
+        getPlayerData: vi.fn().mockReturnValue({
+            id: 'player',
+            name: 'Hero',
+            level: 1,
+            exp: 0,
+            hp: 100,
+            maxhp: 100,
+            attack: 10,
+            defense: 10,
+            speed: 10,
+            keys: { yellow: 0, blue: 0, red: 0 },
+        }),
+        getLevelData: vi.fn().mockReturnValue([
+            { level: 1, exp_needed: 0, hp: 100, attack: 10, defense: 10, speed: 10 },
+            { level: 2, exp_needed: 100, hp: 120, attack: 12, defense: 12, speed: 11 },
+        ]),
     },
 }));
 
@@ -163,7 +179,10 @@ function createMockGameState(): GameState {
     const player: IPlayer = {
         id: 'player',
         name: 'Player',
+        level: 1,
+        exp: 0,
         hp: 100,
+        maxhp: 100,
         attack: 10,
         defense: 5,
         speed: 10,
@@ -178,7 +197,9 @@ function createMockGameState(): GameState {
     const monster: IMonster = {
         id: 'monster_green_slime',
         name: 'Green Slime',
+        level: 1,
         hp: 10,
+        maxhp: 10,
         attack: 3,
         defense: 1,
         speed: 5,
