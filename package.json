@@ -15,7 +15,8 @@
     "lint:fix": "eslint --ext .ts,.tsx src --fix",
     "check": "npm run typecheck && npm run format:check && npm run lint && npm run test:ci && npm run check-assets",
     "check-assets": "node scripts/check-assets.js",
-    "gen-map": "node --loader ts-node/esm scripts/run-gen-map.ts"
+    "gen-map": "node --no-warnings=ExperimentalWarning --loader ts-node/esm scripts/run-gen-map.ts",
+    "gen-map:v2": "node --no-warnings=ExperimentalWarning --loader ts-node/esm scripts/run-gen-map-v2.ts"
   },
   "repository": {
     "type": "git",
