@@ -7,26 +7,42 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { generateMapV2 } from './gen-map-v2.js';
-import type { GenMapV2Params, RoomTemplate } from './gen-map-v2.js';
+import type { GenMapV2Params, RoomTemplate, TemplateConstraint } from './gen-map-v2.js';
 
 // --- Load the templates ---
 const templatesPath = path.join(path.dirname(import.meta.url.replace('file://', '')), 'genmap2-templates.json');
 const templatesFile = fs.readFileSync(templatesPath, 'utf-8');
 const templates: RoomTemplate[] = JSON.parse(templatesFile);
 
+// --- Define the constraints for template placement ---
+// Each inner array is a constraint: [minW, minH, maxW, maxH, minRoomNum, maxRoomNum]
+// The generator will iterate through this list and place one template per constraint.
+const templateData: TemplateConstraint[] = [
+    // Place a big 5x5 room
+    [5, 5, 5, 5, 1, 1],
+    // Place another big 5x5 room
+    [5, 5, 5, 5, 1, 1],
+    // Place a smaller 3x3 room
+    [3, 3, 3, 3, 1, 1],
+    // Place any template
+    [1, 1, 99, 99, 1, 99],
+    [1, 1, 99, 99, 1, 99],
+    [1, 1, 99, 99, 1, 99],
+];
+
 
 // --- Parameters for the map generation ---
 const params: GenMapV2Params = {
-  Width: 16,
-  Height: 16,
+  Width: 20,
+  Height: 20,
   templates: templates,
+  templateData: templateData,
   forceFloorPos: [
-    [5, 5], // Example: ensure this tile is a floor
+    [2, 2], // Example: ensure this tile is a floor
   ],
   outputFilename: 'mapdata/generated_map_v2.json',
   seed: Math.floor(Math.random() * 100000), // Use a random seed each time
   doorDensity: 0.6,
-  maxPlacementAttempts: 200,
 };
 
 function run() {
@@ -34,7 +50,6 @@ function run() {
 
   const { layout } = generateMapV2(params);
 
-  // The user wants the layout to be easily human-readable in the JSON.
   const output = {
     meta: {
         ...params,
@@ -42,6 +57,11 @@ function run() {
     },
     layout: layout,
   };
+
+  // The output meta.templates can be very long, so remove it for clarity
+  if (output.meta.templates) {
+    delete (output.meta as any).templates;
+  }
 
   const outputString = JSON.stringify(output, null, 2); // Pretty print JSON
 

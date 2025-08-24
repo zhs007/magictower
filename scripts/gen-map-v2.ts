@@ -13,16 +13,17 @@ export const TILE_DOOR_CANDIDATE = -2;
 
 // Type definitions
 export type Vec2 = [number, number];
+export type TemplateConstraint = [number, number, number, number, number, number]; // minW, minH, maxW, maxH, minRoomNum, maxRoomNum
 
 export interface GenMapV2Params {
   Width: number;
   Height: number;
   templates: RoomTemplate[];
+  templateData: TemplateConstraint[];
   forceFloorPos: Vec2[];
   outputFilename: string;
   seed: number; // Seed for the random number generator
   doorDensity?: number; // Optional: 0 to 1, how many candidates become doors
-  maxPlacementAttempts?: number; // Optional: How many times to try placing templates
 }
 
 export interface RoomTemplate {
@@ -30,6 +31,7 @@ export interface RoomTemplate {
   layout: number[][];
   width: number;
   height: number;
+  roomNum: number;
 }
 
 // Helper function to create a PRNG
@@ -40,36 +42,6 @@ function createPRNG(seed: number): () => number {
       t ^= t + Math.imul(t ^ t >>> 7, t | 61);
       return ((t ^ t >>> 14) >>> 0) / 4294967296;
     }
-}
-
-// Helper to find all contiguous empty regions
-function findEmptyRegions(layout: number[][], width: number, height: number): Vec2[][] {
-    const regions: Vec2[][] = [];
-    const visited: boolean[][] = Array(height).fill(0).map(() => Array(width).fill(false));
-
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            if (layout[y][x] === TILE_EMPTY && !visited[y][x]) {
-                const region: Vec2[] = [];
-                const queue: Vec2[] = [[x, y]];
-                visited[y][x] = true;
-                while (queue.length > 0) {
-                    const [cx, cy] = queue.shift()!;
-                    region.push([cx, cy]);
-                    const neighbors: Vec2[] = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]];
-                    for (const [nx, ny] of neighbors) {
-                        if (nx >= 0 && nx < width && ny >= 0 && ny < height &&
-                            layout[ny][nx] === TILE_EMPTY && !visited[ny][nx]) {
-                            visited[ny][nx] = true;
-                            queue.push([nx, ny]);
-                        }
-                    }
-                }
-                regions.push(region);
-            }
-        }
-    }
-    return regions;
 }
 
 // Helper to check if a position is a forced floor
@@ -94,9 +66,8 @@ interface ValidPlacement {
  */
 export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
     const {
-        Width, Height, seed, forceFloorPos, templates,
+        Width, Height, seed, forceFloorPos, templates, templateData,
         doorDensity = 0.5,
-        maxPlacementAttempts = 100
     } = params;
     const random = createPRNG(seed);
 
@@ -110,18 +81,23 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
         }
     }
 
-    // Main placement loop
-    for (let attempt = 0; attempt < maxPlacementAttempts; attempt++) {
-        const regions = findEmptyRegions(layout, Width, Height);
-        if (regions.length === 0) break;
+    // Main placement loop - iterates through each constraint in templateData
+    for (const constraint of templateData) {
+        const [minW, minH, maxW, maxH, minRoomNum, maxRoomNum] = constraint;
 
-        regions.sort((a, b) => b.length - a.length);
-        const largestRegion = regions[0];
+        // Filter templates based on the current constraint
+        const filteredTemplates = templates.filter(t =>
+            t.width >= minW && t.width <= maxW &&
+            t.height >= minH && t.height <= maxH &&
+            t.roomNum >= minRoomNum && t.roomNum <= maxRoomNum
+        );
+
+        if (filteredTemplates.length === 0) continue; // No templates match this constraint
 
         const allValidPlacements: ValidPlacement[] = [];
 
-        // Try every template
-        for (const template of templates) {
+        // Try every filtered template
+        for (const template of filteredTemplates) {
             // Try every possible top-left position on the map
             for (let y = 0; y <= Height - template.height; y++) {
                 for (let x = 0; x <= Width - template.width; x++) {
@@ -132,23 +108,20 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
                     for (let ty = 0; ty < template.height; ty++) {
                         for (let tx = 0; tx < template.width; tx++) {
                             const tile = template.layout[ty][tx];
-                            if (tile === TILE_EMPTY) continue; // -1 is ignored
+                            if (tile === TILE_EMPTY) continue;
 
                             const mapX = x + tx;
                             const mapY = y + ty;
                             const mapTile = layout[mapY][mapX];
 
-                            // Rule: forceFloorPos must not be a wall or door
                             if (isForceFloor(mapX, mapY, forceFloorPos) && (tile === TILE_WALL || tile === TILE_DOOR_CANDIDATE)) {
                                 isValid = false; break;
                             }
 
-                            // Rule: Template walls must overlap with existing walls
                             if (tile === TILE_WALL) {
                                 if (mapTile !== TILE_WALL && mapTile !== TILE_EMPTY) {
                                     isValid = false; break;
                                 }
-                                // If it overlaps a wall, calculate weight
                                 if (mapTile === TILE_WALL) {
                                     weight += isOuterWall(mapX, mapY, Width, Height) ? 2 : 1;
                                 }
@@ -157,14 +130,14 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
                         if (!isValid) break;
                     }
 
-                    if (isValid && weight > 0) { // Require at least one wall to overlap
+                    if (isValid && weight > 0) {
                         allValidPlacements.push({ template, x, y, weight });
                     }
                 }
             }
         }
 
-        if (allValidPlacements.length === 0) break; // No more valid placements found
+        if (allValidPlacements.length === 0) continue;
 
         // Weighted random selection
         const totalWeight = allValidPlacements.reduce((sum, p) => sum + p.weight, 0);
@@ -192,14 +165,13 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
 
                 if (templateTile === TILE_DOOR_CANDIDATE) {
                     if (isOuterWall(mapX, mapY, Width, Height)) {
-                        layout[mapY][mapX] = TILE_WALL; // Doors on outer wall become walls
+                        layout[mapY][mapX] = TILE_WALL;
                     } else if (existingTile === TILE_DOOR_CANDIDATE) {
-                        layout[mapY][mapX] = TILE_DOOR_CANDIDATE; // Keep door if both are doors
+                        layout[mapY][mapX] = TILE_DOOR_CANDIDATE;
                     } else if (existingTile === TILE_WALL) {
-                        layout[mapY][mapX] = TILE_WALL; // Becomes wall if hitting existing wall
-                    }
-                     else {
-                        layout[mapY][mapX] = TILE_DOOR_CANDIDATE; // Place new door candidate
+                        layout[mapY][mapX] = TILE_WALL;
+                    } else {
+                        layout[mapY][mapX] = TILE_DOOR_CANDIDATE;
                     }
                 } else {
                     layout[mapY][mapX] = templateTile;
@@ -208,31 +180,27 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
         }
     }
 
-    // 4. Finalization
+    // Finalization
     const doorCandidates: Vec2[] = [];
     for (let y = 0; y < Height; y++) {
         for (let x = 0; x < Width; x++) {
-            // Finalize public areas
             if (layout[y][x] === TILE_EMPTY) {
                 layout[y][x] = TILE_FLOOR;
             }
-            // Collect door candidates
             if (layout[y][x] === TILE_DOOR_CANDIDATE) {
                 doorCandidates.push([x, y]);
             }
         }
     }
 
-    // Finalize doors
     doorCandidates.forEach(([x, y]) => {
         if (random() < doorDensity) {
-            layout[y][x] = TILE_FLOOR; // Becomes a door (floor tile)
+            layout[y][x] = TILE_FLOOR;
         } else {
-            layout[y][x] = TILE_WALL; // Becomes a wall
+            layout[y][x] = TILE_WALL;
         }
     });
 
-    // Ensure forceFloorPos are floors
     forceFloorPos.forEach(([x, y]) => {
         if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1) {
             layout[y][x] = TILE_FLOOR;
