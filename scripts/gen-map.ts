@@ -38,7 +38,8 @@ function isPointInRect(point: Vec2, rect: Rect): boolean {
 }
 
 /**
- * The main recursive function to partition the map.
+ * The main recursive function to partition the map. This function's only job
+ * is to populate the areaGrid with area indices.
  * @param areaGrid The grid to store area indices.
  * @param rect The current rectangular region to partition.
  * @param areaIndices The indices of areas to place in this region.
@@ -50,12 +51,11 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         return;
     }
 
-    // Base case: If only one area, fill the rect with its index
     if (areaIndices.length === 1) {
         const areaIndex = areaIndices[0];
         for (let y = rect.y; y < rect.y + rect.height; y++) {
             for (let x = rect.x; x < rect.x + rect.width; x++) {
-                if (x < params.Width && y < params.Height) {
+                if (x >= 0 && x < params.Width && y >= 0 && y < params.Height) {
                     areaGrid[y][x] = areaIndex;
                 }
             }
@@ -63,57 +63,75 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         return;
     }
 
-    // --- Third attempt at partitioning logic ---
-    let splitVertical: boolean;
-    const canSplitVertical = rect.width > 2;
-    const canSplitHorizontal = rect.height > 2;
+    // Attempt to find a valid split
+    for (let i = 0; i < 10; i++) { // Try up to 10 times to find a valid split
+        let splitVertical: boolean;
+        const canSplitVertical = rect.width > 2;
+        const canSplitHorizontal = rect.height > 2;
 
-    if (!canSplitVertical && !canSplitHorizontal) {
-        // Cannot split further, fallback
-        const areaIndex = areaIndices[0];
-        for (let y = rect.y; y < rect.y + rect.height; y++) {
-            for (let x = rect.x; x < rect.x + rect.width; x++) {
-                if (x < params.Width && y < params.Height) {
-                    areaGrid[y][x] = areaIndex;
-                }
-            }
+        if (!canSplitVertical && !canSplitHorizontal) break;
+        if (canSplitVertical && !canSplitHorizontal) splitVertical = true;
+        else if (!canSplitVertical && canSplitHorizontal) splitVertical = false;
+        else splitVertical = random() > 0.5;
+
+        const minSplitOffset = 2;
+        const maxSplitOffset = (splitVertical ? rect.width : rect.height) - minSplitOffset;
+        if (minSplitOffset >= maxSplitOffset) continue;
+
+        const splitOffset = Math.floor(random() * (maxSplitOffset - minSplitOffset)) + minSplitOffset;
+
+        let rectA: Rect, rectB: Rect;
+        if (splitVertical) {
+            const splitX = rect.x + splitOffset;
+            rectA = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
+            rectB = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
+        } else {
+            const splitY = rect.y + splitOffset;
+            rectA = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
+            rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
         }
-        return;
-    } else if (canSplitVertical && !canSplitHorizontal) {
-        splitVertical = true;
-    } else if (!canSplitVertical && canSplitHorizontal) {
-        splitVertical = false;
-    } else {
-        splitVertical = random() > 0.5;
+
+        const mustGoInA: number[] = [];
+        const mustGoInB: number[] = [];
+        const unconstrained: number[] = [];
+        let possible = true;
+
+        for (const areaIndex of areaIndices) {
+            const requiredPos = params.mapAreaPos[areaIndex] || [];
+            const inA = requiredPos.every(p => isPointInRect(p, rectA));
+            const inB = requiredPos.every(p => isPointInRect(p, rectB));
+
+            if (inA) mustGoInA.push(areaIndex);
+            else if (inB) mustGoInB.push(areaIndex);
+            else if (requiredPos.length > 0) { possible = false; break; }
+            else unconstrained.push(areaIndex);
+        }
+        if (!possible) continue;
+
+        // Randomly distribute unconstrained areas
+        unconstrained.forEach(areaIndex => {
+            if (mustGoInA.length < areaIndices.length / 2 && random() > 0.5) {
+                mustGoInA.push(areaIndex);
+            } else {
+                mustGoInB.push(areaIndex);
+            }
+        });
+
+        if (mustGoInA.length > 0 && mustGoInB.length > 0) {
+            recursivePartition(areaGrid, rectA, mustGoInA, params, random);
+            recursivePartition(areaGrid, rectB, mustGoInB, params, random);
+            return;
+        }
     }
 
-    // Determine the groups of areas
-    const midPoint = Math.floor(areaIndices.length / 2);
-    const groupA = areaIndices.slice(0, midPoint);
-    const groupB = areaIndices.slice(midPoint);
-
-    // Determine a valid range for the split line
-    const minSplitOffset = 2; // Keep rooms at least 2 wide/high
-    const maxSplitOffset = (splitVertical ? rect.width : rect.height) - minSplitOffset;
-
-    if (minSplitOffset >= maxSplitOffset) {
-        // Fallback if the rectangle is too small to split meaningfully
-        const areaIndex = areaIndices[0];
-        for (let y = rect.y; y < rect.y + rect.height; y++) {
-            for (let x = rect.x; x < rect.x + rect.width; x++) {
-                if (x < params.Width && y < params.Height) {
-                    areaGrid[y][x] = areaIndex;
-                }
-            }
-        }
-        return;
-    }
-
-    // Randomly choose a split point within the valid range
-    const splitOffset = Math.floor(random() * (maxSplitOffset - minSplitOffset)) + minSplitOffset;
-
+    // Fallback if no valid split found
+    const mid = Math.floor(areaIndices.length / 2);
+    const groupA = areaIndices.slice(0, mid);
+    const groupB = areaIndices.slice(mid);
+    const fallbackSplitVertical = rect.width > rect.height;
+    const splitOffset = Math.floor((fallbackSplitVertical ? rect.width : rect.height) / 2);
     let rectA: Rect, rectB: Rect;
-    if (splitVertical) {
+     if (fallbackSplitVertical) {
         const splitX = rect.x + splitOffset;
         rectA = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
         rectB = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
@@ -122,50 +140,8 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         rectA = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
         rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
     }
-
-    // This simplified logic doesn't re-verify constraints after the random split.
-    // This might fail if constraints are tight, but is more likely to produce varied rooms.
     recursivePartition(areaGrid, rectA, groupA, params, random);
     recursivePartition(areaGrid, rectB, groupB, params, random);
-}
-
-
-/**
- * Checks if a given rectangle can satisfy the constraints for a set of areas.
- * @param rect The rectangle to check.
- * @param areaIndices The indices of areas to be placed in the rectangle.
- * @param params The global map generation parameters.
- * @returns True if the constraints can be satisfied, false otherwise.
- */
-function canSatisfyConstraints(rect: Rect, areaIndices: number[], params: GenMapParams): boolean {
-    if (rect.width <= 0 || rect.height <= 0) {
-        return false;
-    }
-
-    // Check mapAreaPos constraint: all required positions for the given areas must be within the rect
-    for (const areaIndex of areaIndices) {
-        const required_positions = params.mapAreaPos[areaIndex];
-        if (required_positions) {
-            for (const pos of required_positions) {
-                if (!isPointInRect(pos, rect)) {
-                    return false; // A required point is outside this rect
-                }
-            }
-        }
-    }
-
-    // A simple heuristic: check if the total minimum area is smaller than the rect area.
-    let totalMinArea = 0;
-    for (const areaIndex of areaIndices) {
-        const minSize = params.minAreaSize[areaIndex] || [1, 1];
-        totalMinArea += minSize[0] * minSize[1];
-    }
-
-    if (rect.width * rect.height < totalMinArea) {
-        return false;
-    }
-
-    return true;
 }
 
 
@@ -194,23 +170,56 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
   const layout: number[][] = Array(params.Height).fill(0).map(() => Array(params.Width).fill(TILE_FLOOR));
   const areaGrid: number[][] = Array(params.Height).fill(0).map(() => Array(params.Width).fill(-1));
 
-  // 2. Perform partitioning
+  // 2. Perform partitioning to fill areaGrid
   const initialRect: Rect = { x: 1, y: 1, width: params.Width - 2, height: params.Height - 2 };
   const allAreaIndices = Array.from({ length: params.AreaNum }, (_, i) => i);
   recursivePartition(areaGrid, initialRect, allAreaIndices, params, random);
 
-  // 3. Place walls based on area boundaries
-  for (let y = 0; y < params.Height -1; y++) {
+  // 3. Draw walls based on area boundaries
+  for (let y = 0; y < params.Height - 1; y++) {
     for (let x = 0; x < params.Width - 1; x++) {
-        const currentArea = areaGrid[y][x];
-        const rightArea = areaGrid[y][x+1];
-        const downArea = areaGrid[y+1][x];
-
-        if (currentArea !== -1 && rightArea !== -1 && currentArea !== rightArea) {
+        const area1 = areaGrid[y][x];
+        const area2 = areaGrid[y][x+1];
+        const area3 = areaGrid[y+1][x];
+        if (area1 !== -1 && area2 !== -1 && area1 !== area2) {
             layout[y][x+1] = TILE_WALL;
         }
-        if (currentArea !== -1 && downArea !== -1 && currentArea !== downArea) {
+        if (area1 !== -1 && area3 !== -1 && area1 !== area3) {
             layout[y+1][x] = TILE_WALL;
+        }
+    }
+  }
+
+  // --- Perturb Walls ---
+  for (let y = 1; y < params.Height - 2; y++) {
+    for (let x = 1; x < params.Width - 2; x++) {
+        // Find a vertical wall segment
+        if (layout[y][x] === TILE_WALL && layout[y+1][x] === TILE_WALL) {
+            if (random() > 0.7) { // Chance to perturb
+                const areaLeft = areaGrid[y][x-1];
+                const areaRight = areaGrid[y][x+1];
+                if (areaLeft !== -1 && areaRight !== -1 && areaLeft !== areaRight) {
+                    const pushDir = random() > 0.5 ? 1 : -1; // Push right or left
+                    if (areaGrid[y][x+pushDir] === (pushDir === 1 ? areaRight : areaLeft)) {
+                         layout[y][x] = TILE_FLOOR;
+                         layout[y][x+pushDir] = TILE_WALL;
+                    }
+                }
+            }
+        }
+         // Find a horizontal wall segment
+        if (layout[y][x] === TILE_WALL && layout[y][x+1] === TILE_WALL) {
+             if (random() > 0.7) { // Chance to perturb
+                const areaUp = areaGrid[y-1][x];
+                const areaDown = areaGrid[y+1][x];
+                 if (areaUp !== -1 && areaDown !== -1 && areaUp !== areaDown) {
+                    const pushDir = random() > 0.5 ? 1 : -1; // Push down or up
+                    if (areaGrid[y+pushDir][x] === (pushDir === 1 ? areaDown : areaUp)) {
+                         layout[y][x] = TILE_FLOOR;
+                         layout[y+pushDir][x] = TILE_WALL;
+                    }
+                }
+            }
         }
     }
   }
@@ -218,15 +227,15 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
   // 4. Create doors based on LinkData
   params.LinkData.forEach(([areaA, areaB]) => {
     const possibleDoors: Vec2[] = [];
+    // This logic needs to be aware of the new wall layout
     for (let y = 1; y < params.Height - 2; y++) {
         for (let x = 1; x < params.Width - 2; x++) {
-            // Check for vertical walls between A and B
-            if ( (areaGrid[y][x] === areaA && areaGrid[y][x+1] === areaB) || (areaGrid[y][x] === areaB && areaGrid[y][x+1] === areaA) ) {
-                if (layout[y][x+1] === TILE_WALL) possibleDoors.push([x+1, y]);
+            const currentArea = areaGrid[y][x];
+            if (layout[y][x+1] === TILE_WALL && ((currentArea === areaA && areaGrid[y][x+2] === areaB) || (currentArea === areaB && areaGrid[y][x+2] === areaA))) {
+                possibleDoors.push([x+1, y]);
             }
-            // Check for horizontal walls between A and B
-            if ( (areaGrid[y][x] === areaA && areaGrid[y+1][x] === areaB) || (areaGrid[y][x] === areaB && areaGrid[y+1][x] === areaA) ) {
-                if(layout[y+1][x] === TILE_WALL) possibleDoors.push([x, y+1]);
+             if (layout[y+1][x] === TILE_WALL && ((currentArea === areaA && areaGrid[y+2][x] === areaB) || (currentArea === areaB && areaGrid[y+2][x] === areaA))) {
+                possibleDoors.push([x, y+1]);
             }
         }
     }
