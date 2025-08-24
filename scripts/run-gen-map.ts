@@ -20,7 +20,6 @@ function formatLayoutForDisplay(layout: number[][]): string {
     return rows.join(',\n');
 }
 
-
 /**
  * Main function to run the map generator.
  */
@@ -46,50 +45,29 @@ function main() {
   console.log('Starting map generation with parameters:');
   console.log(JSON.stringify(exampleParams, null, 2));
 
-  let attempts = 0;
-  const maxAttempts = 100;
-  let finalLayout: number[][] | null = null;
-  let finalAreaGrid: number[][] | null = null;
-  let success = false;
+  const { layout, areaGrid } = generateMapLayout(exampleParams);
 
-  while (attempts < maxAttempts && !success) {
-    attempts++;
-    const currentSeed = exampleParams.seed + attempts - 1;
-    console.log(`\n--- Generation Attempt ${attempts} (Seed: ${currentSeed}) ---`);
-    const { layout, areaGrid } = generateMapLayout({ ...exampleParams, seed: currentSeed});
+  const tileAssetsString = JSON.stringify({ '0': 'map_floor', '1': 'map_wall' }, null, 2);
+  const layoutString = formatLayoutForDisplay(layout);
 
-    if (verifyAllConstraints(areaGrid, exampleParams)) {
-        success = true;
-        finalLayout = layout;
-        finalAreaGrid = areaGrid;
-        console.log("Successfully generated a valid map!");
-    } else {
-        console.log("Constraint check failed. Retrying...");
-    }
-  }
-
-  if (success && finalLayout && finalAreaGrid) {
-    const tileAssetsString = JSON.stringify({ '0': 'map_floor', '1': 'map_wall' }, null, 2);
-    const layoutString = formatLayoutForDisplay(finalLayout);
-
-    const outputString = `{
+  const outputString = `{
   "tileAssets": ${tileAssetsString},
   "layout": [
 ${layoutString}
   ]
 }`;
 
-    const outputPath = path.join('mapdata', exampleParams.outputFilename);
-    fs.writeFileSync(outputPath, outputString);
+  const outputPath = path.join('mapdata', exampleParams.outputFilename);
+  fs.writeFileSync(outputPath, outputString);
 
-    console.log(`\nMap successfully generated and saved to ${outputPath}`);
-    logAreaDimensions(finalAreaGrid, exampleParams.AreaNum);
-  } else {
-    console.error(`\nFailed to generate a valid map after ${maxAttempts} attempts.`);
-  }
+  console.log(`\nMap successfully generated and saved to ${outputPath}`);
+  logAreaDimensions(areaGrid, exampleParams.AreaNum);
 }
 
-function getAreaBounds(areaGrid: number[][], areaNum: number): Record<number, { minX: number, minY: number, maxX: number, maxY: number }> {
+/**
+ * Calculates and logs the dimensions of each area in the grid.
+ */
+function logAreaDimensions(areaGrid: number[][], areaNum: number) {
     const bounds: Record<number, { minX: number, minY: number, maxX: number, maxY: number }> = {};
     for (let i = 0; i < areaNum; i++) { bounds[i] = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }; }
     const height = areaGrid.length;
@@ -106,15 +84,6 @@ function getAreaBounds(areaGrid: number[][], areaNum: number): Record<number, { 
             }
         }
     }
-    return bounds;
-}
-
-
-/**
- * Calculates and logs the dimensions of each area in the grid.
- */
-function logAreaDimensions(areaGrid: number[][], areaNum: number) {
-    const bounds = getAreaBounds(areaGrid, areaNum);
     console.log('\n--- Generated Area Dimensions ---');
     for (let i = 0; i < areaNum; i++) {
         const b = bounds[i];
@@ -127,70 +96,5 @@ function logAreaDimensions(areaGrid: number[][], areaNum: number) {
     }
     console.log('---------------------------------');
 }
-
-/**
- * Verifies all constraints (connectivity, min size, required positions).
- */
-function verifyAllConstraints(areaGrid: number[][], params: GenMapParams): boolean {
-    console.log('--- Verifying All Constraints ---');
-    let allOk = true;
-
-    // 1. Verify Connectivity
-    for (const link of params.LinkData) {
-        const [areaA, areaB] = link;
-        let isAdjacent = false;
-        for (let y = 0; y < areaGrid.length - 1; y++) {
-            for (let x = 0; x < areaGrid[0].length - 1; x++) {
-                const current = areaGrid[y][x];
-                const right = areaGrid[y][x+1];
-                const down = areaGrid[y+1][x];
-                if ((current === areaA && (right === areaB || down === areaB)) || (current === areaB && (right === areaA || down === areaA))) {
-                    isAdjacent = true;
-                    break;
-                }
-            }
-            if (isAdjacent) break;
-        }
-        if (!isAdjacent) {
-            console.log(`Connectivity FAIL: Link [${areaA}, ${areaB}] are not adjacent.`);
-            allOk = false;
-        }
-    }
-
-    // 2. Verify mapAreaPos
-    for (const areaIndexStr in params.mapAreaPos) {
-        const areaIndex = parseInt(areaIndexStr, 10);
-        const positions = params.mapAreaPos[areaIndex];
-        for (const pos of positions) {
-            const [x, y] = pos;
-            if (areaGrid[y][x] !== areaIndex) {
-                 console.log(`mapAreaPos FAIL: Pos [${x},${y}] is in area ${areaGrid[y][x]} but should be in ${areaIndex}.`);
-                 allOk = false;
-            }
-        }
-    }
-
-    // 3. Verify minAreaSize
-    const bounds = getAreaBounds(areaGrid, params.AreaNum);
-     for (const areaIndexStr in params.minAreaSize) {
-        const areaIndex = parseInt(areaIndexStr, 10);
-        const minSize = params.minAreaSize[areaIndex];
-        const b = bounds[areaIndex];
-        if (b.minX === Infinity) {
-             console.log(`minAreaSize FAIL: Area ${areaIndex} was not generated.`);
-             allOk = false;
-             continue;
-        }
-        const w = b.maxX - b.minX + 1;
-        const h = b.maxY - b.minY + 1;
-        if (w < minSize[0] || h < minSize[1]) {
-            console.log(`minAreaSize FAIL: Area ${areaIndex} is ${w}x${h}, smaller than required ${minSize[0]}x${minSize[1]}.`);
-            allOk = false;
-        }
-    }
-
-    return allOk;
-}
-
 
 main();
