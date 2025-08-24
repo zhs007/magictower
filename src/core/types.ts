@@ -130,6 +130,7 @@ export interface IDoor {
 export interface GameState {
     currentFloor: number;
     map: number[][];
+    tileAssets?: Record<string, string>;
     player: IPlayer;
     entities: Record<string, any>; // A dictionary of all entities on the map
     monsters: Record<string, IMonster>;

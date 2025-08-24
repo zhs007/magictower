@@ -89,21 +89,54 @@ export class Renderer {
         }
         this.wallSprites = [];
 
+        const useNewTiles = state.tileAssets && Object.keys(state.tileAssets).length > 0;
+
         for (let y = 0; y < state.map.length; y++) {
             for (let x = 0; x < state.map[y].length; x++) {
                 const tileValue = state.map[y][x];
+                let tileTexture;
 
-                // Always draw a floor tile
-                const floorSprite = new Sprite(this.resolveTextureAlias('floor', 'map'));
-                floorSprite.x = x * TILE_SIZE;
-                floorSprite.y = y * TILE_SIZE;
-                floorSprite.width = TILE_SIZE;
-                floorSprite.height = TILE_SIZE;
-                this.floorContainer.addChild(floorSprite);
+                if (useNewTiles) {
+                    const assetId = state.tileAssets![tileValue];
+                    if (assetId) {
+                        tileTexture = Assets.get(assetId);
+                    } else {
+                        // Fallback for tiles not in tileAssets (e.g. treat as floor)
+                        const floorAssetId = state.tileAssets!['0'];
+                        tileTexture = floorAssetId ? Assets.get(floorAssetId) : Texture.EMPTY;
+                    }
+                } else {
+                    // Fallback to old system
+                    if (tileValue === 1) {
+                        tileTexture = this.resolveTextureAlias('wall', 'map');
+                    } else {
+                        tileTexture = this.resolveTextureAlias('floor', 'map');
+                    }
+                }
 
-                if (tileValue === 1) {
+                if (tileValue === 0) {
+                    // It's a floor tile
+                    const floorSprite = new Sprite(tileTexture);
+                    floorSprite.x = x * TILE_SIZE;
+                    floorSprite.y = y * TILE_SIZE;
+                    floorSprite.width = TILE_SIZE;
+                    floorSprite.height = TILE_SIZE;
+                    this.floorContainer.addChild(floorSprite);
+                } else if (tileValue === 1) {
+                    // Always draw a floor tile underneath walls
+                    const floorAssetId = useNewTiles
+                        ? state.tileAssets!['0']
+                        : this.resolveTextureAlias('floor', 'map');
+                    const floorTexture = useNewTiles ? Assets.get(floorAssetId) : floorAssetId;
+                    const floorSprite = new Sprite(floorTexture);
+                    floorSprite.x = x * TILE_SIZE;
+                    floorSprite.y = y * TILE_SIZE;
+                    floorSprite.width = TILE_SIZE;
+                    floorSprite.height = TILE_SIZE;
+                    this.floorContainer.addChild(floorSprite);
+
                     // It's a wall
-                    const wallSprite = new Sprite(this.resolveTextureAlias('wall', 'map'));
+                    const wallSprite = new Sprite(tileTexture);
                     wallSprite.anchor.set(0.5, 1); // Bottom-center
                     wallSprite.x = x * TILE_SIZE + TILE_SIZE / 2;
                     wallSprite.y = (y + 1) * TILE_SIZE;

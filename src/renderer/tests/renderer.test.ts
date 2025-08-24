@@ -84,8 +84,8 @@ describe('Renderer', () => {
         expect(renderer['mainContainer'].addChild).toHaveBeenCalledTimes(4);
 
         const PIXI = await import('pixi.js');
-        expect(PIXI.Assets.get).toHaveBeenCalledWith('wall');
-        expect(PIXI.Assets.get).toHaveBeenCalledWith('floor');
+        expect(PIXI.Assets.get).toHaveBeenCalledWith('map_wall');
+        expect(PIXI.Assets.get).toHaveBeenCalledWith('map_floor');
         expect(PIXI.Assets.get).toHaveBeenCalledWith('player');
         expect(PIXI.Assets.get).toHaveBeenCalledWith('monster_green_slime');
         expect(PIXI.Assets.get).toHaveBeenCalledWith('item_yellow_key');

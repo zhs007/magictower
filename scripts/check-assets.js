@@ -3,6 +3,7 @@ import path from 'path';
 
 const repoRoot = path.resolve(new URL('..', import.meta.url).pathname);
 const gamedataDir = path.join(repoRoot, 'gamedata');
+const mapdataDir = path.join(repoRoot, 'mapdata');
 const assetsDir = path.join(repoRoot, 'assets');
 
 function collectJsonFiles(dir) {
@@ -46,9 +47,12 @@ for (const af of assetFiles) {
   aliasMap.set(alias, af);
 }
 
-const jsonFiles = collectJsonFiles(gamedataDir);
+const gamedataJsonFiles = collectJsonFiles(gamedataDir);
+const mapdataJsonFiles = collectJsonFiles(mapdataDir);
 const missing = [];
-for (const jf of jsonFiles) {
+
+// Check gamedata files
+for (const jf of gamedataJsonFiles) {
   const raw = fs.readFileSync(jf, 'utf8');
   let obj;
   try {
@@ -62,6 +66,27 @@ for (const jf of jsonFiles) {
   if (!aliasMap.has(assetId)) {
     missing.push({ file: jf, assetId });
   }
+}
+
+// Check mapdata files for tileAssets
+for (const jf of mapdataJsonFiles) {
+    const raw = fs.readFileSync(jf, 'utf8');
+    let obj;
+    try {
+        obj = JSON.parse(raw);
+    } catch (e) {
+        console.error('invalid json', jf, e.message);
+        continue;
+    }
+
+    if (obj.tileAssets && typeof obj.tileAssets === 'object') {
+        for (const tileValue in obj.tileAssets) {
+            const assetId = obj.tileAssets[tileValue];
+            if (assetId && !aliasMap.has(assetId)) {
+                missing.push({ file: jf, assetId: assetId, context: `tileAssets[${tileValue}]` });
+            }
+        }
+    }
 }
 
 if (missing.length === 0) {
