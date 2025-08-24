@@ -97,10 +97,13 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
             let templateWallCount = 0;
             for(const row of template.layout) {
                 for(const tile of row) {
-                    if (tile === TILE_WALL) templateWallCount++;
+                    // FIX: Count door candidates as walls for overlap rule
+                    if (tile === TILE_WALL || tile === TILE_DOOR_CANDIDATE) {
+                        templateWallCount++;
+                    }
                 }
             }
-            if (templateWallCount === 0) continue; // Cannot place templates without walls
+            if (templateWallCount === 0) continue;
 
             for (let y = 0; y <= Height - template.height; y++) {
                 for (let x = 0; x <= Width - template.width; x++) {
@@ -121,11 +124,11 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
                                 isValid = false; break;
                             }
 
-                            if (tile === TILE_WALL) {
-                                if (mapTile !== TILE_WALL && mapTile !== TILE_EMPTY) {
+                            if (tile === TILE_WALL || tile === TILE_DOOR_CANDIDATE) {
+                                if (mapTile !== TILE_WALL && mapTile !== TILE_DOOR_CANDIDATE && mapTile !== TILE_EMPTY) {
                                     isValid = false; break;
                                 }
-                                if (mapTile === TILE_WALL) {
+                                if (mapTile === TILE_WALL || mapTile === TILE_DOOR_CANDIDATE) {
                                     weight += isOuterWall(mapX, mapY, Width, Height) ? 2 : 1;
                                     overlapWallCount++;
                                 } else { // Placing a new wall, check for adjacent walls
@@ -141,8 +144,6 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
                         if (!isValid) break;
                     }
 
-                    // Rule 1: Placement must be valid based on above checks
-                    // Rule 2: Overlap must be > 40% of template walls
                     if (isValid && overlapWallCount > (templateWallCount * 2 / 5)) {
                         allValidPlacements.push({ template, x, y, weight });
                     }
@@ -172,14 +173,10 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
 
                 const mapX = x + tx;
                 const mapY = y + ty;
-                const existingTile = layout[mapY][mapX];
 
+                // FIX: Simplified door placement logic
                 if (templateTile === TILE_DOOR_CANDIDATE) {
                     if (isOuterWall(mapX, mapY, Width, Height)) {
-                        layout[mapY][mapX] = TILE_WALL;
-                    } else if (existingTile === TILE_DOOR_CANDIDATE) {
-                        layout[mapY][mapX] = TILE_DOOR_CANDIDATE;
-                    } else if (existingTile === TILE_WALL) {
                         layout[mapY][mapX] = TILE_WALL;
                     } else {
                         layout[mapY][mapX] = TILE_DOOR_CANDIDATE;

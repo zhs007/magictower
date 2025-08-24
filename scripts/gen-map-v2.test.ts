@@ -73,7 +73,9 @@ describe('Map Generator V2', () => {
   });
 
   it('should have more walls when doorDensity is 0 than when it is 1', () => {
+    // Give it more attempts to ensure a door candidate is likely to be placed.
     const templateData: TemplateConstraint[] = [
+        [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99],
         [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99]
     ];
     const params0 = { ...baseParams, seed: 1, doorDensity: 0, templateData };
