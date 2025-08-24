@@ -38,6 +38,67 @@ function isPointInRect(point: Vec2, rect: Rect): boolean {
 }
 
 /**
+ * Finds a valid way to partition a set of areas based on connectivity.
+ * @param areas The list of area indices to partition.
+ * @param allLinks The global link data.
+ * @param random The seeded PRNG.
+ * @returns A tuple containing two arrays, representing the two partitioned groups.
+ */
+function findValidPartition(areas: number[], allLinks: [number, number][], random: () => number): [number[], number[]] {
+    if (areas.length <= 1) {
+        return [areas, []];
+    }
+
+    const areaSet = new Set(areas);
+    const adj: Record<number, number[]> = {};
+    areas.forEach(area => adj[area] = []);
+
+    // Build adjacency list for the current subset of areas
+    allLinks.forEach(([u, v]) => {
+        if (areaSet.has(u) && areaSet.has(v)) {
+            adj[u].push(v);
+            adj[v].push(u);
+        }
+    });
+
+    const groupA = new Set<number>();
+    const startNode = areas[Math.floor(random() * areas.length)];
+    const queue = [startNode];
+    const visited = new Set([startNode]);
+    groupA.add(startNode);
+
+    // Randomly decide the size of the first group
+    const groupASize = Math.floor(random() * (areas.length - 1)) + 1;
+
+    // Perform a BFS to find a connected component of the target size
+    while (queue.length > 0 && groupA.size < groupASize) {
+        const u = queue.shift()!;
+        // Shuffle neighbors to add randomness
+        const neighbors = adj[u].sort(() => random() - 0.5);
+        for (const v of neighbors) {
+            if (!visited.has(v)) {
+                visited.add(v);
+                groupA.add(v);
+                queue.push(v);
+                if (groupA.size >= groupASize) break;
+            }
+        }
+    }
+
+    const groupA_array = Array.from(groupA);
+    const groupB_array = areas.filter(area => !groupA.has(area));
+
+    if (groupA_array.length === 0 || groupB_array.length === 0) {
+        // Fallback for disconnected graphs or other edge cases
+        const mid = Math.floor(areas.length / 2);
+        return [areas.slice(0, mid), areas.slice(mid)];
+    }
+
+    return [groupA_array, groupB_array];
+}
+
+
+/**
  * The main recursive function to partition the map. This function's only job
  * is to populate the areaGrid with area indices.
  * @param areaGrid The grid to store area indices.
@@ -63,8 +124,10 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         return;
     }
 
+    const [groupA, groupB] = findValidPartition(areaIndices, params.LinkData, random);
+
     // Attempt to find a valid split
-    for (let i = 0; i < 10; i++) { // Try up to 10 times to find a valid split
+    for (let i = 0; i < 10; i++) {
         let splitVertical: boolean;
         const canSplitVertical = rect.width > 2;
         const canSplitHorizontal = rect.height > 2;
@@ -91,43 +154,21 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
             rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
         }
 
-        const mustGoInA: number[] = [];
-        const mustGoInB: number[] = [];
-        const unconstrained: number[] = [];
-        let possible = true;
+        // Validate that constrained positions are respected by this split
+        const groupA_constrained = groupA.filter(a => params.mapAreaPos[a]);
+        const groupB_constrained = groupB.filter(a => params.mapAreaPos[a]);
 
-        for (const areaIndex of areaIndices) {
-            const requiredPos = params.mapAreaPos[areaIndex] || [];
-            const inA = requiredPos.every(p => isPointInRect(p, rectA));
-            const inB = requiredPos.every(p => isPointInRect(p, rectB));
+        const isA_valid = groupA_constrained.every(a => params.mapAreaPos[a].every(p => isPointInRect(p, rectA)));
+        const isB_valid = groupB_constrained.every(a => params.mapAreaPos[a].every(p => isPointInRect(p, rectB)));
 
-            if (inA) mustGoInA.push(areaIndex);
-            else if (inB) mustGoInB.push(areaIndex);
-            else if (requiredPos.length > 0) { possible = false; break; }
-            else unconstrained.push(areaIndex);
-        }
-        if (!possible) continue;
-
-        // Randomly distribute unconstrained areas
-        unconstrained.forEach(areaIndex => {
-            if (mustGoInA.length < areaIndices.length / 2 && random() > 0.5) {
-                mustGoInA.push(areaIndex);
-            } else {
-                mustGoInB.push(areaIndex);
-            }
-        });
-
-        if (mustGoInA.length > 0 && mustGoInB.length > 0) {
-            recursivePartition(areaGrid, rectA, mustGoInA, params, random);
-            recursivePartition(areaGrid, rectB, mustGoInB, params, random);
+        if (isA_valid && isB_valid) {
+            recursivePartition(areaGrid, rectA, groupA, params, random);
+            recursivePartition(areaGrid, rectB, groupB, params, random);
             return;
         }
     }
 
     // Fallback if no valid split found
-    const mid = Math.floor(areaIndices.length / 2);
-    const groupA = areaIndices.slice(0, mid);
-    const groupB = areaIndices.slice(mid);
     const fallbackSplitVertical = rect.width > rect.height;
     const splitOffset = Math.floor((fallbackSplitVertical ? rect.width : rect.height) / 2);
     let rectA: Rect, rectB: Rect;
