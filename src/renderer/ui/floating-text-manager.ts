@@ -1,4 +1,4 @@
-import { Container, Sprite, Text } from 'pixi.js';
+import { Container, Sprite, Text, TextStyleFontWeight } from 'pixi.js';
 import { gsap } from 'gsap';
 
 export type FloatingTextType = 'DAMAGE' | 'HEAL' | 'ITEM_GAIN' | 'STAT_INCREASE';
@@ -41,17 +41,20 @@ export class FloatingTextManager {
     }
 
     private getStyle(type: FloatingTextType) {
+        const fontWeight: TextStyleFontWeight = 'bold';
+        const normalWeight: TextStyleFontWeight = 'normal';
+
         switch (type) {
             case 'DAMAGE':
-                return { fontSize: 24, fill: 'red', fontWeight: 'bold' };
+                return { fontSize: 24, fill: 'red', fontWeight };
             case 'HEAL':
-                return { fontSize: 24, fill: 'green', fontWeight: 'bold' };
+                return { fontSize: 24, fill: 'green', fontWeight };
             case 'ITEM_GAIN':
-                return { fontSize: 22, fill: 'yellow', fontWeight: 'bold' };
+                return { fontSize: 22, fill: 'yellow', fontWeight };
             case 'STAT_INCREASE':
-                return { fontSize: 22, fill: 'orange', fontWeight: 'bold' };
+                return { fontSize: 22, fill: 'orange', fontWeight };
             default:
-                return { fontSize: 20, fill: 'white', fontWeight: 'normal' };
+                return { fontSize: 20, fill: 'white', fontWeight: normalWeight };
         }
     }
 

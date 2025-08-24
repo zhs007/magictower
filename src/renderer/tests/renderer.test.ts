@@ -155,11 +155,7 @@ describe('Renderer', () => {
 
         renderer.showFloatingTextOnEntity('Test Text', 'ITEM_GAIN', playerEntityKey);
 
-        expect(textManagerAddSpy).toHaveBeenCalledWith(
-            'Test Text',
-            'ITEM_GAIN',
-            playerEntityKey
-        );
+        expect(textManagerAddSpy).toHaveBeenCalledWith('Test Text', 'ITEM_GAIN', playerEntityKey);
     });
 });
 
