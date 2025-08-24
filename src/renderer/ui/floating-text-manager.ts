@@ -56,7 +56,7 @@ export class FloatingTextManager {
     }
 
     private createAndAnimateText(request: FloatingTextRequest): void {
-        console.log(`[FloatingTextManager] Processing request for entityId: ${request.entityId}`);
+        console.log(`[FloatingTextManager] Processing request:`, JSON.stringify(request, null, 2));
         console.log(`[FloatingTextManager] Available sprite keys:`, Array.from(this.entitySprites.keys()));
         const sprite = this.entitySprites.get(request.entityId);
 
