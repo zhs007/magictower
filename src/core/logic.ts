@@ -52,9 +52,19 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     }
 
     // Check for entity interaction at the destination
-    const destinationEntityKey = Object.keys(newState.entities).find(
-        (k) => newState.entities[k].x === newX && newState.entities[k].y === newY
-    );
+    console.log(`Checking for entity at ${newX}, ${newY}`);
+    console.log('Entities:', newState.entities);
+    const destinationEntityKey = Object.keys(newState.entities).find((k) => {
+        const entity = newState.entities[k];
+        const match = entity.x === newX && entity.y === newY;
+        if (match) {
+            console.log('Found matching entity:', k, entity);
+        }
+        return match;
+    });
+
+    console.log('destinationEntityKey:', destinationEntityKey);
+
     if (destinationEntityKey) {
         const destinationEntity = newState.entities[destinationEntityKey];
         if (destinationEntity.type === 'item') {

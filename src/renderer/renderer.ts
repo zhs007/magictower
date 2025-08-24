@@ -44,7 +44,8 @@ export class Renderer {
         // or filename for top-level assets (e.g. 'player'). Use import.meta.glob to get URLs.
         const modules = import.meta.glob('/assets/**/*.{png,jpg,jpeg,webp}', {
             eager: true,
-            as: 'url',
+            query: '?url',
+            import: 'default',
         }) as Record<string, string>;
         const assetsList: { alias: string; src: string }[] = [];
         for (const p in modules) {
@@ -212,26 +213,18 @@ export class Renderer {
     }
 
     public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
-        console.log('animateItemPickup called');
         if (state.interactionState.type !== 'item_pickup') return;
 
         const playerKey = Object.keys(state.entities).find(
             (k) => state.entities[k].type === 'player_start'
         );
-        if (!playerKey) {
-            console.log('animateItemPickup: playerKey not found');
-            return;
-        }
+        if (!playerKey) return;
 
         const player = state.entities[playerKey];
         const playerSprite = this.entitySprites.get(playerKey);
         const itemSprite = this.entitySprites.get(state.interactionState.itemId);
 
-        console.log('playerSprite:', playerSprite);
-        console.log('itemSprite:', itemSprite);
-
         if (!playerSprite || !itemSprite) {
-            console.log('animateItemPickup: missing sprite, calling onComplete manually.');
             onComplete();
             return;
         }
