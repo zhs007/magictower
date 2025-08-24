@@ -31,87 +31,12 @@ interface Rect {
   height: number;
 }
 
-// Helper function to check if a point is inside a rectangle
-function isPointInRect(point: Vec2, rect: Rect): boolean {
-    return point[0] >= rect.x && point[0] < rect.x + rect.width &&
-           point[1] >= rect.y && point[1] < rect.y + rect.height;
-}
-
-/**
- * Finds a valid way to partition a set of areas based on connectivity.
- * @param areas The list of area indices to partition.
- * @param allLinks The global link data.
- * @param random The seeded PRNG.
- * @returns A tuple containing two arrays, representing the two partitioned groups.
- */
-function findValidPartition(areas: number[], allLinks: [number, number][], random: () => number): [number[], number[]] {
-    if (areas.length <= 1) {
-        return [areas, []];
-    }
-
-    const areaSet = new Set(areas);
-    const adj: Record<number, number[]> = {};
-    areas.forEach(area => adj[area] = []);
-
-    // Build adjacency list for the current subset of areas
-    allLinks.forEach(([u, v]) => {
-        if (areaSet.has(u) && areaSet.has(v)) {
-            adj[u].push(v);
-            adj[v].push(u);
-        }
-    });
-
-    const groupA = new Set<number>();
-    const startNode = areas[Math.floor(random() * areas.length)];
-    const queue = [startNode];
-    const visited = new Set([startNode]);
-    groupA.add(startNode);
-
-    // Randomly decide the size of the first group
-    const groupASize = Math.floor(random() * (areas.length - 1)) + 1;
-
-    // Perform a BFS to find a connected component of the target size
-    while (queue.length > 0 && groupA.size < groupASize) {
-        const u = queue.shift()!;
-        // Shuffle neighbors to add randomness
-        const neighbors = adj[u].sort(() => random() - 0.5);
-        for (const v of neighbors) {
-            if (!visited.has(v)) {
-                visited.add(v);
-                groupA.add(v);
-                queue.push(v);
-                if (groupA.size >= groupASize) break;
-            }
-        }
-    }
-
-    const groupA_array = Array.from(groupA);
-    const groupB_array = areas.filter(area => !groupA.has(area));
-
-    if (groupA_array.length === 0 || groupB_array.length === 0) {
-        // Fallback for disconnected graphs or other edge cases
-        const mid = Math.floor(areas.length / 2);
-        return [areas.slice(0, mid), areas.slice(mid)];
-    }
-
-    return [groupA_array, groupB_array];
-}
-
-
 /**
  * The main recursive function to partition the map. This function's only job
  * is to populate the areaGrid with area indices.
- * @param areaGrid The grid to store area indices.
- * @param rect The current rectangular region to partition.
- * @param areaIndices The indices of areas to place in this region.
- * @param params The global map generation parameters.
- * @param random The seeded PRNG function.
  */
 function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: number[], params: GenMapParams, random: () => number) {
-    if (areaIndices.length === 0) {
-        return;
-    }
-
+    if (areaIndices.length === 0) return;
     if (areaIndices.length === 1) {
         const areaIndex = areaIndices[0];
         for (let y = rect.y; y < rect.y + rect.height; y++) {
@@ -124,55 +49,41 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         return;
     }
 
-    const [groupA, groupB] = findValidPartition(areaIndices, params.LinkData, random);
+    let splitVertical: boolean;
+    const canSplitVertical = rect.width > 2;
+    const canSplitHorizontal = rect.height > 2;
 
-    // Attempt to find a valid split
-    for (let i = 0; i < 10; i++) {
-        let splitVertical: boolean;
-        const canSplitVertical = rect.width > 2;
-        const canSplitHorizontal = rect.height > 2;
-
-        if (!canSplitVertical && !canSplitHorizontal) break;
-        if (canSplitVertical && !canSplitHorizontal) splitVertical = true;
-        else if (!canSplitVertical && canSplitHorizontal) splitVertical = false;
-        else splitVertical = random() > 0.5;
-
-        const minSplitOffset = 2;
-        const maxSplitOffset = (splitVertical ? rect.width : rect.height) - minSplitOffset;
-        if (minSplitOffset >= maxSplitOffset) continue;
-
-        const splitOffset = Math.floor(random() * (maxSplitOffset - minSplitOffset)) + minSplitOffset;
-
-        let rectA: Rect, rectB: Rect;
-        if (splitVertical) {
-            const splitX = rect.x + splitOffset;
-            rectA = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
-            rectB = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
-        } else {
-            const splitY = rect.y + splitOffset;
-            rectA = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
-            rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
-        }
-
-        // Validate that constrained positions are respected by this split
-        const groupA_constrained = groupA.filter(a => params.mapAreaPos[a]);
-        const groupB_constrained = groupB.filter(a => params.mapAreaPos[a]);
-
-        const isA_valid = groupA_constrained.every(a => params.mapAreaPos[a].every(p => isPointInRect(p, rectA)));
-        const isB_valid = groupB_constrained.every(a => params.mapAreaPos[a].every(p => isPointInRect(p, rectB)));
-
-        if (isA_valid && isB_valid) {
-            recursivePartition(areaGrid, rectA, groupA, params, random);
-            recursivePartition(areaGrid, rectB, groupB, params, random);
-            return;
-        }
+    if (!canSplitVertical && !canSplitHorizontal) { // Cannot split further, fallback
+        areaIndices.forEach((areaIndex, i) => {
+            if (i === 0) areaGrid[rect.y][rect.x] = areaIndex;
+        });
+        return;
+    } else if (canSplitVertical && !canSplitHorizontal) {
+        splitVertical = true;
+    } else if (!canSplitVertical && canSplitHorizontal) {
+        splitVertical = false;
+    } else {
+        splitVertical = random() > 0.5;
     }
 
-    // Fallback if no valid split found
-    const fallbackSplitVertical = rect.width > rect.height;
-    const splitOffset = Math.floor((fallbackSplitVertical ? rect.width : rect.height) / 2);
+    // Simple random grouping
+    const shuffledIndices = [...areaIndices].sort(() => random() - 0.5);
+    const splitPoint = Math.floor(random() * (shuffledIndices.length - 1)) + 1;
+    const groupA = shuffledIndices.slice(0, splitPoint);
+    const groupB = shuffledIndices.slice(splitPoint);
+
+    const minSplitOffset = 2;
+    const maxSplitOffset = (splitVertical ? rect.width : rect.height) - minSplitOffset;
+
+    if (minSplitOffset >= maxSplitOffset) { // Fallback if too small
+        recursivePartition(areaGrid, rect, [areaIndices[0]], params, random);
+        return;
+    }
+
+    const splitOffset = Math.floor(random() * (maxSplitOffset - minSplitOffset)) + minSplitOffset;
+
     let rectA: Rect, rectB: Rect;
-     if (fallbackSplitVertical) {
+    if (splitVertical) {
         const splitX = rect.x + splitOffset;
         rectA = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
         rectB = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
@@ -181,6 +92,7 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         rectA = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
         rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
     }
+
     recursivePartition(areaGrid, rectA, groupA, params, random);
     recursivePartition(areaGrid, rectB, groupB, params, random);
 }
@@ -188,8 +100,6 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
 
 /**
  * Creates a seeded pseudo-random number generator (PRNG) using the mulberry32 algorithm.
- * @param seed The seed for the PRNG.
- * @returns A function that returns a random number between 0 and 1.
  */
 function createPRNG(seed: number): () => number {
     return function() {
@@ -200,10 +110,55 @@ function createPRNG(seed: number): () => number {
     }
 }
 
+interface WallSegment {
+    start: Vec2;
+    end: Vec2;
+    orientation: 'V' | 'H';
+}
+
+function findWallSegments(layout: number[][], areaGrid: number[][]): WallSegment[] {
+    const segments: WallSegment[] = [];
+    const height = layout.length;
+    const width = layout[0]?.length || 0;
+    const visited: boolean[][] = Array(height).fill(0).map(() => Array(width).fill(false));
+
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            if (layout[y][x] === TILE_WALL && !visited[y][x]) {
+                const area1 = areaGrid[y][x-1];
+                const area2 = areaGrid[y][x+1];
+                if (area1 !== -1 && area2 !== -1 && area1 !== area2) {
+                    let endY = y;
+                    while (endY + 1 < height -1 && layout[endY+1][x] === TILE_WALL && areaGrid[endY+1][x-1] === area1 && areaGrid[endY+1][x+1] === area2) {
+                        endY++;
+                    }
+                    if (endY >= y) {
+                        segments.push({ start: [x, y], end: [x, endY], orientation: 'V' });
+                        for(let i = y; i <= endY; i++) visited[i][x] = true;
+                    }
+                }
+
+                const area3 = areaGrid[y-1][x];
+                const area4 = areaGrid[y+1][x];
+                if (area3 !== -1 && area4 !== -1 && area3 !== area4) {
+                    let endX = x;
+                    while (endX + 1 < width -1 && layout[y][endX+1] === TILE_WALL && areaGrid[y-1][endX+1] === area3 && areaGrid[y+1][endX+1] === area4) {
+                        endX++;
+                    }
+                     if (endX >= x) {
+                        segments.push({ start: [x, y], end: [endX, y], orientation: 'H' });
+                        for(let i = x; i <= endX; i++) visited[y][i] = true;
+                    }
+                }
+            }
+        }
+    }
+    return segments;
+}
+
+
 /**
  * Generates the map layout.
- * @param params The parameters for map generation.
- * @returns The generated map layout as a 2D array of tile IDs.
  */
 function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid: number[][] } {
   // 1. Initialize PRNG and grids
@@ -239,8 +194,8 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
         const len = segment.orientation === 'V' ? segment.end[1] - segment.start[1] : segment.end[0] - segment.start[0];
         if (len < 3) return; // Too short to bend
 
-        const bendIndex = Math.floor(random() * (len - 2)) + 1; // Pick a bend point (not at the ends)
-        const pushDist = random() > 0.7 ? 2 : 1; // Push by 1 or 2 tiles
+        const bendIndex = Math.floor(random() * (len - 2)) + 1;
+        const pushDist = random() > 0.7 ? 2 : 1;
         const pushDir = random() > 0.5 ? 1 : -1;
 
         let segmentToMove: Vec2[];
@@ -260,30 +215,30 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
             }
         }
 
-        // Validate the move
         const isValid = segmentToMove.every(([x, y]) => {
-            const targetX = x + (segment.orientation === 'V' ? pushDir : 0);
-            const targetY = y + (segment.orientation === 'H' ? pushDir : 0);
+            const targetX = x + (segment.orientation === 'V' ? pushDir * pushDist : 0);
+            const targetY = y + (segment.orientation === 'H' ? pushDir * pushDist : 0);
             if (targetX < 0 || targetX >= params.Width || targetY < 0 || targetY >= params.Height) return false;
-            // More complex validation needed here in a real scenario
             return layout[targetY][targetX] === TILE_FLOOR;
         });
 
         if (isValid) {
-            // Execute the move
             segmentToMove.forEach(([x, y]) => {
                 layout[y][x] = TILE_FLOOR;
                 if (segment.orientation === 'V') {
-                    layout[y][x + pushDir] = TILE_WALL;
+                    layout[y][x + pushDir * pushDist] = TILE_WALL;
                 } else {
-                    layout[y + pushDir][x] = TILE_WALL;
+                    layout[y + pushDir * pushDist][x] = TILE_WALL;
                 }
             });
-            // Draw the hinge
             if (segment.orientation === 'V') {
-                layout[hingePoint[1]][hingePoint[0] + pushDir] = TILE_WALL;
+                for (let i = 1; i <= pushDist; i++) {
+                    layout[hingePoint[1]][hingePoint[0] + pushDir * i] = TILE_WALL;
+                }
             } else {
-                layout[hingePoint[1] + pushDir][hingePoint[0]] = TILE_WALL;
+                 for (let i = 1; i <= pushDist; i++) {
+                    layout[hingePoint[1] + pushDir * i][hingePoint[0]] = TILE_WALL;
+                }
             }
         }
     }
@@ -333,54 +288,6 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
   }
 
   return { layout, areaGrid };
-}
-
-interface WallSegment {
-    start: Vec2;
-    end: Vec2;
-    orientation: 'V' | 'H';
-}
-
-function findWallSegments(layout: number[][], areaGrid: number[][]): WallSegment[] {
-    const segments: WallSegment[] = [];
-    const height = layout.length;
-    const width = layout[0]?.length || 0;
-    const visited: boolean[][] = Array(height).fill(0).map(() => Array(width).fill(false));
-
-    for (let y = 1; y < height - 1; y++) {
-        for (let x = 1; x < width - 1; x++) {
-            if (layout[y][x] === TILE_WALL && !visited[y][x]) {
-                const area1 = areaGrid[y][x-1];
-                const area2 = areaGrid[y][x+1];
-                // Check for vertical segment
-                if (area1 !== -1 && area2 !== -1 && area1 !== area2) {
-                    let endY = y;
-                    while (endY + 1 < height -1 && layout[endY+1][x] === TILE_WALL && areaGrid[endY+1][x-1] === area1 && areaGrid[endY+1][x+1] === area2) {
-                        endY++;
-                    }
-                    if (endY > y) {
-                        segments.push({ start: [x, y], end: [x, endY], orientation: 'V' });
-                        for(let i = y; i <= endY; i++) visited[i][x] = true;
-                    }
-                }
-
-                const area3 = areaGrid[y-1][x];
-                const area4 = areaGrid[y+1][x];
-                 // Check for horizontal segment
-                if (area3 !== -1 && area4 !== -1 && area3 !== area4) {
-                    let endX = x;
-                    while (endX + 1 < width -1 && layout[y][endX+1] === TILE_WALL && areaGrid[y-1][endX+1] === area3 && areaGrid[y+1][endX+1] === area4) {
-                        endX++;
-                    }
-                     if (endX > x) {
-                        segments.push({ start: [x, y], end: [endX, y], orientation: 'H' });
-                        for(let i = x; i <= endX; i++) visited[y][i] = true;
-                    }
-                }
-            }
-        }
-    }
-    return segments;
 }
 
 // Consolidate all exports here
