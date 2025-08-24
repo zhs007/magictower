@@ -52,28 +52,21 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     }
 
     // Check for entity interaction at the destination
-    console.log(`Checking for entity at ${newX}, ${newY}`);
-    console.log('Entities:', newState.entities);
-    const destinationEntityKey = Object.keys(newState.entities).find((k) => {
-        const entity = newState.entities[k];
-        const match = entity.x === newX && entity.y === newY;
-        if (match) {
-            console.log('Found matching entity:', k, entity);
-        }
-        return match;
-    });
-
-    console.log('destinationEntityKey:', destinationEntityKey);
+    const destinationEntityKey = Object.keys(newState.entities).find(
+        (k) => newState.entities[k].x === newX && newState.entities[k].y === newY
+    );
 
     if (destinationEntityKey) {
-        const destinationEntity = newState.entities[destinationEntityKey];
-        if (destinationEntity.type === 'item') {
-            // This is now handled by an action dispatch
+        // If the destination entity is an item, set interaction state
+        if (newState.items[destinationEntityKey]) {
             return {
                 ...newState,
                 interactionState: { type: 'item_pickup', itemId: destinationEntityKey },
             };
-        } else if (destinationEntity.type === 'equipment') {
+        }
+
+        const destinationEntity = newState.entities[destinationEntityKey];
+        if (destinationEntity.type === 'equipment') {
             // Dispatch equipment pickup action
             return {
                 ...newState,

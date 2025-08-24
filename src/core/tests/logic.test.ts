@@ -165,6 +165,30 @@ describe('handleMove', () => {
         expect(wallState.player.x).toBe(1); // Still did not move
         expect(wallState.player.direction).toBe('right'); // Direction is unchanged
     });
+
+    it('should set interactionState to item_pickup when moving onto an item', () => {
+        const item = {
+            id: 'item_yellow_key',
+            name: 'Yellow Key',
+            type: 'key' as 'key',
+            color: 'yellow' as 'yellow',
+        };
+        gameState.items['item_1'] = item;
+        gameState.entities['item_1'] = { ...item, type: 'item', x: 0, y: 1 };
+
+        // Move player to the item's location
+        gameState.player.x = 0;
+        gameState.player.y = 0;
+        gameState.entities['player_start_0_0'].x = 0;
+        gameState.entities['player_start_0_0'].y = 0;
+
+        const newState = handleMove(gameState, 0, 1); // Move down onto the item
+
+        expect(newState.interactionState.type).toBe('item_pickup');
+        if (newState.interactionState.type === 'item_pickup') {
+            expect(newState.interactionState.itemId).toBe('item_1');
+        }
+    });
 });
 
 describe('handleOpenDoor', () => {
