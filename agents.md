@@ -29,6 +29,19 @@ This project uses `vitest` for unit testing.
 
 Core logic in `src/core/` should have high test coverage. All new features should be accompanied by corresponding tests.
 
+## Utility Scripts
+
+For tasks that should be run from the command line (e.g., data generation, build tools), create a TypeScript file in the `scripts/` directory.
+
+- **Execution**: To run a script, use the `ts-node` package, which is included in `devDependencies`. The recommended way to run a script in this project's ES Module context is by using the `ts-node/esm` loader. Add a command to the `scripts` section of `package.json`:
+  ```json
+  "scripts": {
+    "my-script": "node --loader ts-node/esm scripts/my-script.ts"
+  }
+  ```
+
+- **Testability**: To ensure that utility scripts can be unit-tested without issues, keep the script file itself free of side effects. All core logic should be in exported functions. Create a separate "runner" script (e.g., `scripts/run-my-script.ts`) that imports the main function and calls it. The `npm` script should then execute this runner file. This pattern prevents module loading issues with `vitest`.
+
 ## Code Style
 
 - **Language**: TypeScript
