@@ -158,7 +158,7 @@ describe('Renderer', () => {
         expect(textManagerAddSpy).toHaveBeenCalledWith(
             'Test Text',
             'ITEM_GAIN',
-            expect.any(Object)
+            playerEntityKey
         );
     });
 });

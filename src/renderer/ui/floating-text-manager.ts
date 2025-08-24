@@ -56,16 +56,19 @@ export class FloatingTextManager {
     }
 
     private createAndAnimateText(request: FloatingTextRequest): void {
-        console.log(`[FloatingTextManager] Processing request:`, JSON.stringify(request, null, 2));
-        console.log(`[FloatingTextManager] Available sprite keys:`, Array.from(this.entitySprites.keys()));
         const sprite = this.entitySprites.get(request.entityId);
 
         if (!sprite) {
-            console.error(`[FloatingTextManager] Sprite not found for entityId: ${request.entityId}. Skipping text animation.`);
-            // If sprite is not found (e.g., entity was removed), skip this request
+            // If sprite is not found, we must still process the rest of the queue.
             this.processQueue();
             return;
         }
+
+        // Trigger the next item in the queue after the desired delay.
+        // This makes the queue processing independent of the animation duration.
+        setTimeout(() => {
+            this.processQueue();
+        }, 200);
 
         const style = this.getStyle(request.type);
         const damageText = new Text({
@@ -84,10 +87,6 @@ export class FloatingTextManager {
             ease: 'power1.out',
             onComplete: () => {
                 this.parent.removeChild(damageText);
-                // Wait a bit before processing the next item in the queue
-                setTimeout(() => {
-                    this.processQueue();
-                }, 100); // 100ms delay between texts
             },
         });
     }

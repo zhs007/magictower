@@ -340,10 +340,7 @@ export class Renderer {
     ): void {
         const sprite = this.entitySprites.get(entityId);
         if (sprite) {
-            this.floatingTextManager.add(text, type, {
-                x: sprite.x,
-                y: sprite.y - TILE_SIZE,
-            });
+            this.floatingTextManager.add(text, type, entityId);
         }
     }
 
