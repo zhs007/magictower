@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { handleMove, handleOpenDoor } from '../logic';
+import { handleMove, handleOpenDoor, handlePickupItem } from '../logic';
 import { GameState } from '../types';
 
 describe('handleMove', () => {
@@ -188,6 +188,36 @@ describe('handleMove', () => {
         if (newState.interactionState.type === 'item_pickup') {
             expect(newState.interactionState.itemId).toBe('item_1');
         }
+    });
+
+    it('should correctly pick up a key and update player state', () => {
+        const item = {
+            id: 'item_yellow_key',
+            name: 'Yellow Key',
+            type: 'key' as 'key',
+            color: 'yellow' as 'yellow',
+        };
+        gameState.items['item_1'] = item;
+        gameState.entities['item_1'] = { ...item, type: 'item', x: 0, y: 1 };
+
+        // 1. Turn the player left (player starts at (1,1) facing right)
+        const turnState = handleMove(gameState, -1, 0);
+        expect(turnState.player.direction).toBe('left');
+        expect(turnState.player.x).toBe(1); // Should not have moved yet
+
+        // 2. Move onto the item
+        const moveState = handleMove(turnState, -1, 0); // From (1,1) to (0,1)
+        expect(moveState.interactionState.type).toBe('item_pickup');
+        if (moveState.interactionState.type !== 'item_pickup') return; // Guard for TS
+
+        // 3. Pick up the item
+        const finalState = handlePickupItem(moveState, moveState.interactionState.itemId);
+
+        // 4. Verify state changes
+        expect(finalState.player.keys.yellow).toBe(1);
+        expect(finalState.items['item_1']).toBeUndefined();
+        expect(finalState.entities['item_1']).toBeUndefined();
+        expect(finalState.interactionState.type).toBe('none');
     });
 });
 
