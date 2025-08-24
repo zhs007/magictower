@@ -190,39 +190,63 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
     }
   }
 
-  // --- Perturb Walls ---
-  for (let y = 1; y < params.Height - 2; y++) {
-    for (let x = 1; x < params.Width - 2; x++) {
-        // Find a vertical wall segment
-        if (layout[y][x] === TILE_WALL && layout[y+1][x] === TILE_WALL) {
-            if (random() > 0.7) { // Chance to perturb
-                const areaLeft = areaGrid[y][x-1];
-                const areaRight = areaGrid[y][x+1];
-                if (areaLeft !== -1 && areaRight !== -1 && areaLeft !== areaRight) {
-                    const pushDir = random() > 0.5 ? 1 : -1; // Push right or left
-                    if (areaGrid[y][x+pushDir] === (pushDir === 1 ? areaRight : areaLeft)) {
-                         layout[y][x] = TILE_FLOOR;
-                         layout[y][x+pushDir] = TILE_WALL;
-                    }
-                }
+  // --- Perturb Walls (v2) ---
+  const wallSegments = findWallSegments(layout, areaGrid);
+
+  wallSegments.forEach(segment => {
+    if (random() > 0.5) { // 50% chance to perturb a segment
+        const len = segment.orientation === 'V' ? segment.end[1] - segment.start[1] : segment.end[0] - segment.start[0];
+        if (len < 3) return; // Too short to bend
+
+        const bendIndex = Math.floor(random() * (len - 2)) + 1; // Pick a bend point (not at the ends)
+        const pushDist = random() > 0.7 ? 2 : 1; // Push by 1 or 2 tiles
+        const pushDir = random() > 0.5 ? 1 : -1;
+
+        let segmentToMove: Vec2[];
+        let hingePoint: Vec2;
+
+        if (segment.orientation === 'V') {
+            hingePoint = [segment.start[0], segment.start[1] + bendIndex];
+            segmentToMove = [];
+            for (let y = hingePoint[1] + 1; y <= segment.end[1]; y++) {
+                segmentToMove.push([segment.start[0], y]);
+            }
+        } else { // Horizontal
+            hingePoint = [segment.start[0] + bendIndex, segment.start[1]];
+            segmentToMove = [];
+            for (let x = hingePoint[0] + 1; x <= segment.end[0]; x++) {
+                segmentToMove.push([x, segment.start[1]]);
             }
         }
-         // Find a horizontal wall segment
-        if (layout[y][x] === TILE_WALL && layout[y][x+1] === TILE_WALL) {
-             if (random() > 0.7) { // Chance to perturb
-                const areaUp = areaGrid[y-1][x];
-                const areaDown = areaGrid[y+1][x];
-                 if (areaUp !== -1 && areaDown !== -1 && areaUp !== areaDown) {
-                    const pushDir = random() > 0.5 ? 1 : -1; // Push down or up
-                    if (areaGrid[y+pushDir][x] === (pushDir === 1 ? areaDown : areaUp)) {
-                         layout[y][x] = TILE_FLOOR;
-                         layout[y+pushDir][x] = TILE_WALL;
-                    }
+
+        // Validate the move
+        const isValid = segmentToMove.every(([x, y]) => {
+            const targetX = x + (segment.orientation === 'V' ? pushDir : 0);
+            const targetY = y + (segment.orientation === 'H' ? pushDir : 0);
+            if (targetX < 0 || targetX >= params.Width || targetY < 0 || targetY >= params.Height) return false;
+            // More complex validation needed here in a real scenario
+            return layout[targetY][targetX] === TILE_FLOOR;
+        });
+
+        if (isValid) {
+            // Execute the move
+            segmentToMove.forEach(([x, y]) => {
+                layout[y][x] = TILE_FLOOR;
+                if (segment.orientation === 'V') {
+                    layout[y][x + pushDir] = TILE_WALL;
+                } else {
+                    layout[y + pushDir][x] = TILE_WALL;
                 }
+            });
+            // Draw the hinge
+            if (segment.orientation === 'V') {
+                layout[hingePoint[1]][hingePoint[0] + pushDir] = TILE_WALL;
+            } else {
+                layout[hingePoint[1] + pushDir][hingePoint[0]] = TILE_WALL;
             }
         }
     }
-  }
+  });
 
   // 4. Create doors based on LinkData
   params.LinkData.forEach(([areaA, areaB]) => {
@@ -256,6 +280,54 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
   }
 
   return { layout, areaGrid };
+}
+
+interface WallSegment {
+    start: Vec2;
+    end: Vec2;
+    orientation: 'V' | 'H';
+}
+
+function findWallSegments(layout: number[][], areaGrid: number[][]): WallSegment[] {
+    const segments: WallSegment[] = [];
+    const height = layout.length;
+    const width = layout[0]?.length || 0;
+    const visited: boolean[][] = Array(height).fill(0).map(() => Array(width).fill(false));
+
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            if (layout[y][x] === TILE_WALL && !visited[y][x]) {
+                const area1 = areaGrid[y][x-1];
+                const area2 = areaGrid[y][x+1];
+                // Check for vertical segment
+                if (area1 !== -1 && area2 !== -1 && area1 !== area2) {
+                    let endY = y;
+                    while (endY + 1 < height -1 && layout[endY+1][x] === TILE_WALL && areaGrid[endY+1][x-1] === area1 && areaGrid[endY+1][x+1] === area2) {
+                        endY++;
+                    }
+                    if (endY > y) {
+                        segments.push({ start: [x, y], end: [x, endY], orientation: 'V' });
+                        for(let i = y; i <= endY; i++) visited[i][x] = true;
+                    }
+                }
+
+                const area3 = areaGrid[y-1][x];
+                const area4 = areaGrid[y+1][x];
+                 // Check for horizontal segment
+                if (area3 !== -1 && area4 !== -1 && area3 !== area4) {
+                    let endX = x;
+                    while (endX + 1 < width -1 && layout[y][endX+1] === TILE_WALL && areaGrid[y-1][endX+1] === area3 && areaGrid[y+1][endX+1] === area4) {
+                        endX++;
+                    }
+                     if (endX > x) {
+                        segments.push({ start: [x, y], end: [endX, y], orientation: 'H' });
+                        for(let i = x; i <= endX; i++) visited[y][i] = true;
+                    }
+                }
+            }
+        }
+    }
+    return segments;
 }
 
 // Consolidate all exports here
