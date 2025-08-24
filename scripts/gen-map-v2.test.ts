@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { generateMapV2, TILE_WALL, TILE_FLOOR, TILE_EMPTY } from './gen-map-v2.js';
+import { generateMapV2, TILE_WALL, TILE_FLOOR, TILE_DOOR_CANDIDATE } from './gen-map-v2.js';
 import type { GenMapV2Params, RoomTemplate, TemplateConstraint } from './gen-map-v2.js';
 
 // Load templates for testing
@@ -72,25 +72,22 @@ describe('Map Generator V2', () => {
     expect(layout[12][10]).toBe(TILE_FLOOR);
   });
 
-  it('should have more walls when doorDensity is 0 than when it is 1', () => {
-    // Give it more attempts to ensure a door candidate is likely to be placed.
+  it('should preserve door candidates (-2) in the final layout', () => {
     const templateData: TemplateConstraint[] = [
-        [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99],
-        [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99], [1, 1, 99, 99, 1, 99]
+        [3, 3, 5, 5, 1, 1], [3, 3, 5, 5, 1, 1], [3, 3, 5, 5, 1, 1],
     ];
-    const params0 = { ...baseParams, seed: 1, doorDensity: 0, templateData };
-    const params1 = { ...baseParams, seed: 1, doorDensity: 1, templateData };
+    const params = { ...baseParams, seed: 1, templateData };
+    const { layout } = generateMapV2(params);
 
-    const { layout: layout0 } = generateMapV2(params0);
-    const { layout: layout1 } = generateMapV2(params1);
-
-    let wallCount0 = 0;
-    layout0.forEach(row => row.forEach(tile => { if (tile === TILE_WALL) wallCount0++; }));
-
-    let wallCount1 = 0;
-    layout1.forEach(row => row.forEach(tile => { if (tile === TILE_WALL) wallCount1++; }));
-
-    expect(wallCount0).toBeGreaterThan(wallCount1);
+    let hasDoorCandidate = false;
+    for (const row of layout) {
+        if (row.includes(TILE_DOOR_CANDIDATE)) {
+            hasDoorCandidate = true;
+            break;
+        }
+    }
+    // This test relies on the seed and constraints being likely to place a door.
+    expect(hasDoorCandidate).toBe(true);
   });
 
   it('should not place any templates if constraints are impossible', () => {
@@ -101,18 +98,6 @@ describe('Map Generator V2', () => {
       ]
     };
     const { layout } = generateMapV2(params);
-    let placedTiles = 0;
-    for (let y = 1; y < params.Height - 1; y++) {
-        for (let x = 1; x < params.Width - 1; x++) {
-            // After finalization, empty tiles become floor tiles (0).
-            // If any tile is not 0, something must have been placed.
-            if (layout[y][x] !== TILE_FLOOR) {
-                placedTiles++;
-            }
-        }
-    }
-    // This is a slightly weak test, as a template could consist of only floors.
-    // A better check is to see if any tile is a wall other than the border.
     let interiorWalls = 0;
     for (let y = 1; y < params.Height - 1; y++) {
         for (let x = 1; x < params.Width - 1; x++) {

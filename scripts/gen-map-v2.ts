@@ -23,7 +23,6 @@ export interface GenMapV2Params {
   forceFloorPos: Vec2[];
   outputFilename: string;
   seed: number; // Seed for the random number generator
-  doorDensity?: number; // Optional: 0 to 1, how many candidates become doors
 }
 
 export interface RoomTemplate {
@@ -67,7 +66,6 @@ interface ValidPlacement {
 export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
     const {
         Width, Height, seed, forceFloorPos, templates, templateData,
-        doorDensity = 0.5,
     } = params;
     const random = createPRNG(seed);
 
@@ -97,7 +95,6 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
             let templateWallCount = 0;
             for(const row of template.layout) {
                 for(const tile of row) {
-                    // FIX: Count door candidates as walls for overlap rule
                     if (tile === TILE_WALL || tile === TILE_DOOR_CANDIDATE) {
                         templateWallCount++;
                     }
@@ -131,7 +128,7 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
                                 if (mapTile === TILE_WALL || mapTile === TILE_DOOR_CANDIDATE) {
                                     weight += isOuterWall(mapX, mapY, Width, Height) ? 2 : 1;
                                     overlapWallCount++;
-                                } else { // Placing a new wall, check for adjacent walls
+                                } else {
                                     const neighbors = [[mapY - 1, mapX], [mapY + 1, mapX], [mapY, mapX - 1], [mapY, mapX + 1]];
                                     for (const [ny, nx] of neighbors) {
                                         if (nx > 0 && nx < Width - 1 && ny > 0 && ny < Height - 1 && layout[ny][nx] === TILE_WALL) {
@@ -174,7 +171,6 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
                 const mapX = x + tx;
                 const mapY = y + ty;
 
-                // FIX: Simplified door placement logic
                 if (templateTile === TILE_DOOR_CANDIDATE) {
                     if (isOuterWall(mapX, mapY, Width, Height)) {
                         layout[mapY][mapX] = TILE_WALL;
@@ -188,25 +184,14 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
         }
     }
 
-    const doorCandidates: Vec2[] = [];
+    // Finalization: Only fill in empty areas. Keep door candidates (-2).
     for (let y = 0; y < Height; y++) {
         for (let x = 0; x < Width; x++) {
             if (layout[y][x] === TILE_EMPTY) {
                 layout[y][x] = TILE_FLOOR;
             }
-            if (layout[y][x] === TILE_DOOR_CANDIDATE) {
-                doorCandidates.push([x, y]);
-            }
         }
     }
-
-    doorCandidates.forEach(([x, y]) => {
-        if (random() < doorDensity) {
-            layout[y][x] = TILE_FLOOR;
-        } else {
-            layout[y][x] = TILE_WALL;
-        }
-    });
 
     forceFloorPos.forEach(([x, y]) => {
         if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1) {

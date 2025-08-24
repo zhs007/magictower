@@ -32,7 +32,6 @@ const params: GenMapV2Params = {
   forceFloorPos: [],
   outputFilename: 'mapdata/generated_map_v2.json',
   seed: 12345,
-  doorDensity: 0.6,
 };
 
 /**
