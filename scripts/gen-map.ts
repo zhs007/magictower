@@ -249,22 +249,34 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
   });
 
   // 4. Create doors based on LinkData
-  params.LinkData.forEach(([areaA, areaB]) => {
-    const possibleDoors: Vec2[] = [];
-    // This logic needs to be aware of the new wall layout
-    for (let y = 1; y < params.Height - 2; y++) {
-        for (let x = 1; x < params.Width - 2; x++) {
-            const currentArea = areaGrid[y][x];
-            if (layout[y][x+1] === TILE_WALL && ((currentArea === areaA && areaGrid[y][x+2] === areaB) || (currentArea === areaB && areaGrid[y][x+2] === areaA))) {
-                possibleDoors.push([x+1, y]);
-            }
-             if (layout[y+1][x] === TILE_WALL && ((currentArea === areaA && areaGrid[y+2][x] === areaB) || (currentArea === areaB && areaGrid[y+2][x] === areaA))) {
-                possibleDoors.push([x, y+1]);
+  const doorLinks = new Map<string, Vec2[]>();
+  params.LinkData.forEach(link => {
+      const key = link.sort().join(',');
+      doorLinks.set(key, []);
+  });
+
+  for (let y = 1; y < params.Height - 1; y++) {
+    for (let x = 1; x < params.Width - 1; x++) {
+        if (layout[y][x] !== TILE_WALL) continue;
+
+        const neighborAreas = new Set<number>();
+        if (areaGrid[y-1][x] !== -1) neighborAreas.add(areaGrid[y-1][x]);
+        if (areaGrid[y+1][x] !== -1) neighborAreas.add(areaGrid[y+1][x]);
+        if (areaGrid[y][x-1] !== -1) neighborAreas.add(areaGrid[y][x-1]);
+        if (areaGrid[y][x+1] !== -1) neighborAreas.add(areaGrid[y][x+1]);
+
+        if (neighborAreas.size === 2) {
+            const [areaA, areaB] = Array.from(neighborAreas);
+            const key = [areaA, areaB].sort().join(',');
+            if (doorLinks.has(key)) {
+                doorLinks.get(key)!.push([x, y]);
             }
         }
     }
+  }
 
-    if (possibleDoors.length > 0) {
+  doorLinks.forEach(possibleDoors => {
+      if (possibleDoors.length > 0) {
         const [doorX, doorY] = possibleDoors[Math.floor(random() * possibleDoors.length)];
         layout[doorY][doorX] = TILE_FLOOR;
     }
