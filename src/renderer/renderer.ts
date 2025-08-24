@@ -322,10 +322,13 @@ export class Renderer {
             '-=0.1'
         );
 
-        const damageText = new Text(`-${damage}`, {
-            fontSize: 24,
-            fill: 'red',
-            fontWeight: 'bold',
+        const damageText = new Text({
+            text: `-${damage}`,
+            style: {
+                fontSize: 24,
+                fill: 'red',
+                fontWeight: 'bold',
+            },
         });
         damageText.x = defenderSprite.x;
         damageText.y = defenderSprite.y - TILE_SIZE; // Adjusted for new sprite height
