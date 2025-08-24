@@ -55,7 +55,9 @@ export interface IBuff extends IBaseObject {
 // Base interface for characters (Player, Monsters, NPCs).
 // It includes properties common to all characters.
 export interface ICharacter extends IBaseObject {
+    level: number;
     hp: number;
+    maxhp: number;
     attack: number;
     defense: number;
     speed: number;
@@ -75,6 +77,7 @@ export interface ICharacter extends IBaseObject {
 }
 
 export interface IPlayer extends ICharacter {
+    exp: number;
     keys: {
         yellow: number;
         blue: number;

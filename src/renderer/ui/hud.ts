@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { GameState } from '../../core/types';
+import { GameState, IPlayer } from '../../core/types';
 import { eventManager } from '../../core/event-manager';
+import { dataManager } from '../../data/data-manager';
 
 const HUD_WIDTH = 1080;
 const HUD_HEIGHT = 400;
@@ -10,6 +11,8 @@ const FONT_SIZE = 48;
 export class HUD extends Container {
     private background: Graphics;
     private playerStatsText: Text;
+    private levelText: Text;
+    private expText: Text;
     private monsterStatsText: Text;
     private keysText: Text;
 
@@ -20,24 +23,34 @@ export class HUD extends Container {
         this.addChild(this.background);
 
         this.playerStatsText = this.createText('', PADDING, PADDING);
-        this.monsterStatsText = this.createText('', PADDING, PADDING + FONT_SIZE * 2);
-        this.keysText = this.createText('', PADDING, PADDING + FONT_SIZE * 4);
+        this.levelText = this.createText('', PADDING, PADDING + FONT_SIZE * 1.5);
+        this.expText = this.createText('', PADDING, PADDING + FONT_SIZE * 3);
+        this.monsterStatsText = this.createText('', PADDING, PADDING + FONT_SIZE * 4.5);
+        this.keysText = this.createText('', PADDING, PADDING + FONT_SIZE * 6);
 
-        this.addChild(this.playerStatsText, this.monsterStatsText, this.keysText);
+        this.addChild(
+            this.playerStatsText,
+            this.levelText,
+            this.expText,
+            this.monsterStatsText,
+            this.keysText
+        );
         this.monsterStatsText.visible = false;
 
         this.registerListeners();
     }
 
     // --- Event Handlers ---
-    private hpChangeHandler = (payload: any) => this.handleHpChange(payload);
+    private playerUpdateHandler = (payload: any) => this.handlePlayerUpdate(payload);
     private keysChangeHandler = (payload: any) => this.handleKeysChange(payload);
     private battleEndHandler = (payload: any) => this.handleBattleEnd(payload);
+    private levelUpHandler = (payload: any) => this.handleLevelUp(payload);
 
     private registerListeners(): void {
-        eventManager.on('HP_CHANGED', this.hpChangeHandler);
+        eventManager.on('HP_CHANGED', this.playerUpdateHandler);
         eventManager.on('KEYS_CHANGED', this.keysChangeHandler);
         eventManager.on('BATTLE_ENDED', this.battleEndHandler);
+        eventManager.on('PLAYER_LEVELED_UP', this.levelUpHandler);
     }
 
     private createText(content: string, x: number, y: number): Text {
@@ -55,13 +68,26 @@ export class HUD extends Container {
 
     // This method is for the very first draw.
     public update(state: GameState): void {
-        this.updatePlayerStats(state.player.hp, state.player.attack, state.player.defense);
+        this.updatePlayerInfo(state.player);
         this.updateKeys(state.player.keys);
         this.monsterStatsText.visible = false;
     }
 
-    private updatePlayerStats(hp: number, attack: number, defense: number): void {
-        this.playerStatsText.text = `勇者: HP ${hp}  ATK ${attack}  DEF ${defense}`;
+    private updatePlayerInfo(player: IPlayer): void {
+        this.playerStatsText.text = `HP ${player.hp}/${player.maxhp}  ATK ${player.attack}  DEF ${player.defense}  SPD ${player.speed}`;
+        this.levelText.text = `Level: ${player.level}`;
+
+        const levelData = dataManager.getLevelData();
+        const currentLevelInfo = levelData.find((ld) => ld.level === player.level);
+        const nextLevelInfo = levelData.find((ld) => ld.level === player.level + 1);
+
+        if (currentLevelInfo && nextLevelInfo) {
+            const expForNextLevel = nextLevelInfo.exp_needed - currentLevelInfo.exp_needed;
+            const currentExpInLevel = player.exp - currentLevelInfo.exp_needed;
+            this.expText.text = `EXP: ${currentExpInLevel} / ${expForNextLevel}`;
+        } else {
+            this.expText.text = `EXP: ${player.exp}`;
+        }
     }
 
     private updateMonsterStats(name: string, hp: number, attack: number, defense: number): void {
@@ -72,15 +98,29 @@ export class HUD extends Container {
         this.keysText.text = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
     }
 
-    private handleHpChange(payload: {
+    private handlePlayerUpdate(payload: {
         entityId: string;
         name?: string;
         newHp: number;
+        maxHp: number;
+        level: number;
+        exp: number;
         attack: number;
         defense: number;
+        speed: number;
     }): void {
         if (payload.entityId === 'player') {
-            this.updatePlayerStats(payload.newHp, payload.attack, payload.defense);
+            // Reconstruct a partial player object for the update method
+            const playerUpdate = {
+                hp: payload.newHp,
+                maxhp: payload.maxHp,
+                level: payload.level,
+                exp: payload.exp,
+                attack: payload.attack,
+                defense: payload.defense,
+                speed: payload.speed,
+            } as IPlayer; // Cast to IPlayer, acknowledging it's partial
+            this.updatePlayerInfo(playerUpdate);
         } else if (payload.name) {
             this.monsterStatsText.visible = true;
             this.updateMonsterStats(payload.name, payload.newHp, payload.attack, payload.defense);
@@ -95,21 +135,37 @@ export class HUD extends Container {
 
     private handleBattleEnd(payload: {
         finalPlayerHp: number;
+        finalPlayerMaxHp: number;
+        finalPlayerLevel: number;
+        finalPlayerExp: number;
         finalPlayerAtk: number;
         finalPlayerDef: number;
+        finalPlayerSpeed: number;
     }): void {
         this.monsterStatsText.visible = false;
-        this.updatePlayerStats(
-            payload.finalPlayerHp,
-            payload.finalPlayerAtk,
-            payload.finalPlayerDef
-        );
+        const playerUpdate = {
+            hp: payload.finalPlayerHp,
+            maxhp: payload.finalPlayerMaxHp,
+            level: payload.finalPlayerLevel,
+            exp: payload.finalPlayerExp,
+            attack: payload.finalPlayerAtk,
+            defense: payload.finalPlayerDef,
+            speed: payload.finalPlayerSpeed,
+        } as IPlayer;
+        this.updatePlayerInfo(playerUpdate);
+    }
+
+    private handleLevelUp(payload: any): void {
+        // The battle_end event will handle the final state update.
+        // This handler is mostly for triggering special effects in the future.
+        console.log('HUD received level up event:', payload);
     }
 
     public destroy(options?: any): void {
-        eventManager.off('HP_CHANGED', this.hpChangeHandler);
+        eventManager.off('HP_CHANGED', this.playerUpdateHandler);
         eventManager.off('KEYS_CHANGED', this.keysChangeHandler);
         eventManager.off('BATTLE_ENDED', this.battleEndHandler);
+        eventManager.off('PLAYER_LEVELED_UP', this.levelUpHandler);
         super.destroy(options);
     }
 }

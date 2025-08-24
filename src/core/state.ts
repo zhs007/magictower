@@ -40,17 +40,16 @@ export class GameStateManager {
         let player: IPlayer | null = null;
         let playerKey: string | null = null;
 
-        const playerTemplate = {
-            id: 'player',
-            name: 'Hero',
-            hp: 100,
-            attack: 10,
-            defense: 5,
-            speed: 10,
+        const playerData = dataManager.getPlayerData();
+        if (!playerData) {
+            throw new Error('Player data not found.');
+        }
+
+        const playerTemplate: Omit<IPlayer, 'x' | 'y'> = {
+            ...playerData,
             equipment: {},
             backupEquipment: [],
             buffs: [],
-            keys: { yellow: 0, blue: 0, red: 0 },
             direction: 'right' as 'left' | 'right',
         };
 
