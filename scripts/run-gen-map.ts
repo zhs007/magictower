@@ -10,6 +10,20 @@ import { generateMapLayout } from './gen-map.js';
 import type { GenMapParams } from './gen-map.js';
 
 /**
+ * Converts a 2D layout array into a nicely formatted string for JSON output.
+ * @param layout The 2D array of numbers.
+ * @returns A formatted string representing the 2D array.
+ */
+function formatLayoutForDisplay(layout: number[][]): string {
+    const rows = layout.map(row => {
+        const rowString = row.map(cell => String(cell).padStart(2, ' ')).join(', ');
+        return `    [${rowString}]`;
+    });
+    return rows.join(',\n');
+}
+
+
+/**
  * Main function to run the map generator.
  */
 function main() {
@@ -36,16 +50,19 @@ function main() {
 
   const { layout, areaGrid } = generateMapLayout(exampleParams);
 
-  const output = {
-    tileAssets: {
-      '0': 'map_floor',
-      '1': 'map_wall',
-    },
-    layout: layout,
-  };
+  // Manually construct the JSON string for pretty layout printing
+  const tileAssetsString = JSON.stringify({ '0': 'map_floor', '1': 'map_wall' }, null, 2);
+  const layoutString = formatLayoutForDisplay(layout);
+
+  const outputString = `{
+  "tileAssets": ${tileAssetsString},
+  "layout": [
+${layoutString}
+  ]
+}`;
 
   const outputPath = path.join('mapdata', exampleParams.outputFilename);
-  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  fs.writeFileSync(outputPath, outputString);
 
   console.log(`Map successfully generated and saved to ${outputPath}`);
   logAreaDimensions(areaGrid, exampleParams.AreaNum);
