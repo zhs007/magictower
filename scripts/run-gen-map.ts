@@ -13,25 +13,28 @@ import type { GenMapParams } from './gen-map.js';
  * Main function to run the map generator.
  */
 function main() {
-  // Example parameters
+  // Parameters from user request
   const exampleParams: GenMapParams = {
-    Width: 32,
-    Height: 32,
+    Width: 16,
+    Height: 16,
     AreaNum: 4,
     LinkData: [[0, 1], [1, 2], [2, 3]],
     minAreaSize: {
       0: [4, 4],
+      1: [3, 3],
+      2: [3, 3]
     },
     mapAreaPos: {
-      1: [[10, 10]],
+      1: [[3, 3]],
     },
     outputFilename: 'generated_map.json',
+    seed: 42,
   };
 
   console.log('Starting map generation with parameters:');
   console.log(JSON.stringify(exampleParams, null, 2));
 
-  const { layout } = generateMapLayout(exampleParams);
+  const { layout, areaGrid } = generateMapLayout(exampleParams);
 
   const output = {
     tileAssets: {
@@ -45,6 +48,50 @@ function main() {
   fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
 
   console.log(`Map successfully generated and saved to ${outputPath}`);
+  logAreaDimensions(areaGrid, exampleParams.AreaNum);
 }
+
+/**
+ * Calculates and logs the dimensions of each area in the grid.
+ * @param areaGrid The grid containing area indices.
+ * @param areaNum The total number of areas.
+ */
+function logAreaDimensions(areaGrid: number[][], areaNum: number) {
+    const bounds: Record<number, { minX: number, minY: number, maxX: number, maxY: number }> = {};
+
+    for (let i = 0; i < areaNum; i++) {
+        bounds[i] = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+    }
+
+    const height = areaGrid.length;
+    const width = areaGrid[0]?.length || 0;
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const areaIndex = areaGrid[y][x];
+            if (areaIndex !== -1 && bounds[areaIndex]) {
+                const b = bounds[areaIndex];
+                b.minX = Math.min(b.minX, x);
+                b.minY = Math.min(b.minY, y);
+                b.maxX = Math.max(b.maxX, x);
+                b.maxY = Math.max(b.maxY, y);
+            }
+        }
+    }
+
+    console.log('\n--- Generated Area Dimensions ---');
+    for (let i = 0; i < areaNum; i++) {
+        const b = bounds[i];
+        if (b.minX === Infinity) {
+            console.log(`Area ${i}: Not generated`);
+        } else {
+            const w = b.maxX - b.minX + 1;
+            const h = b.maxY - b.minY + 1;
+            console.log(`Area ${i}: ${w} x ${h}`);
+        }
+    }
+    console.log('---------------------------------');
+}
+
 
 main();

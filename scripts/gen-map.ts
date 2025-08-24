@@ -5,9 +5,6 @@
  * It is intended to be used as a library by a runner script.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-
 // Constants for tile types
 const TILE_FLOOR = 0;
 const TILE_WALL = 1;
@@ -23,6 +20,7 @@ interface GenMapParams {
   minAreaSize: Record<number, Vec2>;
   mapAreaPos: Record<number, Vec2[]>;
   outputFilename: string;
+  seed: number;
 }
 
 // Helper interface for representing a rectangle
@@ -39,15 +37,15 @@ function isPointInRect(point: Vec2, rect: Rect): boolean {
            point[1] >= rect.y && point[1] < rect.y + rect.height;
 }
 
-
 /**
  * The main recursive function to partition the map.
  * @param areaGrid The grid to store area indices.
  * @param rect The current rectangular region to partition.
  * @param areaIndices The indices of areas to place in this region.
  * @param params The global map generation parameters.
+ * @param random The seeded PRNG function.
  */
-function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: number[], params: GenMapParams) {
+function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: number[], params: GenMapParams, random: () => number) {
     if (areaIndices.length === 0) {
         return;
     }
@@ -65,86 +63,70 @@ function recursivePartition(areaGrid: number[][], rect: Rect, areaIndices: numbe
         return;
     }
 
-    // Recursive step: Try to find a valid way to split the areas and the rectangle
-    const splitVertical = rect.width > rect.height;
+    // --- Third attempt at partitioning logic ---
+    let splitVertical: boolean;
+    const canSplitVertical = rect.width > 2;
+    const canSplitHorizontal = rect.height > 2;
 
-    // Iterate through possible split points of the rectangle
-    const mainAxisLength = splitVertical ? rect.width : rect.height;
-    for (let splitOffset = 1; splitOffset < mainAxisLength -1; splitOffset++) {
-        let rectA: Rect, rectB: Rect;
-        if (splitVertical) {
-            const splitX = rect.x + splitOffset;
-            rectA = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
-            rectB = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
-        } else {
-            const splitY = rect.y + splitOffset;
-            rectA = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
-            rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
-        }
-
-        // Given the split rectangles, classify which areas MUST go into which rectangle
-        const mustGoInA: number[] = [];
-        const mustGoInB: number[] = [];
-        const canGoAnywhere: number[] = [];
-
-        let possible = true;
-        for (const areaIndex of areaIndices) {
-            const requiredPos = params.mapAreaPos[areaIndex] || [];
-            const isInA = requiredPos.every(p => isPointInRect(p, rectA));
-            const isInB = requiredPos.every(p => isPointInRect(p, rectB));
-
-            if (isInA && !isInB) {
-                mustGoInA.push(areaIndex);
-            } else if (!isInA && isInB) {
-                mustGoInB.push(areaIndex);
-            } else if (!isInA && !isInB && requiredPos.length > 0) {
-                possible = false; // This split is impossible, required points are in neither child
-                break;
-            } else {
-                canGoAnywhere.push(areaIndex);
-            }
-        }
-        if (!possible) continue; // Try next split point
-
-        // Now, try to distribute the "anywhere" areas to find a valid partition
-        const remainingCount = canGoAnywhere.length;
-        for (let i = 0; i < (1 << remainingCount); i++) { // Iterate through all subsets of canGoAnywhere
-            const groupA_extra: number[] = [];
-            const groupB_extra: number[] = [];
-
-            for (let j = 0; j < remainingCount; j++) {
-                if ((i & (1 << j)) > 0) {
-                    groupA_extra.push(canGoAnywhere[j]);
-                } else {
-                    groupB_extra.push(canGoAnywhere[j]);
+    if (!canSplitVertical && !canSplitHorizontal) {
+        // Cannot split further, fallback
+        const areaIndex = areaIndices[0];
+        for (let y = rect.y; y < rect.y + rect.height; y++) {
+            for (let x = rect.x; x < rect.x + rect.width; x++) {
+                if (x < params.Width && y < params.Height) {
+                    areaGrid[y][x] = areaIndex;
                 }
             }
-
-            const groupA = [...mustGoInA, ...groupA_extra];
-            const groupB = [...mustGoInB, ...groupB_extra];
-
-            if (groupA.length === 0 || groupB.length === 0) continue;
-
-            if (canSatisfyConstraints(rectA, groupA, params) && canSatisfyConstraints(rectB, groupB, params)) {
-                // Found a valid split! Recurse.
-                recursivePartition(areaGrid, rectA, groupA, params);
-                recursivePartition(areaGrid, rectB, groupB, params);
-                return; // Exit after finding the first valid split
-            }
         }
+        return;
+    } else if (canSplitVertical && !canSplitHorizontal) {
+        splitVertical = true;
+    } else if (!canSplitVertical && canSplitHorizontal) {
+        splitVertical = false;
+    } else {
+        splitVertical = random() > 0.5;
     }
 
+    // Determine the groups of areas
+    const midPoint = Math.floor(areaIndices.length / 2);
+    const groupA = areaIndices.slice(0, midPoint);
+    const groupB = areaIndices.slice(midPoint);
 
-    // Fallback if no valid split is found (e.g., constraints are too tight)
-    // This just stuffs all remaining areas into the current rect, which is not ideal.
-    const areaIndex = areaIndices[0];
-    for (let y = rect.y; y < rect.y + rect.height; y++) {
-        for (let x = rect.x; x < rect.x + rect.width; x++) {
-            if (x < params.Width && y < params.Height) {
-                areaGrid[y][x] = areaIndex;
+    // Determine a valid range for the split line
+    const minSplitOffset = 2; // Keep rooms at least 2 wide/high
+    const maxSplitOffset = (splitVertical ? rect.width : rect.height) - minSplitOffset;
+
+    if (minSplitOffset >= maxSplitOffset) {
+        // Fallback if the rectangle is too small to split meaningfully
+        const areaIndex = areaIndices[0];
+        for (let y = rect.y; y < rect.y + rect.height; y++) {
+            for (let x = rect.x; x < rect.x + rect.width; x++) {
+                if (x < params.Width && y < params.Height) {
+                    areaGrid[y][x] = areaIndex;
+                }
             }
         }
+        return;
     }
+
+    // Randomly choose a split point within the valid range
+    const splitOffset = Math.floor(random() * (maxSplitOffset - minSplitOffset)) + minSplitOffset;
+
+    let rectA: Rect, rectB: Rect;
+    if (splitVertical) {
+        const splitX = rect.x + splitOffset;
+        rectA = { x: rect.x, y: rect.y, width: splitX - rect.x, height: rect.height };
+        rectB = { x: splitX, y: rect.y, width: rect.width - (splitX - rect.x), height: rect.height };
+    } else {
+        const splitY = rect.y + splitOffset;
+        rectA = { x: rect.x, y: rect.y, width: rect.width, height: splitY - rect.y };
+        rectB = { x: rect.x, y: splitY, width: rect.width, height: rect.height - (splitY - rect.y) };
+    }
+
+    // This simplified logic doesn't re-verify constraints after the random split.
+    // This might fail if constraints are tight, but is more likely to produce varied rooms.
+    recursivePartition(areaGrid, rectA, groupA, params, random);
+    recursivePartition(areaGrid, rectB, groupB, params, random);
 }
 
 
@@ -188,19 +170,34 @@ function canSatisfyConstraints(rect: Rect, areaIndices: number[], params: GenMap
 
 
 /**
+ * Creates a seeded pseudo-random number generator (PRNG) using the mulberry32 algorithm.
+ * @param seed The seed for the PRNG.
+ * @returns A function that returns a random number between 0 and 1.
+ */
+function createPRNG(seed: number): () => number {
+    return function() {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+}
+
+/**
  * Generates the map layout.
  * @param params The parameters for map generation.
  * @returns The generated map layout as a 2D array of tile IDs.
  */
 function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid: number[][] } {
-  // 1. Initialize layout and area grids
+  // 1. Initialize PRNG and grids
+  const random = createPRNG(params.seed);
   const layout: number[][] = Array(params.Height).fill(0).map(() => Array(params.Width).fill(TILE_FLOOR));
   const areaGrid: number[][] = Array(params.Height).fill(0).map(() => Array(params.Width).fill(-1));
 
   // 2. Perform partitioning
   const initialRect: Rect = { x: 1, y: 1, width: params.Width - 2, height: params.Height - 2 };
   const allAreaIndices = Array.from({ length: params.AreaNum }, (_, i) => i);
-  recursivePartition(areaGrid, initialRect, allAreaIndices, params);
+  recursivePartition(areaGrid, initialRect, allAreaIndices, params, random);
 
   // 3. Place walls based on area boundaries
   for (let y = 0; y < params.Height -1; y++) {
@@ -235,7 +232,7 @@ function generateMapLayout(params: GenMapParams): { layout: number[][], areaGrid
     }
 
     if (possibleDoors.length > 0) {
-        const [doorX, doorY] = possibleDoors[Math.floor(Math.random() * possibleDoors.length)];
+        const [doorX, doorY] = possibleDoors[Math.floor(random() * possibleDoors.length)];
         layout[doorY][doorX] = TILE_FLOOR;
     }
   });

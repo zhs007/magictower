@@ -12,6 +12,7 @@ describe('Map Generator', () => {
     minAreaSize: {},
     mapAreaPos: {},
     outputFilename: 'test.json',
+    seed: 1,
   };
 
   it('should generate a map with the correct dimensions', () => {
