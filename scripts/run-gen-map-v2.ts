@@ -7,13 +7,19 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { generateMapV2 } from './gen-map-v2.js';
-import type { GenMapV2Params } from './gen-map-v2.js';
+import type { GenMapV2Params, RoomTemplate } from './gen-map-v2.js';
+
+// --- Load the templates ---
+const templatesPath = path.join(path.dirname(import.meta.url.replace('file://', '')), 'genmap2-templates.json');
+const templatesFile = fs.readFileSync(templatesPath, 'utf-8');
+const templates: RoomTemplate[] = JSON.parse(templatesFile);
+
 
 // --- Parameters for the map generation ---
 const params: GenMapV2Params = {
   Width: 16,
   Height: 16,
-  templateData: [], // Not used yet
+  templates: templates,
   forceFloorPos: [
     [5, 5], // Example: ensure this tile is a floor
   ],

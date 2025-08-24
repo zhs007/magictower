@@ -17,7 +17,7 @@ export type Vec2 = [number, number];
 export interface GenMapV2Params {
   Width: number;
   Height: number;
-  templateData: any[]; // This parameter is complex and will be handled later.
+  templates: RoomTemplate[];
   forceFloorPos: Vec2[];
   outputFilename: string;
   seed: number; // Seed for the random number generator
@@ -31,43 +31,6 @@ export interface RoomTemplate {
   width: number;
   height: number;
 }
-
-// A simple, hardcoded library of room templates.
-// 0=floor, 1=wall, -1=empty, -2=door candidate
-const TEMPLATE_LIBRARY: RoomTemplate[] = [
-  {
-    name: '3x3 Room', width: 3, height: 3,
-    layout: [[1, -2, 1], [1, 0, 1], [1, 1, 1]],
-  },
-  {
-    name: '5x5 Room', width: 5, height: 5,
-    layout: [
-      [1, 1, 1, 1, 1],
-      [1, 0, 0, 0, 1],
-      [1, 0, 0, 0, 1],
-      [1, 0, 0, 0, 1],
-      [1, -2, 1, -2, 1],
-    ],
-  },
-  {
-    name: '5x4 Room', width: 5, height: 4,
-    layout: [
-        [1, 1, -2, 1, 1],
-        [1, 0, 0, 0, 1],
-        [1, 0, 0, 0, 1],
-        [1, 1, 1, 1, 1],
-    ]
-  },
-  {
-    name: 'L-shape 4x4', width: 4, height: 4,
-    layout: [
-        [1, 1, 1, 1],
-        [1, 0, 0, 1],
-        [1, 0, 1, -1],
-        [1, -2, 1, -1],
-    ]
-  }
-];
 
 // Helper function to create a PRNG
 function createPRNG(seed: number): () => number {
@@ -131,7 +94,7 @@ interface ValidPlacement {
  */
 export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
     const {
-        Width, Height, seed, forceFloorPos,
+        Width, Height, seed, forceFloorPos, templates,
         doorDensity = 0.5,
         maxPlacementAttempts = 100
     } = params;
@@ -158,7 +121,7 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
         const allValidPlacements: ValidPlacement[] = [];
 
         // Try every template
-        for (const template of TEMPLATE_LIBRARY) {
+        for (const template of templates) {
             // Try every possible top-left position on the map
             for (let y = 0; y <= Height - template.height; y++) {
                 for (let x = 0; x <= Width - template.width; x++) {

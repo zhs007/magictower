@@ -1,13 +1,20 @@
 import { describe, it, expect } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
 import { generateMapV2, TILE_WALL, TILE_FLOOR } from './gen-map-v2.js';
-import type { GenMapV2Params } from './gen-map-v2.js';
+import type { GenMapV2Params, RoomTemplate } from './gen-map-v2.js';
+
+// Load templates for testing
+const templatesPath = path.join(path.dirname(import.meta.url.replace('file://', '')), 'genmap2-templates.json');
+const templatesFile = fs.readFileSync(templatesPath, 'utf-8');
+const templates: RoomTemplate[] = JSON.parse(templatesFile);
 
 describe('Map Generator V2', () => {
 
   const baseParams: GenMapV2Params = {
     Width: 20,
     Height: 20,
-    templateData: [],
+    templates: templates,
     forceFloorPos: [],
     outputFilename: 'test-v2.json',
     seed: 123,
