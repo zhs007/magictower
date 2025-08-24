@@ -88,11 +88,20 @@ export class GameScene extends BaseScene {
         this.isAnimating = true;
         this.renderer.animateItemPickup(state, () => {
             if (this.gameStateManager && state.interactionState.type === 'item_pickup') {
+                const itemId = state.interactionState.itemId;
+                const item = state.items[itemId];
                 this.gameStateManager.dispatch({
                     type: 'PICK_UP_ITEM',
-                    payload: { itemId: state.interactionState.itemId },
+                    payload: { itemId: itemId },
                 });
                 this.renderer.render(this.gameStateManager.getState());
+                if (item && this.playerEntityKey) {
+                    this.renderer.showFloatingTextOnEntity(
+                        `+1 ${item.name}`,
+                        'ITEM_GAIN',
+                        this.playerEntityKey
+                    );
+                }
             }
             this.isAnimating = false;
         });

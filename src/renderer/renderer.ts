@@ -3,6 +3,7 @@ import { GameState } from '../core/types';
 import { dataManager } from '../data/data-manager';
 import { HUD } from './ui/hud';
 import { gsap } from 'gsap';
+import { FloatingTextManager } from './ui/floating-text-manager';
 
 const TILE_SIZE = 65;
 const MAP_WIDTH_TILES = 16;
@@ -14,6 +15,7 @@ export class Renderer {
     private mainContainer: Container;
     private topLayerContainer: Container;
     private hud: HUD;
+    private floatingTextManager: FloatingTextManager;
 
     private entitySprites: Map<string, Sprite> = new Map();
 
@@ -23,6 +25,10 @@ export class Renderer {
         this.mainContainer = new Container();
         this.topLayerContainer = new Container();
         this.hud = new HUD();
+        this.floatingTextManager = new FloatingTextManager(
+            this.topLayerContainer,
+            this.entitySprites
+        );
 
         this.mainContainer.sortableChildren = true;
         this.topLayerContainer.sortableChildren = true;
@@ -44,7 +50,8 @@ export class Renderer {
         // or filename for top-level assets (e.g. 'player'). Use import.meta.glob to get URLs.
         const modules = import.meta.glob('/assets/**/*.{png,jpg,jpeg,webp}', {
             eager: true,
-            as: 'url',
+            query: '?url',
+            import: 'default',
         }) as Record<string, string>;
         const assetsList: { alias: string; src: string }[] = [];
         for (const p in modules) {
@@ -208,7 +215,8 @@ export class Renderer {
 
     public render(state: GameState): void {
         this.syncSprites(state);
-        this.hud.update(state);
+        // The HUD is now event-driven and does not need a manual render call.
+        // this.hud.update(state);
     }
 
     public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
@@ -322,29 +330,18 @@ export class Renderer {
             '-=0.1'
         );
 
-        const damageText = new Text(`-${damage}`, {
-            fontSize: 24,
-            fill: 'red',
-            fontWeight: 'bold',
-        });
-        damageText.x = defenderSprite.x;
-        damageText.y = defenderSprite.y - TILE_SIZE; // Adjusted for new sprite height
-        damageText.anchor.set(0.5);
-        this.topLayerContainer.addChild(damageText); // Add to top layer
+        this.floatingTextManager.add(`-${damage}`, 'DAMAGE', defenderId);
+    }
 
-        tl.to(
-            damageText,
-            {
-                y: damageText.y - 40,
-                alpha: 0,
-                duration: 1,
-                ease: 'power1.out',
-                onComplete: () => {
-                    this.topLayerContainer.removeChild(damageText);
-                },
-            },
-            '-=0.1'
-        );
+    public showFloatingTextOnEntity(
+        text: string,
+        type: 'ITEM_GAIN' | 'STAT_INCREASE' | 'HEAL',
+        entityId: string
+    ): void {
+        const sprite = this.entitySprites.get(entityId);
+        if (sprite) {
+            this.floatingTextManager.add(text, type, entityId);
+        }
     }
 
     public moveToTopLayer(sprite: Sprite): void {

@@ -55,15 +55,18 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     const destinationEntityKey = Object.keys(newState.entities).find(
         (k) => newState.entities[k].x === newX && newState.entities[k].y === newY
     );
+
     if (destinationEntityKey) {
-        const destinationEntity = newState.entities[destinationEntityKey];
-        if (destinationEntity.type === 'item') {
-            // This is now handled by an action dispatch
+        // If the destination entity is an item, set interaction state
+        if (newState.items[destinationEntityKey]) {
             return {
                 ...newState,
                 interactionState: { type: 'item_pickup', itemId: destinationEntityKey },
             };
-        } else if (destinationEntity.type === 'equipment') {
+        }
+
+        const destinationEntity = newState.entities[destinationEntityKey];
+        if (destinationEntity.type === 'equipment') {
             // Dispatch equipment pickup action
             return {
                 ...newState,

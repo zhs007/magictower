@@ -52,6 +52,16 @@ vi.mock('../../data/data-manager', () => ({
     },
 }));
 
+vi.mock('gsap', () => ({
+    gsap: {
+        timeline: vi.fn((vars) => ({
+            to: vi.fn().mockReturnThis(),
+            vars, // Store vars to access onComplete
+        })),
+        to: vi.fn(),
+    },
+}));
+
 describe('Renderer', () => {
     let renderer: Renderer;
     let mockStage: any;
@@ -63,15 +73,13 @@ describe('Renderer', () => {
         renderer = new Renderer(mockStage);
     });
 
-    it('should call syncSprites and update HUD on render', () => {
+    it('should call syncSprites on render', () => {
         const gameState = createMockGameState();
         const syncSpritesSpy = vi.spyOn(renderer, 'syncSprites');
-        const hudUpdateSpy = vi.spyOn((renderer as any).hud, 'update');
 
         renderer.render(gameState);
 
         expect(syncSpritesSpy).toHaveBeenCalledWith(gameState);
-        expect(hudUpdateSpy).toHaveBeenCalledWith(gameState);
     });
 
     it('should render map tiles and entities correctly on initialize', async () => {
@@ -113,6 +121,41 @@ describe('Renderer', () => {
         expect(monsterSprite).toBeDefined();
         expect(monsterSprite!.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
         expect(monsterSprite!.y).toBe((1 + 1) * TILE_SIZE); // New Y calculation
+    });
+
+    it('should call onComplete callback after item pickup animation', async () => {
+        const gameState = createMockGameState();
+        // Set interaction state for item pickup
+        gameState.interactionState = { type: 'item_pickup', itemId: 'item_1' };
+
+        // Initialize renderer to create sprites
+        renderer.initialize(gameState);
+
+        const onComplete = vi.fn();
+        await renderer.animateItemPickup(gameState, onComplete);
+
+        // Manually trigger the onComplete of the mocked timeline
+        const gsap = await import('gsap');
+        const mockedTimeline = (gsap.gsap.timeline as any).mock.results[0].value;
+
+        // Check if onComplete is actually a function before calling it.
+        if (typeof mockedTimeline.vars.onComplete === 'function') {
+            mockedTimeline.vars.onComplete();
+        }
+
+        expect(onComplete).toHaveBeenCalled();
+    });
+
+    it('should show floating text on an entity', () => {
+        const gameState = createMockGameState();
+        renderer.initialize(gameState); // To populate entitySprites
+
+        const textManagerAddSpy = vi.spyOn((renderer as any).floatingTextManager, 'add');
+        const playerEntityKey = 'player_start_0_0';
+
+        renderer.showFloatingTextOnEntity('Test Text', 'ITEM_GAIN', playerEntityKey);
+
+        expect(textManagerAddSpy).toHaveBeenCalledWith('Test Text', 'ITEM_GAIN', playerEntityKey);
     });
 });
 
