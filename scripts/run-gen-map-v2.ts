@@ -41,7 +41,7 @@ const params: GenMapV2Params = {
     [2, 2], // Example: ensure this tile is a floor
   ],
   outputFilename: 'mapdata/generated_map_v2.json',
-  seed: Math.floor(Math.random() * 100000), // Use a random seed each time
+  seed: 12345, // Use a fixed seed for verification
   doorDensity: 0.6,
 };
 
@@ -51,17 +51,16 @@ function run() {
   const { layout } = generateMapV2(params);
 
   const output = {
-    meta: {
-        ...params,
-        generationDate: new Date().toISOString(),
-    },
+    ...params,
+    generationDate: new Date().toISOString(),
     layout: layout,
   };
 
-  // The output meta.templates can be very long, so remove it for clarity
-  if (output.meta.templates) {
-    delete (output.meta as any).templates;
-  }
+  // Clean up the output object to only include essential metadata and the layout.
+  delete (output as any).templates;
+  delete (output as any).outputFilename;
+  delete (output as any).forceFloorPos;
+  delete (output as any).templateData;
 
   const outputString = JSON.stringify(output, null, 2); // Pretty print JSON
 
