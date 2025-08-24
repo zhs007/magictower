@@ -71,7 +71,6 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
     } = params;
     const random = createPRNG(seed);
 
-    // 1. Initialize map with empty space and a wall border
     const layout: number[][] = Array(Height).fill(0).map(() => Array(Width).fill(TILE_EMPTY));
     for (let y = 0; y < Height; y++) {
         for (let x = 0; x < Width; x++) {
@@ -81,30 +80,34 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
         }
     }
 
-    // Main placement loop - iterates through each constraint in templateData
     for (const constraint of templateData) {
         const [minW, minH, maxW, maxH, minRoomNum, maxRoomNum] = constraint;
 
-        // Filter templates based on the current constraint
         const filteredTemplates = templates.filter(t =>
             t.width >= minW && t.width <= maxW &&
             t.height >= minH && t.height <= maxH &&
             t.roomNum >= minRoomNum && t.roomNum <= maxRoomNum
         );
 
-        if (filteredTemplates.length === 0) continue; // No templates match this constraint
+        if (filteredTemplates.length === 0) continue;
 
         const allValidPlacements: ValidPlacement[] = [];
 
-        // Try every filtered template
         for (const template of filteredTemplates) {
-            // Try every possible top-left position on the map
+            let templateWallCount = 0;
+            for(const row of template.layout) {
+                for(const tile of row) {
+                    if (tile === TILE_WALL) templateWallCount++;
+                }
+            }
+            if (templateWallCount === 0) continue; // Cannot place templates without walls
+
             for (let y = 0; y <= Height - template.height; y++) {
                 for (let x = 0; x <= Width - template.width; x++) {
                     let weight = 0;
+                    let overlapWallCount = 0;
                     let isValid = true;
 
-                    // Check if this placement is valid
                     for (let ty = 0; ty < template.height; ty++) {
                         for (let tx = 0; tx < template.width; tx++) {
                             const tile = template.layout[ty][tx];
@@ -124,13 +127,23 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
                                 }
                                 if (mapTile === TILE_WALL) {
                                     weight += isOuterWall(mapX, mapY, Width, Height) ? 2 : 1;
+                                    overlapWallCount++;
+                                } else { // Placing a new wall, check for adjacent walls
+                                    const neighbors = [[mapY - 1, mapX], [mapY + 1, mapX], [mapY, mapX - 1], [mapY, mapX + 1]];
+                                    for (const [ny, nx] of neighbors) {
+                                        if (nx > 0 && nx < Width - 1 && ny > 0 && ny < Height - 1 && layout[ny][nx] === TILE_WALL) {
+                                            isValid = false; break;
+                                        }
+                                    }
                                 }
                             }
                         }
                         if (!isValid) break;
                     }
 
-                    if (isValid && weight > 0) {
+                    // Rule 1: Placement must be valid based on above checks
+                    // Rule 2: Overlap must be > 40% of template walls
+                    if (isValid && overlapWallCount > (templateWallCount * 2 / 5)) {
                         allValidPlacements.push({ template, x, y, weight });
                     }
                 }
@@ -139,7 +152,6 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
 
         if (allValidPlacements.length === 0) continue;
 
-        // Weighted random selection
         const totalWeight = allValidPlacements.reduce((sum, p) => sum + p.weight, 0);
         let randomWeight = random() * totalWeight;
         let chosenPlacement: ValidPlacement | null = null;
@@ -152,7 +164,6 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
         }
         if (!chosenPlacement) chosenPlacement = allValidPlacements[allValidPlacements.length - 1];
 
-        // Place the chosen template onto the map
         const { template, x, y } = chosenPlacement;
         for (let ty = 0; ty < template.height; ty++) {
             for (let tx = 0; tx < template.width; tx++) {
@@ -180,7 +191,6 @@ export function generateMapV2(params: GenMapV2Params): { layout: number[][] } {
         }
     }
 
-    // Finalization
     const doorCandidates: Vec2[] = [];
     for (let y = 0; y < Height; y++) {
         for (let x = 0; x < Width; x++) {
