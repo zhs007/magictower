@@ -1,0 +1,12 @@
+{
+    "id": "level1_attack_slime",
+    "name": "Attack Slime",
+    "assetId": "monster_monster",
+    "hp": 10,
+    "maxhp": 10,
+    "attack": 30,
+    "defense": 5,
+    "speed": 8,
+    "gold": 10,
+    "exp": 44
+}

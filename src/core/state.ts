@@ -41,12 +41,29 @@ export class GameStateManager {
         let playerKey: string | null = null;
 
         const playerData = dataManager.getPlayerData();
-        if (!playerData) {
-            throw new Error('Player data not found.');
+        const levelData = dataManager.getLevelData();
+        if (!playerData || !levelData) {
+            throw new Error('Player or level data not found.');
+        }
+
+        const initialLevel = playerData.level;
+        const playerLevelStats = levelData.find(l => l.level === initialLevel);
+
+        if (!playerLevelStats) {
+            throw new Error(`Stats for initial level ${initialLevel} not found in leveldata.`);
         }
 
         const playerTemplate: Omit<IPlayer, 'x' | 'y'> = {
-            ...playerData,
+            id: playerData.id,
+            name: playerData.name,
+            level: initialLevel,
+            exp: playerData.exp,
+            hp: playerLevelStats.hp,
+            maxhp: playerLevelStats.hp,
+            attack: playerLevelStats.attack,
+            defense: playerLevelStats.defense,
+            speed: playerLevelStats.speed,
+            keys: playerData.keys,
             equipment: {},
             backupEquipment: [],
             buffs: [],
