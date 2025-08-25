@@ -1,0 +1,12 @@
+{
+    "id": "monster_average_slime",
+    "name": "Average Slime",
+    "assetId": "monster_monster",
+    "hp": 30,
+    "maxhp": 30,
+    "attack": 12,
+    "defense": 2,
+    "speed": 5,
+    "gold": 5,
+    "exp": 22
+}

@@ -126,6 +126,9 @@
     - `plan021`: 已完成。
     - `plan022`: 已完成。
 
+- **已完成**:
+    - `plan023`: "Design and Implement Initial Game Balance".
+
 - **下一个任务建议**:
     - `plan016`: "优化 Renderer 渲染性能".
 

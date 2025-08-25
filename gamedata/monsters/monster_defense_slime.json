@@ -1,0 +1,12 @@
+{
+    "id": "monster_defense_slime",
+    "name": "Defense Slime",
+    "assetId": "monster_monster",
+    "hp": 30,
+    "maxhp": 30,
+    "attack": 11,
+    "defense": 5,
+    "speed": 3,
+    "gold": 5,
+    "exp": 22
+}
