@@ -35,9 +35,9 @@ describe('Plan 023: Game Balance Validation', () => {
         await dataManager.loadAllData();
         playerData = dataManager.getPlayerData()!;
         levelData = dataManager.getLevelData()!;
-        attackSlime = dataManager.getMonsterData('monster_attack_slime')!;
-        averageSlime = dataManager.getMonsterData('monster_average_slime')!;
-        defenseSlime = dataManager.getMonsterData('monster_defense_slime')!;
+        attackSlime = dataManager.getMonsterData('level1_attack_slime')!;
+        averageSlime = dataManager.getMonsterData('level1_average_slime')!;
+        defenseSlime = dataManager.getMonsterData('level1_defense_slime')!;
     });
 
     // Check if data loaded correctly
