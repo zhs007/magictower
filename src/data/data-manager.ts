@@ -7,6 +7,8 @@ import {
     PlayerData,
     LevelData,
 } from './types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class DataManager {
     public monsters: Map<string, MonsterData> = new Map();
@@ -16,67 +18,73 @@ export class DataManager {
     public maps: Map<number, MapLayout> = new Map();
     public playerData: PlayerData | null = null;
     public levelData: LevelData[] = [];
+    private dataLoaded = false;
+
+    // Helper function to dynamically import JSON files from a directory
+    private async loadJsonFromDir(dirPath: string): Promise<any[]> {
+        const absolutePath = path.resolve(dirPath);
+        if (!fs.existsSync(absolutePath)) {
+            console.warn(`Directory not found: ${absolutePath}`);
+            return [];
+        }
+        const files = fs.readdirSync(absolutePath).filter(f => f.endsWith('.json'));
+        const modules = [];
+        for (const file of files) {
+            const filePath = path.join(absolutePath, file);
+            // Use a file URL to ensure correct module resolution in different OS
+            const fileUrl = 'file://' + filePath;
+            try {
+                const module = await import(fileUrl, { assert: { type: 'json' } });
+                modules.push(module.default);
+            } catch (e) {
+                // Fallback for environments that don't support import assertions
+                const fileContent = fs.readFileSync(filePath, 'utf-8');
+                modules.push(JSON.parse(fileContent));
+            }
+        }
+        return modules;
+    }
+
 
     public async loadAllData(): Promise<void> {
-        // Using import.meta.glob to dynamically import all JSON files from a directory.
-        // The `eager: true` option loads the modules immediately.
-        const monsterModules = import.meta.glob('/gamedata/monsters/*.json', { eager: true });
-        const itemModules = import.meta.glob('/gamedata/items/*.json', { eager: true });
-        const equipmentModules = import.meta.glob('/gamedata/equipments/*.json', { eager: true });
-        const buffModules = import.meta.glob('/gamedata/buffs/*.json', { eager: true });
-        const mapModules = import.meta.glob('/mapdata/*.json', { eager: true });
+        if (this.dataLoaded) {
+            return;
+        }
 
-        this.loadDataFromModules(monsterModules, this.monsters);
-        this.loadDataFromModules(itemModules, this.items);
-        this.loadDataFromModules(equipmentModules, this.equipments);
-        this.loadDataFromModules(buffModules, this.buffs);
+        const monsterData = await this.loadJsonFromDir('gamedata/monsters');
+        this.loadDataFromModules(monsterData, this.monsters);
 
-        for (const path in mapModules) {
-            const mapData = (mapModules[path] as any).default as MapLayout;
-            this.maps.set(mapData.floor, mapData);
+        const itemData = await this.loadJsonFromDir('gamedata/items');
+        this.loadDataFromModules(itemData, this.items);
+
+        const equipmentData = await this.loadJsonFromDir('gamedata/equipments');
+        this.loadDataFromModules(equipmentData, this.equipments);
+
+        const buffData = await this.loadJsonFromDir('gamedata/buffs');
+        this.loadDataFromModules(buffData, this.buffs);
+
+        const mapData = await this.loadJsonFromDir('mapdata');
+        for (const map of mapData) {
+            this.maps.set(map.floor, map);
         }
 
         // Load single data files
-        const playerDataModule = (await import('../../gamedata/playerdata.json')).default;
-        this.playerData = playerDataModule as PlayerData;
+        const playerDataContent = fs.readFileSync(path.resolve('gamedata/playerdata.json'), 'utf-8');
+        this.playerData = JSON.parse(playerDataContent);
 
-        const levelDataModule = (await import('../../gamedata/leveldata.json')).default;
-        this.levelData = levelDataModule as LevelData[];
+        const levelDataContent = fs.readFileSync(path.resolve('gamedata/leveldata.json'), 'utf-8');
+        this.levelData = JSON.parse(levelDataContent);
+
+        this.dataLoaded = true;
     }
 
     private loadDataFromModules(
-        modules: Record<string, unknown>,
+        dataArray: any[],
         targetMap: Map<string, any>
     ): void {
-        for (const path in modules) {
-            // The default export of the JSON module is the actual data.
-            const data = (modules[path] as any).default;
+        for (const data of dataArray) {
             if (data && data.id) {
-                // If item data is missing a 'type' field, try to derive it from the id.
-                if (targetMap === this.items) {
-                    if (!data.type) {
-                        data.type = data.id.includes('key')
-                            ? 'key'
-                            : data.id.includes('potion')
-                              ? 'potion'
-                              : 'special';
-                    }
-                }
-
-                // Register by declared id
                 targetMap.set(data.id, data);
-
-                // Also register by the JSON filename (without extension) as a fallback.
-                // Many map files reference entities by the filename (e.g. 'monster_green_slime').
-                try {
-                    const parts = path.split('/');
-                    const filename = parts[parts.length - 1].replace(/\.json$/i, '');
-                    if (filename && filename !== data.id) {
-                        targetMap.set(filename, data);
-                    }
-                } catch (e) {
-                    // ignore filename-derived registration failures
-                }
             }
         }
     }

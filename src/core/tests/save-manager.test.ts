@@ -1,31 +1,7 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { GameStateManager } from '../state';
 import { SaveManager } from '../save-manager';
-import { Action, GameState } from '../types';
-import { dataManager } from '../../data/data-manager';
-
-// Mock the entire data-manager
-vi.mock('../../data/data-manager', () => ({
-    dataManager: {
-        loadAllData: vi.fn().mockResolvedValue(undefined),
-        getMapLayout: vi.fn(),
-        getMonsterData: vi.fn(),
-        getItemData: vi.fn(),
-        getPlayerData: vi.fn().mockReturnValue({
-            id: 'player',
-            name: 'Hero',
-            level: 1,
-            exp: 0,
-            hp: 100,
-            maxhp: 100,
-            attack: 10,
-            defense: 10,
-            speed: 10,
-            keys: { yellow: 0, blue: 0, red: 0 },
-        }),
-        getLevelData: vi.fn().mockReturnValue([]),
-    },
-}));
+import { Action } from '../types';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -54,25 +30,17 @@ describe('SaveManager', () => {
     let gameStateManager: GameStateManager;
     let saveManager: SaveManager;
 
-    beforeEach(async () => {
-        localStorageMock.clear();
-
-        // Provide mock data for floor 1
-        vi.mocked(dataManager.getMapLayout).mockReturnValue({
-            floor: 1,
-            layout: [
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0],
-            ],
-            entities: {
-                player_start_1: { type: 'player_start', id: 'player', x: 1, y: 1 },
-            },
-        });
-
+    // Load real data once for all tests in this file
+    beforeAll(async () => {
+        // The GameStateManager now handles loading data, so we just need to initialize it
         gameStateManager = new GameStateManager();
         await gameStateManager.createAndInitializeState(1);
-        // saveManager is used for saving, which is still an instance method
+    });
+
+    beforeEach(async () => {
+        localStorageMock.clear();
+        // Re-initialize state to ensure no pollution between tests
+        await gameStateManager.createAndInitializeState(1);
         saveManager = new SaveManager(gameStateManager);
     });
 
@@ -89,15 +57,10 @@ describe('SaveManager', () => {
 
         const originalState = { ...gameStateManager.getState() };
 
-        // Save the game using an instance
         saveManager.saveGame('slot1');
-
-        // Load the game using the static method
         const loadedState = await SaveManager.loadGame('slot1');
 
         expect(loadedState).not.toBeNull();
-
-        // Compare states
         expect(loadedState!.player.x).toEqual(originalState.player.x);
         expect(loadedState!.player.y).toEqual(originalState.player.y);
         expect(loadedState!.currentFloor).toEqual(originalState.currentFloor);

@@ -3,11 +3,6 @@
     "name": "Hero",
     "level": 1,
     "exp": 0,
-    "hp": 150,
-    "maxhp": 150,
-    "attack": 10,
-    "defense": 10,
-    "speed": 10,
     "keys": {
         "yellow": 0,
         "blue": 0,
