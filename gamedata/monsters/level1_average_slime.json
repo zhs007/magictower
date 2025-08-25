@@ -2,11 +2,11 @@
     "id": "level1_average_slime",
     "name": "Average Slime",
     "assetId": "monster_monster",
-    "hp": 30,
-    "maxhp": 30,
-    "attack": 12,
-    "defense": 2,
+    "hp": 20,
+    "maxhp": 20,
+    "attack": 16,
+    "defense": 5,
     "speed": 5,
-    "gold": 5,
-    "exp": 22
+    "gold": 8,
+    "exp": 28
 }

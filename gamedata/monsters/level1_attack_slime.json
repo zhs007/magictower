@@ -4,9 +4,9 @@
     "assetId": "monster_monster",
     "hp": 10,
     "maxhp": 10,
-    "attack": 18,
-    "defense": 0,
+    "attack": 30,
+    "defense": 5,
     "speed": 8,
-    "gold": 5,
-    "exp": 27
+    "gold": 10,
+    "exp": 44
 }
