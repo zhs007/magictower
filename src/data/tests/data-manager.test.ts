@@ -8,9 +8,9 @@ describe('DataManager', () => {
 
     it('should load all monster data from files', () => {
         expect(dataManager.monsters.size).toBeGreaterThan(0);
-        const monster = dataManager.getMonsterData('monster_green_slime'); // Correct ID
+        const monster = dataManager.getMonsterData('monster_level1_average'); // Correct ID
         expect(monster).toBeDefined();
-        expect(monster?.name).toBe('Green Slime');
+        expect(monster?.name).toBe('平均型怪物');
     });
 
     it('should load all item data from files', () => {

@@ -89,7 +89,7 @@ export interface PlayerData {
     name: string;
     level: number;
     exp: number;
-    hp: number;
+    hp?: number;
     keys: {
         yellow: number;
         blue: number;

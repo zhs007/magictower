@@ -26,7 +26,7 @@ describe('Plan 023 Stat Refactoring', () => {
         expect(player.attack).toBe(level1Data!.attack);
         expect(player.defense).toBe(level1Data!.defense);
         expect(player.speed).toBe(level1Data!.speed);
-        expect(player.hp).toBe(100); // from playerdata.json
+        expect(player.hp).toBe(level1Data!.maxhp); // Should be initialized to maxhp
     });
 
     it('should update player stats correctly on level up', async () => {
@@ -34,7 +34,7 @@ describe('Plan 023 Stat Refactoring', () => {
         let state = gameStateManager.getState();
 
         // Give player enough EXP to level up to level 2
-        state.player.exp = 100;
+        state.player.exp = 220;
 
         // Run the level up check
         state = checkForLevelUp(state);
