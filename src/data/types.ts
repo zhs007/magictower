@@ -14,6 +14,7 @@ export interface MonsterData {
     defense: number;
     speed: number;
     gold: number;
+    exp: number;
     assetId?: string;
 }
 
@@ -89,11 +90,6 @@ export interface PlayerData {
     name: string;
     level: number;
     exp: number;
-    hp: number;
-    maxhp: number;
-    attack: number;
-    defense: number;
-    speed: number;
     keys: {
         yellow: number;
         blue: number;
