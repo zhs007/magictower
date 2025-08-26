@@ -94,6 +94,10 @@ export class DataManager {
         return this.monsters.get(id);
     }
 
+    public getAllMonsters(): MonsterData[] {
+        return Array.from(this.monsters.values());
+    }
+
     public getItemData(id: string): ItemData | undefined {
         return this.items.get(id);
     }
