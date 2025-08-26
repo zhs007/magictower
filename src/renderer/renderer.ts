@@ -43,16 +43,7 @@ export class Renderer {
         this.stage.addChild(worldContainer, this.hud);
     }
 
-    public async loadAssets(): Promise<void> {
-        await dataManager.loadAllData();
-
-        // Auto-generate asset manifest: alias = <folder>_<filename> for files under subfolders,
-        // or filename for top-level assets (e.g. 'player'). Use import.meta.glob to get URLs.
-        const modules = import.meta.glob('/assets/**/*.{png,jpg,jpeg,webp}', {
-            eager: true,
-            query: '?url',
-            import: 'default',
-        }) as Record<string, string>;
+    public async processAssetModules(modules: Record<string, string>): Promise<void> {
         const assetsList: { alias: string; src: string }[] = [];
         for (const p in modules) {
             const url = modules[p];
@@ -67,6 +58,20 @@ export class Renderer {
         const assetManifest = { bundles: [{ name: 'game-assets', assets: assetsList }] };
         await Assets.init({ manifest: assetManifest });
         await Assets.loadBundle('game-assets');
+    }
+
+    public async loadAssets(): Promise<void> {
+        await dataManager.loadAllData();
+
+        // Auto-generate asset manifest: alias = <folder>_<filename> for files under subfolders,
+        // or filename for top-level assets (e.g. 'player'). Use import.meta.glob to get URLs.
+        const modules = import.meta.glob('/assets/**/*.{png,jpg,jpeg,webp}', {
+            eager: true,
+            query: '?url',
+            import: 'default',
+        }) as Record<string, string>;
+
+        await this.processAssetModules(modules);
     }
 
     public initialize(state: GameState): void {
