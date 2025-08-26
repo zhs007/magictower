@@ -17,7 +17,7 @@
     "check-assets": "node scripts/check-assets.js",
     "gen-map": "node --no-warnings=ExperimentalWarning --loader ts-node/esm scripts/run-gen-map.ts",
     "gen-map:v2": "node --no-warnings=ExperimentalWarning --loader ts-node/esm scripts/run-gen-map-v2.ts",
-    "check-gamedata": "node --no-warnings=ExperimentalWarning --loader ts-node/esm scripts/gamedata-checker.ts"
+    "check-gamedata": "tsx scripts/gamedata-checker.ts"
   },
   "repository": {
     "type": "git",
@@ -50,6 +50,7 @@
     "jsdom": "^26.1.0",
     "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "vite": "^7.1.3",
     "vitest": "^3.2.4"
   }
