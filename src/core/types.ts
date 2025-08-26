@@ -88,6 +88,7 @@ export interface IPlayer extends ICharacter {
 }
 
 export interface IMonster extends ICharacter {
+    exp?: number;
     // Monster-specific properties can be added here.
 }
 

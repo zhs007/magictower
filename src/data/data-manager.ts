@@ -27,7 +27,7 @@ export class DataManager {
             console.warn(`Directory not found: ${absolutePath}`);
             return [];
         }
-        const files = fs.readdirSync(absolutePath).filter(f => f.endsWith('.json'));
+        const files = fs.readdirSync(absolutePath).filter((f) => f.endsWith('.json'));
         const modules = [];
         for (const file of files) {
             const filePath = path.join(absolutePath, file);
@@ -44,7 +44,6 @@ export class DataManager {
         }
         return modules;
     }
-
 
     public async loadAllData(): Promise<void> {
         if (this.dataLoaded) {
@@ -69,7 +68,10 @@ export class DataManager {
         }
 
         // Load single data files
-        const playerDataContent = fs.readFileSync(path.resolve('gamedata/playerdata.json'), 'utf-8');
+        const playerDataContent = fs.readFileSync(
+            path.resolve('gamedata/playerdata.json'),
+            'utf-8'
+        );
         this.playerData = JSON.parse(playerDataContent);
 
         const levelDataContent = fs.readFileSync(path.resolve('gamedata/leveldata.json'), 'utf-8');
@@ -78,10 +80,7 @@ export class DataManager {
         this.dataLoaded = true;
     }
 
-    private loadDataFromModules(
-        dataArray: any[],
-        targetMap: Map<string, any>
-    ): void {
+    private loadDataFromModules(dataArray: any[], targetMap: Map<string, any>): void {
         for (const data of dataArray) {
             if (data && data.id) {
                 targetMap.set(data.id, data);

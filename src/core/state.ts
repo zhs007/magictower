@@ -47,7 +47,7 @@ export class GameStateManager {
         }
 
         const initialLevel = playerData.level;
-        const playerLevelStats = levelData.find(l => l.level === initialLevel);
+        const playerLevelStats = levelData.find((l) => l.level === initialLevel);
 
         if (!playerLevelStats) {
             throw new Error(`Stats for initial level ${initialLevel} not found in leveldata.`);

@@ -2,11 +2,10 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { IPlayer, IMonster } from '../types';
 import { calculateDamage } from '../logic';
 import { dataManager } from '../../data/data-manager';
-import { LevelData } from '../../data/types';
+import { LevelData, MonsterData } from '../../data/types';
 
 // Helper function to calculate total damage in a battle
 const calculateTotalDamage = (player: IPlayer, monster: IMonster) => {
-    // Player always attacks first as per design (player speed > monster speed)
     const pDmg = calculateDamage(player, monster);
     const mDmg = calculateDamage(monster, player);
 
@@ -25,48 +24,96 @@ const calculateTotalDamage = (player: IPlayer, monster: IMonster) => {
 describe('Game Balance Validation (High-Threat Redesign)', () => {
     let playerData: IPlayer;
     let levelData: LevelData[];
-    let attackSlime: IMonster;
-    let averageSlime: IMonster;
-    let defenseSlime: IMonster;
+    let attackSlimeData: MonsterData;
+    let averageSlimeData: MonsterData;
+    let defenseSlimeData: MonsterData;
 
     beforeAll(async () => {
         await dataManager.loadAllData();
-        playerData = dataManager.getPlayerData()!;
+        const pData = dataManager.getPlayerData()!;
+        const l1Data = dataManager.getLevelData().find((l) => l.level === 1)!;
+        playerData = {
+            ...pData,
+            ...l1Data,
+            maxhp: l1Data.hp,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+
         levelData = dataManager.getLevelData()!;
-        attackSlime = dataManager.getMonsterData('level1_attack_slime')!;
-        averageSlime = dataManager.getMonsterData('level1_average_slime')!;
-        defenseSlime = dataManager.getMonsterData('level1_defense_slime')!;
+        attackSlimeData = dataManager.getMonsterData('level1_attack_slime')!;
+        averageSlimeData = dataManager.getMonsterData('level1_average_slime')!;
+        defenseSlimeData = dataManager.getMonsterData('level1_defense_slime')!;
     });
 
     it('should load all required game data', () => {
         expect(playerData).toBeDefined();
         expect(levelData).toBeDefined();
-        expect(attackSlime).toBeDefined();
+        expect(attackSlimeData).toBeDefined();
     });
 
     it('should have correct Level 1 stats', () => {
-        const l1Data = levelData.find(l => l.level === 1)!;
+        const l1Data = levelData.find((l) => l.level === 1)!;
         expect(l1Data.hp).toBe(150);
         expect(l1Data.attack).toBe(10);
         expect(l1Data.defense).toBe(10);
     });
 
     it('should have correct monster properties and calculated EXP', () => {
-        const monsters: IMonster[] = [attackSlime, averageSlime, defenseSlime];
+        const monsters: MonsterData[] = [attackSlimeData, averageSlimeData, defenseSlimeData];
         for (const monster of monsters) {
             expect(monster.attack).toBeGreaterThan(1);
             expect(monster.defense).toBeGreaterThan(1);
-            const calculatedExp = Math.floor(monster.maxhp / 10) + monster.attack + monster.defense + monster.speed;
+            const calculatedExp =
+                Math.floor(monster.maxhp / 10) + monster.attack + monster.defense + monster.speed;
             expect(monster.exp, `${monster.name} EXP`).toBe(calculatedExp);
         }
     });
 
     it('should have correct Level 1 combat outcomes', () => {
-        const l1Data = levelData.find(l => l.level === 1)!;
-        const p1 = { ...playerData, ...l1Data, equipment: {} };
-        const m_atk = { ...attackSlime, equipment: {} };
-        const m_avg = { ...averageSlime, equipment: {} };
-        const m_def = { ...defenseSlime, equipment: {} };
+        const l1Data = levelData.find((l) => l.level === 1)!;
+        const p1: IPlayer = {
+            ...playerData,
+            ...l1Data,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+
+        const m_atk: IMonster = {
+            ...attackSlimeData,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        const m_avg: IMonster = {
+            ...averageSlimeData,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        const m_def: IMonster = {
+            ...defenseSlimeData,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
 
         const battleWithAttack = calculateTotalDamage(p1, m_atk);
         const battleWithAverage = calculateTotalDamage(p1, m_avg);
@@ -76,8 +123,12 @@ describe('Game Balance Validation (High-Threat Redesign)', () => {
         expect(battleWithAverage.rounds, 'Average Slime rounds').toBe(4);
         expect(battleWithDefense.rounds, 'Defense Slime rounds').toBe(6);
 
-        expect(battleWithAttack.playerTakes, 'Damage ranking').toBeGreaterThan(battleWithAverage.playerTakes);
-        expect(battleWithAverage.playerTakes, 'Damage ranking').toBeGreaterThan(battleWithDefense.playerTakes);
+        expect(battleWithAttack.playerTakes, 'Damage ranking').toBeGreaterThan(
+            battleWithAverage.playerTakes
+        );
+        expect(battleWithAverage.playerTakes, 'Damage ranking').toBeGreaterThan(
+            battleWithDefense.playerTakes
+        );
 
         const totalDamage =
             battleWithAttack.playerTakes * 2 +
@@ -87,12 +138,14 @@ describe('Game Balance Validation (High-Threat Redesign)', () => {
     });
 
     it('should have correct Level 2 progression', () => {
-        const l1Data = levelData.find(l => l.level === 1)!;
-        const l2Data = levelData.find(l => l.level === 2)!;
+        const l1Data = levelData.find((l) => l.level === 1)!;
+        const l2Data = levelData.find((l) => l.level === 2)!;
 
-        const totalExpFrom7Monsters = attackSlime.exp * 2 + averageSlime.exp * 3 + defenseSlime.exp * 2;
+        const totalExpFrom7Monsters =
+            attackSlimeData.exp * 2 + averageSlimeData.exp * 3 + defenseSlimeData.exp * 2;
         expect(l2Data.exp_needed).toBe(220);
-        expect(l2Data.exp_needed).toBe(totalExpFrom7Monsters);
+        // Note: The below check is redundant if the above passes, but good for validation
+        expect(220).toBe(totalExpFrom7Monsters);
 
         expect(l2Data.attack - l1Data.attack).toBe(8);
         expect(l2Data.defense - l1Data.defense).toBe(8);
@@ -101,13 +154,40 @@ describe('Game Balance Validation (High-Threat Redesign)', () => {
     });
 
     it('should have correct Level 2 combat outcomes', () => {
-        const l2Data = levelData.find(l => l.level === 2)!;
-        const p2 = { ...playerData, ...l2Data, equipment: {} };
+        const l2Data = levelData.find((l) => l.level === 2)!;
+        const p2: IPlayer = {
+            ...playerData,
+            ...l2Data,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        const m_atk: IMonster = {
+            ...attackSlimeData,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
+        const m_avg: IMonster = {
+            ...averageSlimeData,
+            x: 0,
+            y: 0,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            buffs: [],
+        };
 
-        const atkDmgToP2 = calculateDamage(attackSlime, p2);
+        const atkDmgToP2 = calculateDamage(m_atk, p2);
         expect(atkDmgToP2).toBeGreaterThan(10);
 
-        const avgDmgToP2 = calculateDamage(averageSlime, p2);
+        const avgDmgToP2 = calculateDamage(m_avg, p2);
         expect(avgDmgToP2).toBe(1);
     });
 });
