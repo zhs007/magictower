@@ -3,7 +3,7 @@
     "name": "Hero",
     "level": 1,
     "exp": 0,
-    "hp": 100,
+    "hp": 150,
     "keys": {
         "yellow": 0,
         "blue": 0,
