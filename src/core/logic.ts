@@ -310,7 +310,7 @@ function applyLevelUp(player: IPlayer, newLevelData: LevelData): IPlayer {
 
     // Calculate stat gains for event dispatching
     const statGains = {
-        maxhp: newLevelData.hp - updatedPlayer.maxhp,
+        maxhp: newLevelData.maxhp - updatedPlayer.maxhp,
         attack: newLevelData.attack - updatedPlayer.attack,
         defense: newLevelData.defense - updatedPlayer.defense,
         speed: newLevelData.speed - updatedPlayer.speed,
@@ -318,7 +318,7 @@ function applyLevelUp(player: IPlayer, newLevelData: LevelData): IPlayer {
 
     // Apply new base stats from level data
     updatedPlayer.level = newLevelData.level;
-    updatedPlayer.maxhp = newLevelData.hp;
+    updatedPlayer.maxhp = newLevelData.maxhp;
     updatedPlayer.attack = newLevelData.attack;
     updatedPlayer.defense = newLevelData.defense;
     updatedPlayer.speed = newLevelData.speed;
