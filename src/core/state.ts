@@ -50,8 +50,11 @@ export class GameStateManager {
             throw new Error(`Level data for level ${playerData.level} not found.`);
         }
 
+        const { hp, ...restOfPlayerData } = playerData;
+
         const playerTemplate: Omit<IPlayer, 'x' | 'y'> = {
-            ...playerData,
+            ...restOfPlayerData,
+            hp: hp ?? levelData.maxhp,
             maxhp: levelData.maxhp,
             attack: levelData.attack,
             defense: levelData.defense,
@@ -61,6 +64,10 @@ export class GameStateManager {
             buffs: [],
             direction: 'right' as 'left' | 'right',
         };
+
+        if (playerTemplate.hp <= 0) {
+            playerTemplate.hp = playerTemplate.maxhp;
+        }
 
         if (mapData.entities) {
             for (const entityKey of Object.keys(mapData.entities)) {
