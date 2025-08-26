@@ -90,10 +90,6 @@ export interface PlayerData {
     level: number;
     exp: number;
     hp: number;
-    maxhp: number;
-    attack: number;
-    defense: number;
-    speed: number;
     keys: {
         yellow: number;
         blue: number;
@@ -107,7 +103,7 @@ export interface PlayerData {
 export interface LevelData {
     level: number;
     exp_needed: number;
-    hp: number;
+    maxhp: number;
     attack: number;
     defense: number;
     speed: number;

@@ -12,19 +12,15 @@ vi.mock('/gamedata/playerdata.json', () => ({
         level: 1,
         exp: 0,
         hp: 100,
-        maxhp: 100,
-        attack: 10,
-        defense: 10,
-        speed: 10,
         keys: { yellow: 0, blue: 0, red: 0 },
     },
 }));
 
 vi.mock('/gamedata/leveldata.json', () => ({
     default: [
-        { level: 1, exp_needed: 0, hp: 100, attack: 10, defense: 10, speed: 10 },
-        { level: 2, exp_needed: 100, hp: 120, attack: 12, defense: 12, speed: 11 },
-        { level: 3, exp_needed: 250, hp: 140, attack: 14, defense: 14, speed: 12 },
+        { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
+        { level: 2, exp_needed: 100, maxhp: 120, attack: 12, defense: 12, speed: 11 },
+        { level: 3, exp_needed: 250, maxhp: 140, attack: 14, defense: 14, speed: 12 },
     ],
 }));
 

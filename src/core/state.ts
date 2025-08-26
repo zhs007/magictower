@@ -45,8 +45,17 @@ export class GameStateManager {
             throw new Error('Player data not found.');
         }
 
+        const levelData = dataManager.getLevelData().find((ld) => ld.level === playerData.level);
+        if (!levelData) {
+            throw new Error(`Level data for level ${playerData.level} not found.`);
+        }
+
         const playerTemplate: Omit<IPlayer, 'x' | 'y'> = {
             ...playerData,
+            maxhp: levelData.maxhp,
+            attack: levelData.attack,
+            defense: levelData.defense,
+            speed: levelData.speed,
             equipment: {},
             backupEquipment: [],
             buffs: [],
