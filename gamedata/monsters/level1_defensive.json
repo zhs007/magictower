@@ -1,0 +1,8 @@
+{
+    "id": "level1_defensive",
+    "name": "防御型怪物",
+    "maxhp": 30,
+    "attack": 14,
+    "defense": 7,
+    "speed": 4
+}

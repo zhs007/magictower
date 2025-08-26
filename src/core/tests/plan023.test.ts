@@ -34,7 +34,7 @@ describe('Plan 023 Stat Refactoring', () => {
         let state = gameStateManager.getState();
 
         // Give player enough EXP to level up to level 2
-        state.player.exp = 100;
+        state.player.exp = 220;
 
         // Run the level up check
         state = checkForLevelUp(state);

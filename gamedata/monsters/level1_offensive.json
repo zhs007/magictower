@@ -1,0 +1,8 @@
+{
+    "id": "level1_offensive",
+    "name": "攻击型怪物",
+    "maxhp": 20,
+    "attack": 25,
+    "defense": 2,
+    "speed": 8
+}

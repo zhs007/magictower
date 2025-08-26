@@ -1,0 +1,8 @@
+{
+    "id": "level1_average",
+    "name": "平均型怪物",
+    "maxhp": 20,
+    "attack": 16,
+    "defense": 6,
+    "speed": 6
+}
