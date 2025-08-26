@@ -19,9 +19,11 @@ vi.mock('../../data/data-manager', () => ({
             hp: 100,
             keys: { yellow: 0, blue: 0, red: 0 },
         }),
-        getLevelData: vi.fn().mockReturnValue([
-            { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
-        ]),
+        getLevelData: vi
+            .fn()
+            .mockReturnValue([
+                { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
+            ]),
     },
 }));
 
