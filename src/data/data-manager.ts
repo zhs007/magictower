@@ -17,24 +17,33 @@ export class DataManager {
     public playerData: PlayerData | null = null;
     public levelData: LevelData[] = [];
 
+    public processModules(
+        monsterModules: Record<string, any>,
+        itemModules: Record<string, any>,
+        equipmentModules: Record<string, any>,
+        buffModules: Record<string, any>,
+        mapModules: Record<string, any>
+    ): void {
+        this.loadDataFromModuleGroup(monsterModules, this.monsters);
+        this.loadDataFromModuleGroup(itemModules, this.items);
+        this.loadDataFromModuleGroup(equipmentModules, this.equipments);
+        this.loadDataFromModuleGroup(buffModules, this.buffs);
+
+        for (const path in mapModules) {
+            const mapData = (mapModules[path] as any).default as MapLayout;
+            this.maps.set(mapData.floor, mapData);
+        }
+    }
+
     public async loadAllData(): Promise<void> {
-        // Using import.meta.glob to dynamically import all JSON files from a directory.
-        // The `eager: true` option loads the modules immediately.
+        // This method is now a convenience for the Vite environment.
         const monsterModules = import.meta.glob('/gamedata/monsters/*.json', { eager: true });
         const itemModules = import.meta.glob('/gamedata/items/*.json', { eager: true });
         const equipmentModules = import.meta.glob('/gamedata/equipments/*.json', { eager: true });
         const buffModules = import.meta.glob('/gamedata/buffs/*.json', { eager: true });
         const mapModules = import.meta.glob('/mapdata/*.json', { eager: true });
 
-        this.loadDataFromModules(monsterModules, this.monsters);
-        this.loadDataFromModules(itemModules, this.items);
-        this.loadDataFromModules(equipmentModules, this.equipments);
-        this.loadDataFromModules(buffModules, this.buffs);
-
-        for (const path in mapModules) {
-            const mapData = (mapModules[path] as any).default as MapLayout;
-            this.maps.set(mapData.floor, mapData);
-        }
+        this.processModules(monsterModules, itemModules, equipmentModules, buffModules, mapModules);
 
         // Load single data files
         const playerDataModule = (await import('../../gamedata/playerdata.json')).default;
@@ -44,7 +53,7 @@ export class DataManager {
         this.levelData = levelDataModule as LevelData[];
     }
 
-    private loadDataFromModules(
+    private loadDataFromModuleGroup(
         modules: Record<string, unknown>,
         targetMap: Map<string, any>
     ): void {
