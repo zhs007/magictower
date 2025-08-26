@@ -26,7 +26,7 @@ describe('Plan 023 Stat Refactoring', () => {
         expect(player.attack).toBe(level1Data!.attack);
         expect(player.defense).toBe(level1Data!.defense);
         expect(player.speed).toBe(level1Data!.speed);
-        expect(player.hp).toBe(100); // from playerdata.json
+        expect(player.hp).toBe(150); // from playerdata.json
     });
 
     it('should update player stats correctly on level up', async () => {
