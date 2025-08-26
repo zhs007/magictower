@@ -29,17 +29,18 @@
         "x": 2,
         "y": 2
       },
-      "monster_1": {
-        "type": "monster",
-        "id": "monster_green_slime",
-        "x": 8,
-        "y": 8
-      },
       "item_1": {
         "type": "item",
         "id": "item_yellow_key",
         "x": 13,
         "y": 13
-      }
+      },
+      "monster_off_1": { "type": "monster", "id": "monster_level1_offensive", "x": 4, "y": 4 },
+      "monster_off_2": { "type": "monster", "id": "monster_level1_offensive", "x": 4, "y": 5 },
+      "monster_def_1": { "type": "monster", "id": "monster_level1_defensive", "x": 6, "y": 4 },
+      "monster_def_2": { "type": "monster", "id": "monster_level1_defensive", "x": 6, "y": 5 },
+      "monster_avg_1": { "type": "monster", "id": "monster_level1_average", "x": 8, "y": 4 },
+      "monster_avg_2": { "type": "monster", "id": "monster_level1_average", "x": 8, "y": 5 },
+      "monster_avg_3": { "type": "monster", "id": "monster_level1_average", "x": 8, "y": 6 }
     }
 }
