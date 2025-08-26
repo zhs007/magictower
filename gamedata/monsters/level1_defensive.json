@@ -1,8 +1,18 @@
 {
-    "id": "level1_defensive",
+    "id": "monster_level1_defensive",
+    "assetId": "monster_monster",
     "name": "防御型怪物",
+    "level": 1,
     "maxhp": 30,
     "attack": 14,
     "defense": 7,
-    "speed": 4
+    "speed": 4,
+    "gold": 10,
+    "hp": 30,
+    "x": 0,
+    "y": 0,
+    "direction": "left",
+    "equipment": {},
+    "backupEquipment": [],
+    "buffs": []
 }

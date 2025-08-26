@@ -1,8 +1,18 @@
 {
-    "id": "level1_average",
+    "id": "monster_level1_average",
+    "assetId": "monster_monster",
     "name": "平均型怪物",
+    "level": 1,
     "maxhp": 20,
     "attack": 16,
     "defense": 6,
-    "speed": 6
+    "speed": 6,
+    "gold": 10,
+    "hp": 20,
+    "x": 0,
+    "y": 0,
+    "direction": "left",
+    "equipment": {},
+    "backupEquipment": [],
+    "buffs": []
 }
