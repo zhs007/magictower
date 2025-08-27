@@ -119,6 +119,11 @@ export class GameStateManager {
         // The playerKey might not exist if we came from stairs to a map without a player_start
         if (playerKey) {
             entities[playerKey] = player;
+        } else {
+            // If there's no player_start on the map (e.g. arriving from stairs),
+            // we must still add the player to the entities list for rendering.
+            // We'll use a conventional key.
+            entities['player'] = { ...player, type: 'player_start' };
         }
 
             console.log('Successfully created new game state.');

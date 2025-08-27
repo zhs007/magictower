@@ -137,6 +137,9 @@ export class GameScene extends BaseScene {
 
 
             this.gameStateManager.initializeState(newState);
+            this.playerEntityKey = Object.keys(newState.entities).find(
+                (k) => newState.entities[k].type === 'player_start' || newState.entities[k].id === 'player'
+            );
             this.renderer.initialize(newState);
             console.log('GameStateManager and Renderer re-initialized.');
             this.isAnimating = false;
