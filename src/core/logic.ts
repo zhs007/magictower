@@ -58,7 +58,12 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         (k) => newState.entities[k].x === newX && newState.entities[k].y === newY
     );
 
+    console.log(`[handleMove] Checking entity at (${newX}, ${newY}). Found key: ${destinationEntityKey}`);
+
     if (destinationEntityKey) {
+        const destinationEntity = newState.entities[destinationEntityKey];
+        console.log(`[handleMove] Entity type is: ${destinationEntity.type}`);
+        console.log('[handleMove] Current stairs object:', JSON.stringify(newState.stairs));
         // If the destination entity is an item, set interaction state
         if (newState.items[destinationEntityKey]) {
             return {

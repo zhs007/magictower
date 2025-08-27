@@ -173,21 +173,28 @@ export class Renderer {
 
             if (!sprite) {
                 let textureAlias = '';
-                if (entity.type === 'player_start') textureAlias = 'player';
-                else {
-                    const candidate = (entity as any).assetId ?? entity.id;
-                    if (
-                        entity.type === 'monster' ||
-                        entity.type === 'item' ||
-                        dataManager.getItemData(entity.id)
-                    ) {
-                        textureAlias = candidate;
-                    }
+                if (entity.type === 'player_start') {
+                    textureAlias = 'player';
+                } else if (entity.type === 'stair') {
+                    // TODO: Use a real stair asset when one is created.
+                    textureAlias = 'item_item'; // Reusing item asset as a placeholder.
+                } else if (
+                    entity.type === 'monster' ||
+                    entity.type === 'item' ||
+                    entity.type === 'equipment'
+                ) {
+                    textureAlias = (entity as any).assetId ?? entity.id;
                 }
 
                 if (textureAlias) {
                     sprite = new Sprite(Assets.get(textureAlias));
                     sprite.anchor.set(0.5, 1); // Bottom-center alignment
+
+                    // Add a tint to the placeholder stair sprite to make it visually distinct.
+                    if (entity.type === 'stair') {
+                        sprite.tint = 0x800080; // Purple
+                    }
+
                     this.entitySprites.set(entityId, sprite);
                     this.mainContainer.addChild(sprite);
                 }
