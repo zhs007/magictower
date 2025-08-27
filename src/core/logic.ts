@@ -453,7 +453,7 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
             eventManager.dispatch('KEYS_CHANGED', { keys: newState.player.keys });
         }
     } else if (item.type === 'special') {
-        switch (item.specialType) {
+        switch ((item as any).specialType) {
             case 'monster_manual':
                 newState.player.hasMonsterManual = true;
                 break;
@@ -472,6 +472,13 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
                 }
                 newState.player.specialItems.push('bomb');
                 break;
+            case 'potion':
+                if (!newState.player.specialItems) {
+                    newState.player.specialItems = [];
+                }
+                // Potions are added to inventory, not used on pickup
+                newState.player.specialItems.push('small_potion');
+                break;
         }
     }
 
@@ -481,6 +488,42 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
     AudioManager.getInstance().playSound('pickup');
 
     newState.interactionState = { type: 'none' };
+    return newState;
+}
+
+export function handleUsePotion(state: GameState): GameState {
+    const newState = _.cloneDeep(state);
+
+    // Find and remove the potion from the player's special items
+    const potionIndex = newState.player.specialItems?.indexOf('small_potion');
+    if (potionIndex === undefined || potionIndex === -1) {
+        return state; // No potion to use
+    }
+    newState.player.specialItems?.splice(potionIndex, 1);
+
+    // Get potion data for healing amount
+    const potionData = dataManager.getItemData('small_potion');
+    const healAmount = (potionData as any)?.heal_amount || 0;
+
+    // Apply healing
+    const oldHp = newState.player.hp;
+    const playerStats = calculateFinalStats(newState.player);
+    newState.player.hp = Math.min(playerStats.maxhp, newState.player.hp + healAmount);
+
+    // Dispatch event to update UI
+    const hpChangedPayload = {
+        entityId: 'player',
+        newHp: newState.player.hp,
+        maxHp: playerStats.maxhp,
+        level: playerStats.level,
+        exp: playerStats.exp,
+        attack: playerStats.attack,
+        defense: playerStats.defense,
+        oldHp,
+    };
+    eventManager.dispatch('HP_CHANGED', hpChangedPayload);
+    AudioManager.getInstance().playSound('heal'); // Assuming a 'heal' sound exists
+
     return newState;
 }
 

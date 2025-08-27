@@ -1,0 +1,18 @@
+{
+    "id": "monster_level2_power",
+    "assetId": "monster_monster",
+    "name": "持斧哥布林",
+    "level": 2,
+    "maxhp": 60,
+    "attack": 38,
+    "defense": 10,
+    "speed": 10,
+    "gold": 25,
+    "hp": 60,
+    "x": 0,
+    "y": 0,
+    "direction": "left",
+    "equipment": {},
+    "backupEquipment": [],
+    "buffs": []
+}

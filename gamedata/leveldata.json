@@ -1,7 +1,7 @@
 [
     { "level": 1, "exp_needed": 0, "maxhp": 150, "attack": 12, "defense": 10, "speed": 10 },
-    { "level": 2, "exp_needed": 220, "maxhp": 200, "attack": 17, "defense": 15, "speed": 15 },
-    { "level": 3, "exp_needed": 250, "maxhp": 140, "attack": 14, "defense": 14, "speed": 12 },
-    { "level": 4, "exp_needed": 500, "maxhp": 160, "attack": 16, "defense": 16, "speed": 13 },
-    { "level": 5, "exp_needed": 1000, "maxhp": 180, "attack": 18, "defense": 18, "speed": 14 }
+    { "level": 2, "exp_needed": 220, "maxhp": 200, "attack": 17, "defense": 15, "speed": 12 },
+    { "level": 3, "exp_needed": 700, "maxhp": 300, "attack": 25, "defense": 22, "speed": 18 },
+    { "level": 4, "exp_needed": 1000, "maxhp": 350, "attack": 30, "defense": 27, "speed": 21 },
+    { "level": 5, "exp_needed": 1500, "maxhp": 400, "attack": 35, "defense": 32, "speed": 24 }
 ]

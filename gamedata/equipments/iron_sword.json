@@ -1,0 +1,10 @@
+{
+    "id": "iron_sword",
+    "assetId": "item_item",
+    "name": "铁剑",
+    "slot": "RIGHT_HAND",
+    "weaponType": "ONE_HANDED",
+    "stat_mods": {
+        "attack": 13
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "id": "monster_level2_normal",
+    "assetId": "monster_monster",
+    "name": "巨型史莱姆",
+    "level": 2,
+    "maxhp": 70,
+    "attack": 33,
+    "defense": 12,
+    "speed": 5,
+    "gold": 15,
+    "hp": 70,
+    "x": 0,
+    "y": 0,
+    "direction": "left",
+    "equipment": {},
+    "backupEquipment": [],
+    "buffs": []
+}

@@ -1,0 +1,39 @@
+{
+    "floor": 2,
+    "tileAssets": {
+        "0": "map_floor",
+        "1": "map_wall"
+    },
+    "layout": [
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1],
+      [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ],
+    "entities": {
+      "player_start": { "type": "player_start", "id": "player", "x": 1, "y": 1 },
+      "l1_off": { "type": "monster", "id": "monster_level1_offensive", "x": 2, "y": 2 },
+      "l1_avg": { "type": "monster", "id": "monster_level1_average", "x": 1, "y": 3 },
+      "l1_def": { "type": "monster", "id": "monster_level1_defensive", "x": 2, "y": 4 },
+      "sword": { "type": "equipment", "id": "iron_sword", "x": 1, "y": 5 },
+      "l2_normal_1": { "type": "monster", "id": "monster_level2_normal", "x": 4, "y": 2 },
+      "l2_normal_2": { "type": "monster", "id": "monster_level2_normal", "x": 5, "y": 2 },
+      "l2_power_1": { "type": "monster", "id": "monster_level2_power", "x": 8, "y": 5 },
+      "l2_power_2": { "type": "monster", "id": "monster_level2_power", "x": 9, "y": 5 },
+      "potion": { "type": "item", "id": "small_potion", "x": 8, "y": 8 },
+      "l2_speed_1": { "type": "monster", "id": "monster_level2_speed", "x": 13, "y": 10 },
+      "l2_speed_2": { "type": "monster", "id": "monster_level2_speed", "x": 13, "y": 11 }
+    }
+}

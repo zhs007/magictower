@@ -1,0 +1,18 @@
+{
+    "id": "monster_level2_speed",
+    "assetId": "monster_monster",
+    "name": "暗影螳螂",
+    "level": 2,
+    "maxhp": 50,
+    "attack": 48,
+    "defense": 5,
+    "speed": 15,
+    "gold": 20,
+    "hp": 50,
+    "x": 0,
+    "y": 0,
+    "direction": "left",
+    "equipment": {},
+    "backupEquipment": [],
+    "buffs": []
+}
