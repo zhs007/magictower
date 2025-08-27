@@ -95,7 +95,7 @@ describe('GameStateManager', () => {
 
             // Act & Assert
             await expect(GameStateManager.createInitialState({ floor: 1 })).rejects.toThrow(
-                'Player start position not found in map data.'
+                'Player could not be created or placed.'
             );
         });
     });

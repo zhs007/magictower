@@ -259,10 +259,10 @@ if (item) {
 
 - **玩家等级数据 (`gamedata/leveldata.json`):**
   - **等级 2:** `{ "maxhp": 200, "attack": 17, "defense": 15, "speed": 12 }`
-  - **等级 3:** `{ "exp_needed": 710, "maxhp": 300, "attack": 25, "defense": 22, "speed": 18 }`
+  - **等级 3:** `{ "exp_needed": 700, "maxhp": 300, "attack": 25, "defense": 22, "speed": 18 }`
 
 - **新怪物数据 (`gamedata/monsters/`):**
-  - **速攻型 (暗影螳螂):** `{ "maxhp": 50, "attack": 53, "defense": 5, "speed": 15 }`
+  - **速攻型 (暗影螳螂):** `{ "maxhp": 50, "attack": 48, "defense": 5, "speed": 15 }`
   - **强攻型 (持斧哥布林):** `{ "maxhp": 60, "attack": 38, "defense": 10, "speed": 10 }`
   - **普通型 (巨型史莱姆):** `{ "maxhp": 70, "attack": 33, "defense": 12, "speed": 5 }`
 
@@ -278,3 +278,41 @@ if (item) {
   npm run check-gamedata
   ```
   该命令会加载所有游戏数据并运行所有校验。如果任何平衡性约束被破坏，脚本将失败并报告详细错误。强烈建议在对`gamedata`目录下的任何文件进行修改后，都运行此脚本进行验证。
+
+## 15. 楼层切换系统 (Floor Transition System)
+
+游戏现在支持多楼层以及在它们之间的切换。
+
+### 15.1 数据定义
+- **楼梯实体**: 楼层间的切换是通过地图数据中的“楼梯”实体实现的。
+- **文件**: `mapdata/floor_XX.json`
+- **结构**: 每个地图文件可以包含一个`stairs`对象，其中定义了该层所有的楼梯。同时，在`entities`对象中也要有对应的实体来让它显示在地图上。
+- **示例 (`floor_01.json`):**
+  ```json
+  "entities": {
+    "stair_down_1_to_2": { "type": "stair", "id": "stair_down_1_to_2", "x": 14, "y": 14 }
+  },
+  "stairs": {
+    "stair_down_1_to_2": {
+      "id": "stair_down_1_to_2",
+      "target": {
+        "floor": 2,
+        "x": 1,
+        "y": 1
+      }
+    }
+  }
+  ```
+  `target`对象指定了目标楼层的编号和玩家在新楼层出现时的坐标。
+
+### 15.2 逻辑流程
+该功能的逻辑在代码中已经存在，并且设计得相当完善。
+1.  当玩家移动时，`handleMove` (`src/core/logic.ts`) 会检测目标位置的实体。
+2.  如果实体是一个楼梯（通过检查`state.stairs[entityId]`是否存在来判断），`handleMove`会返回一个将`interactionState`设置为`{ type: 'floor_change', stairId: ... }`的新游戏状态。
+3.  `GameScene` (`src/scenes/game-scene.ts`) 的主循环会检测到这个状态变化，并调用它自己的`handleFloorChange`方法。
+4.  `handleFloorChange`方法负责整个切换过程：
+    - 它会调用`GameStateManager.createInitialState()`来为目标楼层创建一个全新的状态对象。
+    - 关键的是，它会将当前玩家的状态（HP, a/d/s, 装备, 道具等）传入这个函数，以确保玩家状态在楼层间得以保留。
+    - 最后，它会用这个新状态重新初始化`GameStateManager`和`Renderer`，完成楼层切换。
+
+这个流程确保了逻辑的清晰分离：核心逻辑（`core`）只负责声明意图（“我要切换楼层”），而场景（`scenes`）则负责执行具体的、与渲染和状态管理相关的操作。

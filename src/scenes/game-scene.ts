@@ -72,9 +72,13 @@ export class GameScene extends BaseScene {
             return;
         }
 
+        console.log('Processing interaction:', state.interactionState.type);
         switch (state.interactionState.type) {
             case 'item_pickup':
                 this.handleItemPickup(state);
+                break;
+            case 'floor_change':
+                this.handleFloorChange(state);
                 break;
             case 'battle':
                 this.handleBattle(state);
@@ -82,6 +86,61 @@ export class GameScene extends BaseScene {
             default:
                 this.renderer.render(state);
         }
+    }
+
+    private async handleFloorChange(state: GameState): Promise<void> {
+        if (!this.gameStateManager || state.interactionState.type !== 'floor_change') {
+            return;
+        }
+        console.log('Handling floor change...');
+        this.isAnimating = true;
+
+        const stairId = state.interactionState.stairId;
+        const stair = state.stairs[stairId];
+        if (!stair) {
+            console.error('Stair data not found for ID:', stairId);
+            this.isAnimating = false;
+            return;
+        }
+
+        this.renderer.animateFloorTransition(async () => {
+            if (!this.gameStateManager) return;
+            console.log('Floor transition animation callback started.');
+
+            const target = stair.target;
+            const currentPlayerState = this.gameStateManager.getState().player;
+
+            // Preserve player state, but update coordinates
+            const playerForNextFloor = {
+                ...currentPlayerState,
+                x: target.x,
+                y: target.y,
+            };
+
+            console.log(`Creating new state for floor ${target.floor}`);
+            const newState = await GameStateManager.createInitialState(
+                { floor: target.floor },
+                playerForNextFloor
+            );
+            console.log('New game state created.');
+
+            // The player object in the new state needs to be the one we preserved and updated
+            newState.player = playerForNextFloor;
+
+            // Also update the player's entity entry if it exists
+            const playerEntityKey = Object.keys(newState.entities).find(
+                (k) => newState.entities[k].type === 'player_start'
+            );
+            if(playerEntityKey) {
+                newState.entities[playerEntityKey] = newState.player;
+            }
+
+
+            this.gameStateManager.initializeState(newState);
+            this.renderer.initialize(newState);
+            console.log('GameStateManager and Renderer re-initialized.');
+            this.isAnimating = false;
+        });
     }
 
     private handleItemPickup(state: GameState): void {

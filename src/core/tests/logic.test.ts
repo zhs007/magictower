@@ -1,6 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { handleMove, handleOpenDoor, handlePickupItem } from '../logic';
-import { GameState } from '../types';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { handleMove, handleOpenDoor, handlePickupItem, handleUsePotion } from '../logic';
+import { GameState, IItem } from '../types';
+import { dataManager } from '../../data/data-manager';
+
+vi.mock('../../data/data-manager', () => ({
+    dataManager: {
+        getItemData: vi.fn(),
+    },
+}));
 
 describe('handleMove', () => {
     let gameState: GameState;
@@ -44,6 +51,7 @@ describe('handleMove', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: { type: 'none' },
         };
     });
@@ -258,10 +266,62 @@ describe('handleOpenDoor', () => {
             items: {},
             equipments: {},
             doors: { door1: { id: 'door1', color: 'yellow' } },
+            stairs: {},
             interactionState: { type: 'none' },
         };
 
         const newState = handleOpenDoor(gameState, 'door1');
         expect(newState.doors['door1']).toBeUndefined();
+    });
+});
+
+describe('handleUsePotion', () => {
+    let gameState: GameState;
+
+    beforeEach(() => {
+        gameState = {
+            currentFloor: 1,
+            map: [[0]],
+            player: {
+                id: 'player', name: 'Hero', level: 1, exp: 0, hp: 20, maxhp: 100, attack: 10, defense: 5, speed: 5, x: 0, y: 0, direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 },
+                specialItems: ['small_potion'],
+            },
+            entities: {}, monsters: {}, items: {}, equipments: {}, doors: {}, stairs: {},
+            interactionState: { type: 'none' },
+        };
+
+        const mockPotion: Partial<IItem> = {
+            id: 'small_potion',
+            name: 'Small Potion',
+            type: 'special',
+            specialType: 'potion' as any,
+            heal_amount: 80,
+        };
+        vi.mocked(dataManager.getItemData).mockReturnValue(mockPotion as IItem);
+    });
+
+    it('should heal the player and consume the potion', () => {
+        const newState = handleUsePotion(gameState);
+
+        // HP should be healed by 80 (20 + 80 = 100)
+        expect(newState.player.hp).toBe(100);
+        // Potion should be removed from specialItems
+        expect(newState.player.specialItems).not.toContain('small_potion');
+    });
+
+    it('should not heal beyond maxhp', () => {
+        gameState.player.hp = 50; // Player has 50/100 HP
+        const newState = handleUsePotion(gameState);
+
+        // HP should be capped at maxhp (50 + 80 = 130, capped at 100)
+        expect(newState.player.hp).toBe(100);
+    });
+
+    it('should do nothing if player has no potion', () => {
+        gameState.player.specialItems = []; // Remove potion
+        const newState = handleUsePotion(gameState);
+
+        // Game state should be unchanged
+        expect(newState).toEqual(gameState);
     });
 });

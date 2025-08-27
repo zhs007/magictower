@@ -68,7 +68,12 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         }
 
         const destinationEntity = newState.entities[destinationEntityKey];
-        if (destinationEntity.type === 'equipment') {
+        if (newState.stairs[destinationEntityKey]) {
+            return {
+                ...newState,
+                interactionState: { type: 'floor_change', stairId: destinationEntityKey },
+            };
+        } else if (destinationEntity.type === 'equipment') {
             // Dispatch equipment pickup action
             return {
                 ...newState,

@@ -77,6 +77,7 @@ describe('Game Logic with Interactions', () => {
             },
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: { type: 'none' },
         };
     });

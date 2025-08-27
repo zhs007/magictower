@@ -23,7 +23,8 @@
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     ],
     "entities": {
-      "player_start": { "type": "player_start", "id": "player", "x": 1, "y": 1 },
+      "stair_up_2_to_1": { "type": "stair", "id": "stair_up_2_to_1", "x": 1, "y": 1 },
+      "stair_down_2_to_3": { "type": "stair", "id": "stair_down_2_to_3", "x": 13, "y": 13 },
       "l1_off": { "type": "monster", "id": "monster_level1_offensive", "x": 2, "y": 2 },
       "l1_avg": { "type": "monster", "id": "monster_level1_average", "x": 1, "y": 3 },
       "l1_def": { "type": "monster", "id": "monster_level1_defensive", "x": 2, "y": 4 },
@@ -35,5 +36,15 @@
       "potion": { "type": "item", "id": "small_potion", "x": 8, "y": 8 },
       "l2_speed_1": { "type": "monster", "id": "monster_level2_speed", "x": 13, "y": 10 },
       "l2_speed_2": { "type": "monster", "id": "monster_level2_speed", "x": 13, "y": 11 }
+    },
+    "stairs": {
+        "stair_up_2_to_1": {
+            "id": "stair_up_2_to_1",
+            "target": { "floor": 1, "x": 14, "y": 14 }
+        },
+        "stair_down_2_to_3": {
+            "id": "stair_down_2_to_3",
+            "target": { "floor": 3, "x": 2, "y": 2 }
+        }
     }
 }
