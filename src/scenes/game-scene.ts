@@ -103,46 +103,41 @@ export class GameScene extends BaseScene {
             return;
         }
 
-        this.renderer.animateFloorTransition(async () => {
-            if (!this.gameStateManager) return;
-            console.log('Floor transition animation callback started.');
+        this.renderer.animateFloorTransition(() => {
+            (async () => {
+                if (!this.gameStateManager) return;
+                console.log('Floor transition animation callback started.');
 
-            const target = stair.target;
-            const currentPlayerState = this.gameStateManager.getState().player;
+                const target = stair.target;
+                const currentPlayerState = this.gameStateManager.getState().player;
 
-            // Preserve player state, but update coordinates
-            const playerForNextFloor = {
-                ...currentPlayerState,
-                x: target.x,
-                y: target.y,
-            };
+                // Preserve player state, but update coordinates
+                const playerForNextFloor = {
+                    ...currentPlayerState,
+                    x: target.x,
+                    y: target.y,
+                };
 
-            console.log(`Creating new state for floor ${target.floor}`);
-            const newState = await GameStateManager.createInitialState(
-                { floor: target.floor },
-                playerForNextFloor
-            );
-            console.log('New game state created.');
+                console.log(`Creating new state for floor ${target.floor}`);
+                const newState = await GameStateManager.createInitialState(
+                    { floor: target.floor },
+                    playerForNextFloor
+                );
+                console.log('New game state created.');
 
-            // The player object in the new state needs to be the one we preserved and updated
-            newState.player = playerForNextFloor;
+                // The player object in the new state needs to be the one we preserved and updated
+                newState.player = playerForNextFloor;
 
-            // Also update the player's entity entry if it exists
-            const playerEntityKey = Object.keys(newState.entities).find(
-                (k) => newState.entities[k].type === 'player_start'
-            );
-            if(playerEntityKey) {
-                newState.entities[playerEntityKey] = newState.player;
-            }
-
-
-            this.gameStateManager.initializeState(newState);
-            this.playerEntityKey = Object.keys(newState.entities).find(
-                (k) => newState.entities[k].type === 'player_start' || newState.entities[k].id === 'player'
-            );
-            this.renderer.initialize(newState);
-            console.log('GameStateManager and Renderer re-initialized.');
-            this.isAnimating = false;
+                this.gameStateManager.initializeState(newState);
+                this.playerEntityKey = Object.keys(newState.entities).find(
+                    (k) =>
+                        newState.entities[k].type === 'player_start' ||
+                        newState.entities[k].id === 'player'
+                );
+                this.renderer.initialize(newState);
+                console.log('GameStateManager and Renderer re-initialized.');
+                this.isAnimating = false;
+            })();
         });
     }
 

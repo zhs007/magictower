@@ -345,14 +345,14 @@ export class Renderer {
         this.floatingTextManager.add(`-${damage}`, 'DAMAGE', defenderId);
     }
 
-    public animateFloorTransition(onComplete: () => Promise<void>): void {
+    public animateFloorTransition(onComplete: () => void): void {
         const tl = gsap.timeline();
         tl.to(this.stage, {
             alpha: 0,
             duration: 0.5,
             ease: 'power1.in',
-            onComplete: async () => {
-                await onComplete();
+            onComplete: () => {
+                onComplete();
                 gsap.to(this.stage, {
                     alpha: 1,
                     duration: 0.5,

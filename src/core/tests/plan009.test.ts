@@ -38,6 +38,7 @@ describe('plan009 features', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: { type: 'none' },
         };
     });

@@ -28,7 +28,6 @@ describe('Floor Transition Logic', () => {
         testState.player.x = stairEntityFromMap.x - 1;
         testState.player.y = stairEntityFromMap.y;
 
-
         // Dispatch a move action to step on the stairs
         const newState = handleMove(testState, 1, 0);
 

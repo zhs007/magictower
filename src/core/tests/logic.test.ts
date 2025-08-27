@@ -283,21 +283,42 @@ describe('handleUsePotion', () => {
             currentFloor: 1,
             map: [[0]],
             player: {
-                id: 'player', name: 'Hero', level: 1, exp: 0, hp: 20, maxhp: 100, attack: 10, defense: 5, speed: 5, x: 0, y: 0, direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 },
+                id: 'player',
+                name: 'Hero',
+                level: 1,
+                exp: 0,
+                hp: 20,
+                maxhp: 100,
+                attack: 10,
+                defense: 5,
+                speed: 5,
+                x: 0,
+                y: 0,
+                direction: 'right',
+                equipment: {},
+                backupEquipment: [],
+                buffs: [],
+                keys: { yellow: 0, blue: 0, red: 0 },
                 specialItems: ['small_potion'],
             },
-            entities: {}, monsters: {}, items: {}, equipments: {}, doors: {}, stairs: {},
+            entities: {},
+            monsters: {},
+            items: {},
+            equipments: {},
+            doors: {},
+            stairs: {},
             interactionState: { type: 'none' },
         };
 
-        const mockPotion: Partial<IItem> = {
+        const mockPotion = {
             id: 'small_potion',
             name: 'Small Potion',
+            description: 'A small potion.',
             type: 'special',
-            specialType: 'potion' as any,
+            specialType: 'potion',
             heal_amount: 80,
         };
-        vi.mocked(dataManager.getItemData).mockReturnValue(mockPotion as IItem);
+        vi.mocked(dataManager.getItemData).mockReturnValue(mockPotion as any);
     });
 
     it('should heal the player and consume the potion', () => {

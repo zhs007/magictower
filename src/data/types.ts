@@ -67,18 +67,23 @@ export interface BuffData {
 /**
  * Represents the structure of a map layout file.
  */
+import { IDoor, IEquipment, IStair } from '../core/types';
+
 export interface MapLayout {
     floor: number;
     layout: (number | string)[][];
     tileAssets?: Record<string, string>;
     entities?: {
         [id: string]: {
-            type: 'monster' | 'item' | 'equipment' | 'door' | 'player_start';
+            type: 'monster' | 'item' | 'equipment' | 'door' | 'player_start' | 'stair';
             id: string;
             x: number;
             y: number;
         };
     };
+    equipments?: Record<string, IEquipment>;
+    doors?: Record<string, IDoor>;
+    stairs?: Record<string, IStair>;
 }
 
 /**

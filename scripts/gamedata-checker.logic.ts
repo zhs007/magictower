@@ -210,7 +210,7 @@ function validateLevel2To3Balance() {
     // 2. L2 Player (with sword) vs L2 Monsters
     const playerLvl2WithSword = {
         ...playerLvl2,
-        attack: playerLvl2.attack + ironSword.stat_mods.attack!,
+        attack: playerLvl2.attack + ironSword.stat_mods!.attack!,
     };
 
     const dmgFromMantis = calculateDamage(mantis, playerLvl2WithSword);
@@ -233,7 +233,7 @@ function validateLevel2To3Balance() {
     // 3. L3 Player vs L2 Monsters
     const playerLvl3WithSword = {
         ...playerLvl3,
-        attack: playerLvl3.attack + ironSword.stat_mods.attack!,
+        attack: playerLvl3.attack + ironSword.stat_mods!.attack!,
     };
     assert(playerLvl3.speed > mantis.speed, `L3 Player speed (${playerLvl3.speed}) should be greater than Mantis speed (${mantis.speed})`);
 
