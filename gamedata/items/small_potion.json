@@ -1,0 +1,9 @@
+{
+  "id": "small_potion",
+  "assetId": "item_item",
+  "name": "小回复药",
+  "description": "恢复少量HP。",
+  "type": "special",
+  "specialType": "potion",
+  "heal_amount": 80
+}

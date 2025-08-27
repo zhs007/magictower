@@ -43,6 +43,7 @@ describe('Renderer plan018 tests', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: { type: 'none' },
         };
 
@@ -63,6 +64,7 @@ describe('Renderer plan018 tests', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: { type: 'none' },
         };
 
@@ -90,6 +92,7 @@ describe('Renderer plan018 tests', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: { type: 'none' },
         };
 

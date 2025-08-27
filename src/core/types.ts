@@ -115,6 +115,7 @@ export type IEntity = (IPlayer | IMonster | IItem | IEquipment) & { type: string
 export type InteractionState =
     | { type: 'none' }
     | { type: 'item_pickup'; itemId: string }
+    | { type: 'floor_change'; stairId: string }
     | {
           type: 'battle';
           monsterId: string;
@@ -130,6 +131,15 @@ export interface IDoor {
     condition?: { type: 'DEFEAT_MONSTER'; monsterId: string };
 }
 
+export interface IStair {
+    id: string;
+    target: {
+        floor: number;
+        x: number;
+        y: number;
+    };
+}
+
 export interface GameState {
     currentFloor: number;
     map: number[][];
@@ -140,11 +150,13 @@ export interface GameState {
     items: Record<string, IItem>;
     equipments: Record<string, IEquipment>;
     doors: Record<string, IDoor>;
+    stairs: Record<string, IStair>;
     interactionState: InteractionState;
 }
 
 export type Action =
     | { type: 'MOVE'; payload: { dx: number; dy: number } }
+    | { type: 'CHANGE_FLOOR'; payload: { stairId: string } }
     | { type: 'PICK_UP_ITEM'; payload: { itemId: string } }
     | { type: 'PICK_UP_EQUIPMENT'; payload: { equipmentId: string } }
     | { type: 'OPEN_DOOR'; payload: { doorId: string } }
@@ -154,7 +166,8 @@ export type Action =
           type: 'END_BATTLE';
           payload: { winnerId: string | null; reason: 'hp_depleted' | 'timeout' };
       }
-    | { type: 'USE_BOMB'; payload: { monsterType: string } };
+    | { type: 'USE_BOMB'; payload: { monsterType: string } }
+    | { type: 'USE_POTION' };
 
 export interface SaveData {
     timestamp: number;

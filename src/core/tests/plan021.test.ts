@@ -94,6 +94,7 @@ describe('Plan 021: Leveling and Experience System', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: {
                 type: 'battle',
                 monsterId: 'monster_1',
@@ -160,6 +161,7 @@ describe('Plan 021: Leveling and Experience System', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: {
                 type: 'battle',
                 monsterId: 'monster_1',
@@ -234,6 +236,7 @@ describe('Plan 021: Leveling and Experience System', () => {
             items: {},
             equipments: {},
             doors: {},
+            stairs: {},
             interactionState: {
                 type: 'battle',
                 monsterId: 'monster_1',

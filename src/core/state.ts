@@ -7,6 +7,7 @@ import {
     handleAttack,
     handleEndBattle,
     handlePickupEquipment,
+    handleUsePotion,
 } from './logic';
 import { dataManager } from '../data/data-manager';
 
@@ -25,108 +26,126 @@ export class GameStateManager {
         this.initializeState(initialState);
     }
 
-    public static async createInitialState(seed: { floor: number }): Promise<GameState> {
-        await dataManager.loadAllData();
-        const { floor } = seed;
-        const mapData = dataManager.getMapLayout(floor);
-        if (!mapData) {
-            throw new Error(`Map for floor ${floor} not found.`);
-        }
+    public static async createInitialState(
+        seed: { floor: number },
+        playerToPreserve?: IPlayer
+    ): Promise<GameState> {
+        console.log(`createInitialState called for floor ${seed.floor}.`);
+        try {
+            await dataManager.loadAllData();
+            const { floor } = seed;
+            const mapData = dataManager.getMapLayout(floor);
+            if (!mapData) {
+                throw new Error(`Map for floor ${floor} not found.`);
+            }
 
-        const map = mapData.layout.map((row) => row.map(Number));
-        const entities: Record<string, any> = {};
-        const monsters: Record<string, IMonster> = {};
-        const items: Record<string, IItem> = {};
-        let player: IPlayer | null = null;
-        let playerKey: string | null = null;
+            const map = mapData.layout.map((row) => row.map(Number));
+            const entities: Record<string, any> = {};
+            const monsters: Record<string, IMonster> = {};
+            const items: Record<string, IItem> = {};
+            let player: IPlayer | null = null;
+            let playerKey: string | null = null;
 
-        const playerData = dataManager.getPlayerData();
-        if (!playerData) {
-            throw new Error('Player data not found.');
-        }
+            const playerTemplate = playerToPreserve;
 
-        const levelData = dataManager.getLevelData().find((ld) => ld.level === playerData.level);
-        if (!levelData) {
-            throw new Error(`Level data for level ${playerData.level} not found.`);
-        }
+            if (mapData.entities) {
+                for (const entityKey of Object.keys(mapData.entities)) {
+                    const entityInfo = mapData.entities[entityKey];
 
-        const { hp, ...restOfPlayerData } = playerData;
-
-        const playerTemplate: Omit<IPlayer, 'x' | 'y'> = {
-            ...restOfPlayerData,
-            hp: hp ?? levelData.maxhp,
-            maxhp: levelData.maxhp,
-            attack: levelData.attack,
-            defense: levelData.defense,
-            speed: levelData.speed,
-            equipment: {},
-            backupEquipment: [],
-            buffs: [],
-            direction: 'right' as 'left' | 'right',
-        };
-
-        if (playerTemplate.hp <= 0) {
-            playerTemplate.hp = playerTemplate.maxhp;
-        }
-
-        if (mapData.entities) {
-            for (const entityKey of Object.keys(mapData.entities)) {
-                const entityInfo = mapData.entities[entityKey];
-
-                if (entityInfo.type === 'player_start') {
-                    player = { ...playerTemplate, ...entityInfo };
-                    playerKey = entityKey;
-                } else if (entityInfo.type === 'monster') {
-                    const monsterData = dataManager.getMonsterData(entityInfo.id);
-                    if (monsterData) {
-                        const monster = {
-                            ...monsterData,
-                            ...entityInfo,
-                            equipment: {},
-                            backupEquipment: [],
-                            buffs: [],
-                            direction: 'right' as 'left' | 'right',
-                        };
-                        monsters[entityKey] = monster;
-                        entities[entityKey] = monster;
+                    if (entityInfo.type === 'player_start') {
+                        // This is for new games or if there's no specific stair target
+                        if (playerTemplate) {
+                            player = { ...playerTemplate, ...entityInfo };
+                        } else {
+                            // Create player from scratch if not preserved
+                            const playerData = dataManager.getPlayerData()!;
+                            const levelData = dataManager
+                                .getLevelData()
+                                .find((ld) => ld.level === playerData.level)!;
+                            player = {
+                                ...playerData,
+                                hp: levelData.maxhp,
+                                maxhp: levelData.maxhp,
+                                attack: levelData.attack,
+                                defense: levelData.defense,
+                                speed: levelData.speed,
+                                equipment: {},
+                                backupEquipment: [],
+                                buffs: [],
+                                direction: 'right',
+                                ...entityInfo,
+                            };
+                        }
+                        playerKey = entityKey;
+                    } else if (entityInfo.type === 'monster') {
+                        const monsterData = dataManager.getMonsterData(entityInfo.id);
+                        if (monsterData) {
+                            const monster = {
+                                ...monsterData,
+                                ...entityInfo,
+                                equipment: {},
+                                backupEquipment: [],
+                                buffs: [],
+                                direction: 'right' as 'left' | 'right',
+                            };
+                            monsters[entityKey] = monster;
+                            entities[entityKey] = monster;
+                        }
+                    } else if (entityInfo.type === 'item') {
+                        const itemData = dataManager.getItemData(entityInfo.id);
+                        if (itemData) {
+                            // Use type provided by dataManager; fallback to 'special' if missing.
+                            const item: IItem = Object.assign({}, itemData, {
+                                type: itemData.type ?? 'special',
+                                x: entityInfo.x,
+                                y: entityInfo.y,
+                            });
+                            items[entityKey] = item;
+                            entities[entityKey] = item;
+                        }
+                    } else {
+                        entities[entityKey] = { ...entityInfo };
                     }
-                } else if (entityInfo.type === 'item') {
-                    const itemData = dataManager.getItemData(entityInfo.id);
-                    if (itemData) {
-                        // Use type provided by dataManager; fallback to 'special' if missing.
-                        const item: IItem = Object.assign({}, itemData, {
-                            type: itemData.type ?? 'special',
-                            x: entityInfo.x,
-                            y: entityInfo.y,
-                        });
-                        items[entityKey] = item;
-                        entities[entityKey] = item;
-                    }
-                } else {
-                    entities[entityKey] = { ...entityInfo };
                 }
             }
+
+            if (!player && playerToPreserve) {
+                // If the map has no player_start, but we have a player (from stairs), use them
+                player = playerToPreserve;
+            }
+
+            if (!player) {
+                throw new Error('Player could not be created or placed.');
+            }
+
+            // The playerKey might not exist if we came from stairs to a map without a player_start
+            if (playerKey) {
+                entities[playerKey] = player;
+            } else {
+                // If there's no player_start on the map (e.g. arriving from stairs),
+                // we must still add the player to the entities list for rendering.
+                // We'll use a conventional key.
+                entities['player'] = { ...player, type: 'player_start' };
+            }
+
+            console.log('Successfully created new game state.');
+            return {
+                currentFloor: floor,
+                map,
+                tileAssets: mapData.tileAssets,
+                player,
+                entities,
+                monsters,
+                items,
+                equipments: mapData.equipments || {},
+                doors: mapData.doors || {},
+                stairs: mapData.stairs || {},
+                interactionState: { type: 'none' },
+            };
+        } catch (error) {
+            console.error('Error in createInitialState:', error);
+            throw error;
         }
-
-        if (!player || !playerKey) {
-            throw new Error('Player start position not found in map data.');
-        }
-
-        // Ensure the player entity in the entities map is the full player object
-        entities[playerKey] = player;
-
-        return {
-            currentFloor: floor,
-            map,
-            tileAssets: mapData.tileAssets,
-            player,
-            entities,
-            monsters,
-            items,
-            equipments: {},
-            doors: {},
-            interactionState: { type: 'none' },
-        };
     }
 
     public initializeState(initialState: GameState): void {
@@ -169,6 +188,9 @@ export class GameStateManager {
                     action.payload.winnerId,
                     action.payload.reason
                 );
+                break;
+            case 'USE_POTION':
+                newState = handleUsePotion(this.currentState);
                 break;
             default:
                 newState = this.currentState;

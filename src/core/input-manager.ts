@@ -71,6 +71,10 @@ export class InputManager {
             case 'D':
                 action = { type: 'MOVE', payload: { dx: 1, dy: 0 } };
                 break;
+            case 'p':
+            case 'P':
+                action = { type: 'USE_POTION' };
+                break;
         }
 
         if (action) {

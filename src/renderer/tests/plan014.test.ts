@@ -126,6 +126,7 @@ function createMockGameState(): GameState {
         items: {},
         equipments: {},
         doors: {},
+        stairs: {},
         interactionState: { type: 'none' },
     };
 }
