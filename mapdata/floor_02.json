@@ -23,8 +23,8 @@
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     ],
     "entities": {
-      "stair_up_2_to_1": { "type": "stair", "id": "stair_up_2_to_1", "x": 1, "y": 1 },
-      "stair_down_2_to_3": { "type": "stair", "id": "stair_down_2_to_3", "x": 13, "y": 13 },
+      "stair_up_2_to_1": { "type": "stair", "id": "stair_up_2_to_1", "x": 14, "y": 14 },
+      "stair_down_2_to_3": { "type": "stair", "id": "stair_down_2_to_3", "x": 1, "y": 1 },
       "l1_off": { "type": "monster", "id": "monster_level1_offensive", "x": 2, "y": 2 },
       "l1_avg": { "type": "monster", "id": "monster_level1_average", "x": 1, "y": 3 },
       "l1_def": { "type": "monster", "id": "monster_level1_defensive", "x": 2, "y": 4 },
@@ -44,7 +44,7 @@
         },
         "stair_down_2_to_3": {
             "id": "stair_down_2_to_3",
-            "target": { "floor": 3, "x": 2, "y": 2 }
+            "target": { "floor": 3, "x": 1, "y": 1 }
         }
     }
 }

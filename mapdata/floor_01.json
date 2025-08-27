@@ -39,8 +39,8 @@
             "id": "stair_down_1_to_2",
             "target": {
                 "floor": 2,
-                "x": 1,
-                "y": 1
+                "x": 14,
+                "y": 14
             }
         }
     }
