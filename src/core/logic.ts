@@ -72,7 +72,6 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
             };
         }
 
-        const destinationEntity = newState.entities[destinationEntityKey];
         if (newState.stairs[destinationEntityKey]) {
             return {
                 ...newState,
