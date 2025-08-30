@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
 import { dataManager } from '../../data/data-manager';
-import { GameState } from '../types';
+import { GameState, IEquipment, EquipmentSlot } from '../types';
 import { MapLayout } from '../../data/types';
 
 // Mock the dataManager
@@ -11,6 +11,7 @@ vi.mock('../../data/data-manager', () => ({
         getMapLayout: vi.fn(),
         getMonsterData: vi.fn(),
         getItemData: vi.fn(),
+        getEquipmentData: vi.fn(),
         getPlayerData: vi.fn().mockReturnValue({
             id: 'player',
             name: 'Hero',
@@ -97,6 +98,43 @@ describe('GameStateManager', () => {
             await expect(GameStateManager.createInitialState({ floor: 1 })).rejects.toThrow(
                 'Player could not be created or placed.'
             );
+        });
+
+        it('should correctly load equipment from map data', async () => {
+            // Arrange
+            const mockMapData: MapLayout = {
+                floor: 1,
+                layout: [
+                    [1, 1, 1],
+                    [1, 0, 1],
+                    [1, 1, 1],
+                ],
+                entities: {
+                    player_start: { type: 'player_start', id: 'player', x: 1, y: 1 },
+                    sword_1: { type: 'equipment', id: 'iron_sword', x: 2, y: 1 },
+                },
+            };
+            const mockEquipmentData: IEquipment = {
+                id: 'iron_sword',
+                name: 'Iron Sword',
+                slot: EquipmentSlot.RIGHT_HAND,
+            };
+
+            vi.mocked(dataManager.getMapLayout).mockReturnValue(mockMapData);
+            vi.mocked(dataManager.getEquipmentData).mockReturnValue(mockEquipmentData);
+
+            // Act
+            const gameState = await GameStateManager.createInitialState({ floor: 1 });
+
+            // Assert
+            expect(gameState.equipments).toBeDefined();
+            expect(Object.keys(gameState.equipments).length).toBe(1);
+            expect(gameState.equipments['sword_1']).toBeDefined();
+            expect(gameState.equipments['sword_1'].id).toBe('iron_sword');
+            expect(gameState.equipments['sword_1'].name).toBe('Iron Sword');
+            expect((gameState.equipments['sword_1'] as any).x).toBe(2);
+            expect((gameState.equipments['sword_1'] as any).y).toBe(1);
+            expect(gameState.entities['sword_1']).toBeDefined();
         });
     });
 });
