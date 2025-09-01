@@ -1,4 +1,4 @@
-import { GameState, Action, IPlayer, IMonster, IItem } from './types';
+import { GameState, Action, IPlayer, IMonster, IItem, IEquipment } from './types';
 import {
     handleMove,
     handlePickupItem,
@@ -43,6 +43,7 @@ export class GameStateManager {
             const entities: Record<string, any> = {};
             const monsters: Record<string, IMonster> = {};
             const items: Record<string, IItem> = {};
+            const equipments: Record<string, IEquipment> = {};
             let player: IPlayer | null = null;
             let playerKey: string | null = null;
 
@@ -103,6 +104,16 @@ export class GameStateManager {
                             items[entityKey] = item;
                             entities[entityKey] = item;
                         }
+                    } else if (entityInfo.type === 'equipment') {
+                        const equipmentData = dataManager.getEquipmentData(entityInfo.id);
+                        if (equipmentData) {
+                            const equipment: IEquipment = {
+                                ...equipmentData,
+                                ...entityInfo,
+                            };
+                            equipments[entityKey] = equipment;
+                            entities[entityKey] = equipment;
+                        }
                     } else {
                         entities[entityKey] = { ...entityInfo };
                     }
@@ -137,7 +148,7 @@ export class GameStateManager {
                 entities,
                 monsters,
                 items,
-                equipments: mapData.equipments || {},
+                equipments,
                 doors: mapData.doors || {},
                 stairs: mapData.stairs || {},
                 interactionState: { type: 'none' },
