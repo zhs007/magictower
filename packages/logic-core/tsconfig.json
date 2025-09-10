@@ -7,6 +7,12 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-  "types": ["vitest/globals", "vite/client"]
-  }
+    "types": ["vitest/globals"],
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
 }

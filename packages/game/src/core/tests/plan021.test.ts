@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
-import { handleEndBattle } from '../logic';
+import { handleEndBattle, IPlayer, GameState, IMonster } from '@proj-tower/logic-core';
 import { dataManager } from '../../data/data-manager';
-import { IPlayer, GameState, IMonster } from '../types';
 
 // Mock data modules
 vi.mock('/gamedata/playerdata.json', () => ({
@@ -105,7 +104,8 @@ describe('Plan 021: Leveling and Experience System', () => {
             },
         };
 
-        const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted');
+        const levelData = dataManager.getLevelData();
+        const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted', levelData);
 
         // reward_exp = maxhp/10 + attack + defense + speed
         // reward_exp = 50/10 + 10 + 5 + 5 = 5 + 10 + 5 + 5 = 25
@@ -173,7 +173,8 @@ describe('Plan 021: Leveling and Experience System', () => {
         };
 
         // EXP gain is 25, total EXP will be 115, which is > 100 (for level 2)
-        const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted');
+        const levelData = dataManager.getLevelData();
+        const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted', levelData);
 
         expect(finalState.player.level).toBe(2);
         expect(finalState.player.exp).toBe(115);
@@ -249,7 +250,8 @@ describe('Plan 021: Leveling and Experience System', () => {
 
         // EXP gain = 2000/10 + 100 + 50 + 50 = 200 + 100 + 50 + 50 = 400
         // This is enough for level 3 (exp_needed: 250)
-        const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted');
+        const levelData = dataManager.getLevelData();
+        const finalState = handleEndBattle(initialState, 'player_start', 'hp_depleted', levelData);
 
         expect(finalState.player.level).toBe(3);
         expect(finalState.player.exp).toBe(400);

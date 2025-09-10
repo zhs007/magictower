@@ -1,4 +1,4 @@
-import { Action } from './types';
+import { Action } from '@proj-tower/logic-core';
 
 type ActionCallback = (action: Action) => void;
 

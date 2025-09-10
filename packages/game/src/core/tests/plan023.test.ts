@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
 import { dataManager } from '../../data/data-manager';
 import * as _ from 'lodash';
-import { checkForLevelUp } from '../logic';
+import { checkForLevelUp } from '@proj-tower/logic-core';
 
 describe('Plan 023 Stat Refactoring', () => {
     let gameStateManager: GameStateManager;
@@ -37,7 +37,8 @@ describe('Plan 023 Stat Refactoring', () => {
         state.player.exp = 220;
 
         // Run the level up check
-        state = checkForLevelUp(state);
+        const levelData = dataManager.getLevelData();
+        state = checkForLevelUp(state, levelData);
         const player = state.player;
 
         const level2Data = dataManager.getLevelData().find((ld) => ld.level === 2);

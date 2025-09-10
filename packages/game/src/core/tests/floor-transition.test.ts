@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { GameStateManager } from '../state';
-import { handleMove } from '../logic';
-import { GameState } from '../types';
+import { handleMove, GameState } from '@proj-tower/logic-core';
 
 describe('Floor Transition Logic', () => {
     let initialState: GameState;

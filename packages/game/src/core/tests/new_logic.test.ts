@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameState, IPlayer, IMonster, IItem } from '../types';
 import {
+    GameState,
+    IPlayer,
+    IMonster,
+    IItem,
     handleMove,
     handlePickupItem,
     handleStartBattle,
     handleAttack,
     handleEndBattle,
-} from '../logic';
+} from '@proj-tower/logic-core';
 
 describe('Game Logic with Interactions', () => {
     let gameState: GameState;
@@ -181,7 +184,7 @@ describe('Game Logic with Interactions', () => {
                 expect(state.interactionState.turn).toBe('battle_end');
             }
 
-            const finalState = handleEndBattle(state, playerEntityKey, 'hp_depleted');
+            const finalState = handleEndBattle(state, playerEntityKey, 'hp_depleted', []);
             expect(finalState.interactionState.type).toBe('none');
             expect(finalState.monsters[monsterEntityKey]).toBeUndefined();
         });

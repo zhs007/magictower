@@ -1,5 +1,10 @@
-import { GameState, Action, IPlayer, IMonster, IItem, IEquipment } from './types';
 import {
+    GameState,
+    Action,
+    IPlayer,
+    IMonster,
+    IItem,
+    IEquipment,
     handleMove,
     handlePickupItem,
     handleOpenDoor,
@@ -8,7 +13,7 @@ import {
     handleEndBattle,
     handlePickupEquipment,
     handleUsePotion,
-} from './logic';
+} from '@proj-tower/logic-core';
 import { dataManager } from '../data/data-manager';
 
 export class GameStateManager {
@@ -194,14 +199,21 @@ export class GameStateManager {
                 );
                 break;
             case 'END_BATTLE':
-                newState = handleEndBattle(
-                    this.currentState,
-                    action.payload.winnerId,
-                    action.payload.reason
-                );
+                {
+                    const levelData = dataManager.getLevelData();
+                    newState = handleEndBattle(
+                        this.currentState,
+                        action.payload.winnerId,
+                        action.payload.reason,
+                        levelData
+                    );
+                }
                 break;
             case 'USE_POTION':
-                newState = handleUsePotion(this.currentState);
+                {
+                    const potionData = dataManager.getItemData('small_potion');
+                    newState = handleUsePotion(this.currentState, potionData);
+                }
                 break;
             default:
                 newState = this.currentState;

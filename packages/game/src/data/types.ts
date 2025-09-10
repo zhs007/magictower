@@ -1,4 +1,4 @@
-import { EquipmentSlot, WeaponType, BuffTrigger } from '../core/types';
+import { EquipmentSlot, WeaponType, BuffTrigger, IDoor, IEquipment, IStair } from '@proj-tower/logic-core';
 
 /**
  * Represents the raw data for a monster, loaded from a JSON file.
@@ -67,8 +67,6 @@ export interface BuffData {
 /**
  * Represents the structure of a map layout file.
  */
-import { IDoor, IEquipment, IStair } from '../core/types';
-
 export interface MapLayout {
     floor: number;
     layout: (number | string)[][];
@@ -102,14 +100,3 @@ export interface PlayerData {
     };
 }
 
-/**
- * Represents the structure of a single level entry in the level-up table.
- */
-export interface LevelData {
-    level: number;
-    exp_needed: number;
-    maxhp: number;
-    attack: number;
-    defense: number;
-    speed: number;
-}

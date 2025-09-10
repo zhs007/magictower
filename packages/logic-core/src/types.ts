@@ -175,3 +175,15 @@ export interface SaveData {
     actions: Action[]; // All actions from game start to the save point
     screenshot?: string; // Optional screenshot for the save list display
 }
+
+/**
+ * Represents the structure of a single level entry in the level-up table.
+ */
+export interface LevelData {
+    level: number;
+    exp_needed: number;
+    maxhp: number;
+    attack: number;
+    defense: number;
+    speed: number;
+}

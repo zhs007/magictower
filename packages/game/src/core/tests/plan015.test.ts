@@ -1,8 +1,4 @@
-import { IPlayer, IMonster, IEquipment, EquipmentSlot, WeaponType } from '../types';
-import { calculateFinalStats } from '../stat-calculator';
-import { handleStartBattle } from '../logic';
-import { compareEquipment } from '../equipment-manager';
-import { GameState } from '../types';
+import { IPlayer, IMonster, IEquipment, EquipmentSlot, WeaponType, calculateFinalStats, handleStartBattle, compareEquipment, GameState } from '@proj-tower/logic-core';
 import * as _ from 'lodash';
 
 // Helper to create a mock player

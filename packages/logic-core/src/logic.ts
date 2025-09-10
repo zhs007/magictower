@@ -8,12 +8,9 @@ import {
     IEquipment,
 } from './types';
 import * as _ from 'lodash';
-import { AudioManager } from './audio-manager';
-import { eventManager } from './event-manager';
 import { calculateFinalStats } from './stat-calculator';
 import { compareEquipment } from './equipment-manager';
-import { dataManager } from '../data/data-manager';
-import { LevelData } from '../data/types';
+import { LevelData, IItem } from './types';
 
 const MAX_COMBAT_ROUNDS = 8;
 
@@ -179,7 +176,6 @@ export function handlePickupEquipment(state: GameState, equipmentEntityKey: stri
             break;
     }
 
-    // AudioManager.getInstance().playSound(sound); // TODO: Add these sounds
     newState.interactionState = { type: 'none' };
     return newState;
 }
@@ -289,9 +285,6 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
         };
     }
 
-    eventManager.dispatch('HP_CHANGED', hpChangedPayload);
-    AudioManager.getInstance().playSound('attack');
-
     if (newState.interactionState.playerHp <= 0 || newState.interactionState.monsterHp <= 0) {
         newState.interactionState.turn = 'battle_end';
     } else {
@@ -331,17 +324,11 @@ function applyLevelUp(player: IPlayer, newLevelData: LevelData): IPlayer {
     // Restore HP to the new maxHP
     updatedPlayer.hp = updatedPlayer.maxhp;
 
-    eventManager.dispatch('PLAYER_LEVELED_UP', {
-        newLevel: updatedPlayer.level,
-        statGains,
-    });
-
     return updatedPlayer;
 }
 
-export function checkForLevelUp(state: GameState): GameState {
+export function checkForLevelUp(state: GameState, levelData: LevelData[]): GameState {
     let newState = _.cloneDeep(state);
-    const levelData = dataManager.getLevelData();
     if (!levelData || levelData.length === 0) {
         return newState;
     }
@@ -368,7 +355,8 @@ export function checkForLevelUp(state: GameState): GameState {
 export function handleEndBattle(
     state: GameState,
     winnerId: string | null,
-    reason: 'hp_depleted' | 'timeout'
+    reason: 'hp_depleted' | 'timeout',
+    levelData: LevelData[]
 ): GameState {
     let newState = _.cloneDeep(state);
     if (newState.interactionState.type !== 'battle') return state;
@@ -399,7 +387,7 @@ export function handleEndBattle(
             delete newState.monsters[monsterEntityKey];
 
             // Check for level up
-            newState = checkForLevelUp(newState);
+            newState = checkForLevelUp(newState, levelData);
 
             // Check for special door conditions
             for (const doorId in newState.doors) {
@@ -421,17 +409,6 @@ export function handleEndBattle(
         }
     }
 
-    const finalPlayerStats = calculateFinalStats(newState.player);
-    eventManager.dispatch('BATTLE_ENDED', {
-        winnerId,
-        reason,
-        finalPlayerHp: newState.player.hp,
-        finalPlayerMaxHp: finalPlayerStats.maxhp,
-        finalPlayerLevel: finalPlayerStats.level,
-        finalPlayerExp: finalPlayerStats.exp,
-        finalPlayerAtk: finalPlayerStats.attack,
-        finalPlayerDef: finalPlayerStats.defense,
-    });
     newState.interactionState = { type: 'none' };
     return newState;
 }
@@ -455,7 +432,6 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
     if (item.type === 'key') {
         if (item.color === 'yellow') {
             newState.player.keys.yellow++;
-            eventManager.dispatch('KEYS_CHANGED', { keys: newState.player.keys });
         }
     } else if (item.type === 'special') {
         switch ((item as any).specialType) {
@@ -490,13 +466,11 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
     delete newState.entities[itemEntityKey];
     delete newState.items[itemEntityKey];
 
-    AudioManager.getInstance().playSound('pickup');
-
     newState.interactionState = { type: 'none' };
     return newState;
 }
 
-export function handleUsePotion(state: GameState): GameState {
+export function handleUsePotion(state: GameState, potionData: IItem | undefined): GameState {
     const newState = _.cloneDeep(state);
 
     // Find and remove the potion from the player's special items
@@ -507,27 +481,13 @@ export function handleUsePotion(state: GameState): GameState {
     newState.player.specialItems?.splice(potionIndex, 1);
 
     // Get potion data for healing amount
-    const potionData = dataManager.getItemData('small_potion');
-    const healAmount = (potionData as any)?.heal_amount || 0;
+    const healAmount = potionData?.value || 0;
 
     // Apply healing
-    const oldHp = newState.player.hp;
-    const playerStats = calculateFinalStats(newState.player);
-    newState.player.hp = Math.min(playerStats.maxhp, newState.player.hp + healAmount);
-
-    // Dispatch event to update UI
-    const hpChangedPayload = {
-        entityId: 'player',
-        newHp: newState.player.hp,
-        maxHp: playerStats.maxhp,
-        level: playerStats.level,
-        exp: playerStats.exp,
-        attack: playerStats.attack,
-        defense: playerStats.defense,
-        oldHp,
-    };
-    eventManager.dispatch('HP_CHANGED', hpChangedPayload);
-    AudioManager.getInstance().playSound('heal'); // Assuming a 'heal' sound exists
+    newState.player.hp = Math.min(
+        calculateFinalStats(newState.player).maxhp,
+        newState.player.hp + healAmount
+    );
 
     return newState;
 }
@@ -542,8 +502,6 @@ export function handleOpenDoor(state: GameState, doorId: string): GameState {
         delete newState.entities[doorEntityKey];
     }
     delete newState.doors[doorId];
-
-    AudioManager.getInstance().playSound('door');
 
     return newState;
 }

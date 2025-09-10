@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
 import { dataManager } from '../../data/data-manager';
-import { GameState, IEquipment, EquipmentSlot } from '../types';
+import { GameState, IEquipment, EquipmentSlot } from '@proj-tower/logic-core';
 import { MapLayout } from '../../data/types';
 
 // Mock the dataManager

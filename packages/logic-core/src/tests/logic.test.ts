@@ -1,13 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { handleMove, handleOpenDoor, handlePickupItem, handleUsePotion } from '../logic';
 import { GameState, IItem } from '../types';
-import { dataManager } from '../../data/data-manager';
-
-vi.mock('../../data/data-manager', () => ({
-    dataManager: {
-        getItemData: vi.fn(),
-    },
-}));
 
 describe('handleMove', () => {
     let gameState: GameState;
@@ -310,19 +303,17 @@ describe('handleUsePotion', () => {
             interactionState: { type: 'none' },
         };
 
-        const mockPotion = {
-            id: 'small_potion',
-            name: 'Small Potion',
-            description: 'A small potion.',
-            type: 'special',
-            specialType: 'potion',
-            heal_amount: 80,
-        };
-        vi.mocked(dataManager.getItemData).mockReturnValue(mockPotion as any);
+        // No mock setup needed anymore
     });
 
     it('should heal the player and consume the potion', () => {
-        const newState = handleUsePotion(gameState);
+        const mockPotion: IItem = {
+            id: 'small_potion',
+            name: 'Small Potion',
+            type: 'potion',
+            value: 80,
+        };
+        const newState = handleUsePotion(gameState, mockPotion);
 
         // HP should be healed by 80 (20 + 80 = 100)
         expect(newState.player.hp).toBe(100);
@@ -332,7 +323,13 @@ describe('handleUsePotion', () => {
 
     it('should not heal beyond maxhp', () => {
         gameState.player.hp = 50; // Player has 50/100 HP
-        const newState = handleUsePotion(gameState);
+        const mockPotion: IItem = {
+            id: 'small_potion',
+            name: 'Small Potion',
+            type: 'potion',
+            value: 80,
+        };
+        const newState = handleUsePotion(gameState, mockPotion);
 
         // HP should be capped at maxhp (50 + 80 = 130, capped at 100)
         expect(newState.player.hp).toBe(100);
@@ -340,7 +337,13 @@ describe('handleUsePotion', () => {
 
     it('should do nothing if player has no potion', () => {
         gameState.player.specialItems = []; // Remove potion
-        const newState = handleUsePotion(gameState);
+        const mockPotion: IItem = {
+            id: 'small_potion',
+            name: 'Small Potion',
+            type: 'potion',
+            value: 80,
+        };
+        const newState = handleUsePotion(gameState, mockPotion);
 
         // Game state should be unchanged
         expect(newState).toEqual(gameState);

@@ -1,0 +1,21 @@
+{
+  "name": "@proj-tower/logic-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.20",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

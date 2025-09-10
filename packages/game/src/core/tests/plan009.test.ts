@@ -1,5 +1,4 @@
-import { GameState, IPlayer, IMonster, IItem, IDoor } from '../types';
-import { handlePickupItem, handleUseBomb, handleEndBattle } from '../logic';
+import { GameState, IPlayer, IMonster, IItem, IDoor, handlePickupItem, handleUseBomb, handleEndBattle } from '@proj-tower/logic-core';
 import * as _ from 'lodash';
 
 describe('plan009 features', () => {
@@ -214,7 +213,7 @@ describe('plan009 features', () => {
         const playerEntityKey = Object.keys(baseState.entities).find(
             (k) => baseState.entities[k].type === 'player_start'
         );
-        const newState = handleEndBattle(baseState, playerEntityKey ?? null, 'hp_depleted');
+        const newState = handleEndBattle(baseState, playerEntityKey ?? null, 'hp_depleted', []);
 
         expect(newState.monsters['boss_1']).toBeUndefined();
         expect(newState.entities['boss_1']).toBeUndefined();
