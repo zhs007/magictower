@@ -13,8 +13,8 @@ import {
     handleEndBattle,
     handlePickupEquipment,
     handleUsePotion,
+    dataManager,
 } from '@proj-tower/logic-core';
-import { dataManager } from '../data/data-manager';
 
 export class GameStateManager {
     private currentState: GameState;

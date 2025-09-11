@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
-import { handleEndBattle, IPlayer, GameState, IMonster } from '@proj-tower/logic-core';
-import { dataManager } from '../../data/data-manager';
+import {
+    handleEndBattle,
+    IPlayer,
+    GameState,
+    IMonster,
+    dataManager,
+} from '@proj-tower/logic-core';
 
 // Mock data modules
 // Mock both absolute-style and relative-style module IDs so the mock works

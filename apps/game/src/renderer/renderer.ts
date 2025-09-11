@@ -1,6 +1,5 @@
 import { Container, Assets, Sprite, Text, Texture } from 'pixi.js';
-import { GameState } from '../core/types';
-import { dataManager } from '../data/data-manager';
+import { GameState, dataManager } from '@proj-tower/logic-core';
 import { HUD } from './ui/hud';
 import { gsap } from 'gsap';
 import { FloatingTextManager } from './ui/floating-text-manager';

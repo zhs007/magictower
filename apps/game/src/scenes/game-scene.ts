@@ -1,9 +1,8 @@
-import { GameState, calculateDamage } from '@proj-tower/logic-core';
+import { GameState, calculateDamage, dataManager } from '@proj-tower/logic-core';
 import { GameStateManager } from '../core/state';
 import { SaveManager } from '../core/save-manager';
 import { Renderer } from '../renderer/renderer';
 import { InputManager } from '../core/input-manager';
-import { dataManager } from '../data/data-manager';
 import { BaseScene } from './base-scene';
 import { SceneManager } from './scene-manager';
 

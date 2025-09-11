@@ -1,13 +1,21 @@
-import { MonsterData, ItemData, EquipmentData, BuffData, MapLayout, PlayerData } from './types';
-import { LevelData } from '@proj-tower/logic-core';
+import { IMonster, IItem, IEquipment, IBuff, IPlayer, LevelData } from './types';
+
+export interface MapLayout {
+    floor: number;
+    layout: number[][];
+    entities: Record<string, any>;
+    doors?: Record<string, any>;
+    stairs?: Record<string, any>;
+    tileAssets?: Record<string, string>;
+}
 
 export class DataManager {
-    public monsters: Map<string, MonsterData> = new Map();
-    public items: Map<string, ItemData> = new Map();
-    public equipments: Map<string, EquipmentData> = new Map();
-    public buffs: Map<string, BuffData> = new Map();
+    public monsters: Map<string, IMonster> = new Map();
+    public items: Map<string, IItem> = new Map();
+    public equipments: Map<string, IEquipment> = new Map();
+    public buffs: Map<string, IBuff> = new Map();
     public maps: Map<number, MapLayout> = new Map();
-    public playerData: PlayerData | null = null;
+    public playerData: IPlayer | null = null;
     public levelData: LevelData[] = [];
 
     public processModules(
@@ -46,7 +54,7 @@ export class DataManager {
      * Overrides fields:
      * - monsters: Record<string, any> (module-like records)
      * - items, equipments, buffs, maps: same shape as produced by import.meta.glob
-     * - playerData: PlayerData
+     * - playerData: IPlayer
      * - levelData: LevelData[]
      */
     public async loadAllData(overrides?: {
@@ -55,7 +63,7 @@ export class DataManager {
         equipments?: Record<string, any>;
         buffs?: Record<string, any>;
         maps?: Record<string, any>;
-        playerData?: PlayerData;
+        playerData?: IPlayer;
         levelData?: LevelData[];
     }): Promise<void> {
         // Reset previous data to support repeated calls in tests
@@ -71,32 +79,32 @@ export class DataManager {
         // filesystem via import.meta.glob / dynamic import.
         const monsterModules =
             overrides?.monsters ??
-            import.meta.glob('../../../../gamedata/monsters/*.json', { eager: true });
+            import.meta.glob('../../../gamedata/monsters/*.json', { eager: true });
         const itemModules =
             overrides?.items ??
-            import.meta.glob('../../../../gamedata/items/*.json', { eager: true });
+            import.meta.glob('../../../gamedata/items/*.json', { eager: true });
         const equipmentModules =
             overrides?.equipments ??
-            import.meta.glob('../../../../gamedata/equipments/*.json', { eager: true });
+            import.meta.glob('../../../gamedata/equipments/*.json', { eager: true });
         const buffModules =
             overrides?.buffs ??
-            import.meta.glob('../../../../gamedata/buffs/*.json', { eager: true });
+            import.meta.glob('../../../gamedata/buffs/*.json', { eager: true });
         const mapModules =
-            overrides?.maps ?? import.meta.glob('../../../../mapdata/*.json', { eager: true });
+            overrides?.maps ?? import.meta.glob('../../../mapdata/*.json', { eager: true });
 
         this.processModules(monsterModules, itemModules, equipmentModules, buffModules, mapModules);
 
         if (overrides?.playerData) {
             this.playerData = overrides.playerData;
         } else {
-            const playerDataModule = (await import('../../../../gamedata/playerdata.json')).default;
-            this.playerData = playerDataModule as PlayerData;
+            const playerDataModule = (await import('../../../gamedata/playerdata.json')).default;
+            this.playerData = playerDataModule as IPlayer;
         }
 
         if (overrides?.levelData) {
             this.levelData = overrides.levelData;
         } else {
-            const levelDataModule = (await import('../../../../gamedata/leveldata.json')).default;
+            const levelDataModule = (await import('../../../gamedata/leveldata.json')).default;
             this.levelData = levelDataModule as LevelData[];
         }
     }
@@ -138,23 +146,23 @@ export class DataManager {
         }
     }
 
-    public getMonsterData(id: string): MonsterData | undefined {
+    public getMonsterData(id: string): IMonster | undefined {
         return this.monsters.get(id);
     }
 
-    public getAllMonsters(): MonsterData[] {
+    public getAllMonsters(): IMonster[] {
         return Array.from(this.monsters.values());
     }
 
-    public getItemData(id: string): ItemData | undefined {
+    public getItemData(id: string): IItem | undefined {
         return this.items.get(id);
     }
 
-    public getEquipmentData(id: string): EquipmentData | undefined {
+    public getEquipmentData(id: string): IEquipment | undefined {
         return this.equipments.get(id);
     }
 
-    public getBuffData(id: string): BuffData | undefined {
+    public getBuffData(id: string): IBuff | undefined {
         return this.buffs.get(id);
     }
 
@@ -162,7 +170,7 @@ export class DataManager {
         return this.maps.get(floor);
     }
 
-    public getPlayerData(): PlayerData | null {
+    public getPlayerData(): IPlayer | null {
         return this.playerData;
     }
 

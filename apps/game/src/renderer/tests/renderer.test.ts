@@ -46,27 +46,31 @@ vi.mock('pixi.js', async () => {
     };
 });
 
-vi.mock('../../data/data-manager', () => ({
-    dataManager: {
-        loadAllData: vi.fn().mockResolvedValue(undefined),
-        getPlayerData: vi.fn().mockReturnValue({
-            id: 'player',
-            name: 'Hero',
-            level: 1,
-            exp: 0,
-            hp: 100,
-            maxhp: 100,
-            attack: 10,
-            defense: 10,
-            speed: 10,
-            keys: { yellow: 0, blue: 0, red: 0 },
-        }),
-        getLevelData: vi.fn().mockReturnValue([
-            { level: 1, exp_needed: 0, hp: 100, attack: 10, defense: 10, speed: 10 },
-            { level: 2, exp_needed: 100, hp: 120, attack: 12, defense: 12, speed: 11 },
-        ]),
-    },
-}));
+vi.mock('@proj-tower/logic-core', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@proj-tower/logic-core')>();
+    return {
+        ...original,
+        dataManager: {
+            loadAllData: vi.fn().mockResolvedValue(undefined),
+            getPlayerData: vi.fn().mockReturnValue({
+                id: 'player',
+                name: 'Hero',
+                level: 1,
+                exp: 0,
+                hp: 100,
+                maxhp: 100,
+                attack: 10,
+                defense: 10,
+                speed: 10,
+                keys: { yellow: 0, blue: 0, red: 0 },
+            }),
+            getLevelData: vi.fn().mockReturnValue([
+                { level: 1, exp_needed: 0, hp: 100, attack: 10, defense: 10, speed: 10 },
+                { level: 2, exp_needed: 100, hp: 120, attack: 12, defense: 12, speed: 11 },
+            ]),
+        },
+    };
+});
 
 vi.mock('gsap', () => ({
     gsap: {

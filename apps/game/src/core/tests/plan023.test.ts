@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
-import { dataManager } from '../../data/data-manager';
 import * as _ from 'lodash';
-import { checkForLevelUp } from '@proj-tower/logic-core';
+import { checkForLevelUp, dataManager } from '@proj-tower/logic-core';
 
 describe('Plan 023 Stat Refactoring', () => {
     let gameStateManager: GameStateManager;

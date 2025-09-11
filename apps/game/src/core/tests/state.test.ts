@@ -1,32 +1,34 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
-import { dataManager } from '../../data/data-manager';
-import { GameState, IEquipment, EquipmentSlot } from '@proj-tower/logic-core';
-import { MapLayout } from '../../data/types';
+import { GameState, IEquipment, EquipmentSlot, dataManager, MapLayout } from '@proj-tower/logic-core';
 
-// Mock the dataManager
-vi.mock('../../data/data-manager', () => ({
-    dataManager: {
-        loadAllData: vi.fn().mockResolvedValue(undefined),
-        getMapLayout: vi.fn(),
-        getMonsterData: vi.fn(),
-        getItemData: vi.fn(),
-        getEquipmentData: vi.fn(),
-        getPlayerData: vi.fn().mockReturnValue({
-            id: 'player',
-            name: 'Hero',
-            level: 1,
-            exp: 0,
-            hp: 100,
-            keys: { yellow: 0, blue: 0, red: 0 },
-        }),
-        getLevelData: vi
-            .fn()
-            .mockReturnValue([
-                { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
-            ]),
-    },
-}));
+// Mock the dataManager from the logic-core package
+vi.mock('@proj-tower/logic-core', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@proj-tower/logic-core')>();
+    return {
+        ...original,
+        dataManager: {
+            loadAllData: vi.fn().mockResolvedValue(undefined),
+            getMapLayout: vi.fn(),
+            getMonsterData: vi.fn(),
+            getItemData: vi.fn(),
+            getEquipmentData: vi.fn(),
+            getPlayerData: vi.fn().mockReturnValue({
+                id: 'player',
+                name: 'Hero',
+                level: 1,
+                exp: 0,
+                hp: 100,
+                keys: { yellow: 0, blue: 0, red: 0 },
+            }),
+            getLevelData: vi
+                .fn()
+                .mockReturnValue([
+                    { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
+                ]),
+        },
+    };
+});
 
 describe('GameStateManager', () => {
     beforeEach(() => {
