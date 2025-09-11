@@ -6,8 +6,9 @@
 
 ## 2. 核心设计原则
 
-- **逻辑与渲染彻底分离**: 游戏核心逻辑（状态管理、战斗计算、道具效果）必须独立于渲染引擎。逻辑层不应包含任何 Pixi.js 或 DOM 的引用，以便未来能轻松迁移到客户端-服务器架构。
-- **模块化**: 代码按功能划分为独立的模块/包（例如：`core-logic`, `renderer`, `data-management`）。单个文件不应过大，保持高内聚、低耦合。
+- **逻辑与渲染彻底分离**: 游戏核心逻辑（战斗计算、道具效果等）被封装在独立的、无副作用的 `logic-core` 包中。该包不依赖于渲染引擎或任何特定框架，保证了其可移植性和可测试性。
+- **Monorepo 架构**: 项目采用 monorepo 结构，将纯逻辑 (`logic-core`) 与游戏应用层 (`game`) 清晰地分离开。
+- **模块化**: `game` 包内部依然遵循模块化设计，将状态管理、数据加载、渲染和场景管理等功能分离。
 - **数据驱动**: 所有游戏数据（怪物属性、道具效果、地图布局）均由外部 JSON 文件定义，方便策划调整数值和关卡设计。
 - **确定性**: 游戏不包含任何随机因素。玩家以相同的顺序执行相同的操作，必须产生完全相同的结果。
 - **可测试性**: 核心逻辑部分必须有高覆盖率的单元测试（目标 > 90%），以保证游戏规则的正确性和稳定性。
@@ -18,49 +19,43 @@
 
 - **渲染引擎**: Pixi.js (最新版)
 - **开发语言**: TypeScript
-- **构建/打包工具**: Vite (推荐，启动快，支持 TS)
-- **测试框架**: Vitest 或 Jest
+- **包管理器**: pnpm
+- **Monorepo 工具**: Turborepo
+- **构建/打包工具**: Vite
+- **测试框架**: Vitest
 - **代码规范**: ESLint + Prettier
 
-## 4. 目录结构
+## 4. Monorepo 目录结构
+
+项目已重构为基于 pnpm 和 Turborepo 的 monorepo 结构，以更好地分离关注点并提高可维护性。
 
 ```
 .
-├── assets/              # 游戏资源 (图片)
-│   ├── item/
-│   ├── map/
-│   └── monster/
-├── gamedata/            # 游戏数据配置 (JSON)
-│   ├── buffs/           # 增益效果配置
-│   ├── equipments/      # 装备配置
-│   ├── items/           # 道具配置
-│   └── monsters/        # 怪物配置
+├── packages/
+│   ├── game/            # 游戏主程序包
+│   │   ├── src/
+│   │   │   ├── core/    # 游戏核心（状态、存读档等）
+│   │   │   ├── data/    # 数据加载
+│   │   │   ├── renderer/ # 渲染层
+│   │   │   └── scenes/  # 游戏场景
+│   │   ├── assets/      # 静态资源
+│   │   ├── gamedata/    # 游戏数据
+│   │   ├── mapdata/     # 地图数据
+│   │   ├── index.html
+│   │   └── package.json
+│   │
+│   └── logic-core/      # 纯游戏逻辑核心包
+│       ├── src/
+│       │   ├── index.ts # 包出口
+│       │   ├── logic.ts # 核心规则函数
+│       │   └── types.ts # 核心类型定义
+│       └── package.json
+│
 ├── jules/               # Jules 的开发计划文件
-│   ├── plan001.md
-│   └── ...
-├── mapdata/             # 地图数据 (JSON)
-│   └── floor_01.json
-├── public/              # 静态文件
-├── src/                 # 源码
-│   ├── core/            # 核心逻辑 (无渲染)
-│   │   ├── state.ts     # 状态管理
-│   │   ├── types.ts     # 核心类型定义
-│   │   ├── logic.ts     # 战斗、道具等逻辑
-│   │   └── tests/       # 单元测试
-│   ├── data/            # 数据加载和管理
-│   │   └── data-manager.ts
-│   ├── renderer/        # 渲染层 (Pixi.js)
-│   │   ├── renderer.ts
-│   │   └── ui/          # UI 组件
-│   ├── scenes/          # 游戏场景/屏幕
-│   │   ├── start-scene.ts
-│   │   └── game-scene.ts
-│   ├── main.ts          # 应用入口
-│   └── types.ts         # 全局或共享类型
-├── index.html
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
+├── scripts/             # 根级别的脚本
+├── package.json         # Monorepo 根 package.json
+├── pnpm-workspace.yaml  # pnpm 工作区定义
+└── turbo.json           # Turborepo 管道定义
 ```
 
 ## 5. 数据格式约定
@@ -113,7 +108,12 @@
 
 ## 8. 开发流程
 
-我们将遵循 `jules/` 目录下的计划文件，分阶段进行开发。从项目搭建、核心逻辑、数据加载，到渲染、UI、存档等功能，逐步完成。每个阶段都将包含充分的测试。
+项目开发遵循 `jules/` 目录下的计划文件。所有命令都应在项目根目录运行，通过 pnpm 和 Turborepo 执行。
+
+- **安装所有依赖**: `pnpm install`
+- **启动开发服务器**: `pnpm dev`
+- **运行所有测试**: `pnpm test`
+- **构建所有包**: `pnpm build`
 
 ## 9. 当前开发状态
 

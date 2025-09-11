@@ -4,30 +4,34 @@ This file provides instructions for AI coding agents working on this project.
 
 ## Project Overview
 
-This project is a web-based "Magic Tower" style game developed with Pixi.js and TypeScript. The core gameplay involves exploring a maze, defeating monsters, and collecting items to progress. The game is designed for portrait mode on mobile devices, is deterministic (no randomness), and emphasizes strategic resource management.
+This project is a web-based "Magic Tower" style game developed with Pixi.js and TypeScript. The project is structured as a **monorepo** using `pnpm` and `Turborepo` to manage two separate packages:
+-   `packages/game`: The main game application, including the renderer, state management, and assets.
+-   `packages/logic-core`: A pure, framework-agnostic library containing all the core game rules and type definitions.
 
-A key design principle is the strict separation of game logic from the rendering engine. All game data is defined in external JSON files.
-
-For more details, refer to `jules.md`.
+This separation ensures the core logic is highly portable and testable in isolation. For more details on the architecture, refer to `jules.md`.
 
 ## Development Environment
 
 - **Node.js version**: As specified in the development environment.
-- **Package Manager**: `npm`
+- **Package Manager**: `pnpm`
+- **Monorepo Tool**: `Turborepo`
 
 ### Setup Commands
 
-- **Install dependencies**: `npm install`
-- **Start the development server**: `npm run dev`
+All commands should be run from the **root** of the repository.
+
+- **Install dependencies**: `pnpm install`
+- **Start the development server**: `pnpm dev`
+- **Build all packages**: `pnpm build`
 
 ## Testing
 
-This project uses `vitest` for unit testing.
+This project uses `vitest` for unit testing. All test commands should be run from the root directory.
 
-- **Run all tests**: `npm test`
-- **Run tests in watch mode**: `npm test -- --watch`
+- **Run all tests**: `pnpm test`
+- **Run tests in watch mode**: `pnpm test -- --watch`
 
-Core logic in `src/core/` should have high test coverage. All new features should be accompanied by corresponding tests.
+The `logic-core` package should have high test coverage. All new features in `logic-core` must be accompanied by corresponding tests.
 
 ## Utility Scripts
 

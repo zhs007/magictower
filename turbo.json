@@ -1,0 +1,34 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "test:ci": {
+        "dependsOn": ["^build"],
+        "cache": false
+    },
+    "lint": {},
+    "format": {},
+    "typecheck": {
+        "dependsOn": ["^build"]
+    },
+    "check": {
+      "dependsOn": ["typecheck", "lint", "test:ci"]
+    },
+    "check-gamedata": {
+        "dependsOn": ["build"]
+    },
+    "gen-map": {},
+    "gen-map:v2": {},
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

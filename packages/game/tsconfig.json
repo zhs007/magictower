@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["vitest/globals", "vite/client"],
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "logic-core": ["../logic-core/src"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "../logic-core" }]
+}
