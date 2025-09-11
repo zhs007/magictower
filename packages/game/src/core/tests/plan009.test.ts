@@ -1,4 +1,13 @@
-import { GameState, IPlayer, IMonster, IItem, IDoor, handlePickupItem, handleUseBomb, handleEndBattle } from '@proj-tower/logic-core';
+import {
+    GameState,
+    IPlayer,
+    IMonster,
+    IItem,
+    IDoor,
+    handlePickupItem,
+    handleUseBomb,
+    handleEndBattle,
+} from '@proj-tower/logic-core';
 import * as _ from 'lodash';
 
 describe('plan009 features', () => {

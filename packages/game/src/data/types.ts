@@ -1,4 +1,11 @@
-import { EquipmentSlot, WeaponType, BuffTrigger, IDoor, IEquipment, IStair } from '@proj-tower/logic-core';
+import {
+    EquipmentSlot,
+    WeaponType,
+    BuffTrigger,
+    IDoor,
+    IEquipment,
+    IStair,
+} from '@proj-tower/logic-core';
 
 /**
  * Represents the raw data for a monster, loaded from a JSON file.
@@ -99,4 +106,3 @@ export interface PlayerData {
         red: number;
     };
 }
-

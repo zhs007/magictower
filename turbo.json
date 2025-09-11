@@ -18,6 +18,9 @@
     "typecheck": {
         "dependsOn": ["^build"]
     },
+    "check": {
+      "dependsOn": ["typecheck", "lint", "test:ci"]
+    },
     "check-gamedata": {
         "dependsOn": ["build"]
     },

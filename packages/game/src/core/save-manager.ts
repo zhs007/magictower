@@ -1,5 +1,5 @@
 import { GameStateManager } from './state';
-import { SaveData, GameState } from './types';
+import { SaveData, GameState } from '@proj-tower/logic-core';
 
 export class SaveManager {
     private gameStateManager: GameStateManager;

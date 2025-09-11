@@ -212,7 +212,14 @@ export class GameStateManager {
             case 'USE_POTION':
                 {
                     const potionData = dataManager.getItemData('small_potion');
-                    newState = handleUsePotion(this.currentState, potionData);
+                    // dataManager returns ItemData; convert/ensure it matches IItem expected by logic-core
+                    const potionItem = potionData
+                        ? ({
+                              ...potionData,
+                              type: potionData.type ?? 'special',
+                          } as unknown as any)
+                        : undefined;
+                    newState = handleUsePotion(this.currentState, potionItem);
                 }
                 break;
             default:
