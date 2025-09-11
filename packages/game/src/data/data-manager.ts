@@ -1,12 +1,5 @@
-import {
-    MonsterData,
-    ItemData,
-    EquipmentData,
-    BuffData,
-    MapLayout,
-    PlayerData,
-    LevelData,
-} from './types';
+import { MonsterData, ItemData, EquipmentData, BuffData, MapLayout, PlayerData } from './types';
+import { LevelData } from '@proj-tower/logic-core';
 
 export class DataManager {
     public monsters: Map<string, MonsterData> = new Map();
@@ -37,19 +30,30 @@ export class DataManager {
 
     public async loadAllData(): Promise<void> {
         // This method is now a convenience for the Vite environment.
-        const monsterModules = import.meta.glob('/gamedata/monsters/*.json', { eager: true });
-        const itemModules = import.meta.glob('/gamedata/items/*.json', { eager: true });
-        const equipmentModules = import.meta.glob('/gamedata/equipments/*.json', { eager: true });
-        const buffModules = import.meta.glob('/gamedata/buffs/*.json', { eager: true });
-        const mapModules = import.meta.glob('/mapdata/*.json', { eager: true });
+        // Use relative filesystem globs so vitest (node) can resolve the JSON files
+        // during tests. Vite dev server supports repo-root aliases, but vitest
+        // resolves imports from the test runner's context; relative paths are
+        // more reliable here.
+        // From packages/game/src/data, need to go up 4 levels to reach repo root
+        // (src -> game -> packages -> repo root). Use four '..' to reach the
+        // repository root where `gamedata` and `mapdata` live.
+        const monsterModules = import.meta.glob('../../../../gamedata/monsters/*.json', {
+            eager: true,
+        });
+        const itemModules = import.meta.glob('../../../../gamedata/items/*.json', { eager: true });
+        const equipmentModules = import.meta.glob('../../../../gamedata/equipments/*.json', {
+            eager: true,
+        });
+        const buffModules = import.meta.glob('../../../../gamedata/buffs/*.json', { eager: true });
+        const mapModules = import.meta.glob('../../../../mapdata/*.json', { eager: true });
 
         this.processModules(monsterModules, itemModules, equipmentModules, buffModules, mapModules);
 
         // Load single data files
-        const playerDataModule = (await import('../../gamedata/playerdata.json')).default;
+        const playerDataModule = (await import('../../../../gamedata/playerdata.json')).default;
         this.playerData = playerDataModule as PlayerData;
 
-        const levelDataModule = (await import('../../gamedata/leveldata.json')).default;
+        const levelDataModule = (await import('../../../../gamedata/leveldata.json')).default;
         this.levelData = levelDataModule as LevelData[];
     }
 
