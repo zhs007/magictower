@@ -4,7 +4,9 @@ import { handleEndBattle, IPlayer, GameState, IMonster } from '@proj-tower/logic
 import { dataManager } from '../../data/data-manager';
 
 // Mock data modules
-vi.mock('/gamedata/playerdata.json', () => ({
+// Mock both absolute-style and relative-style module IDs so the mock works
+// regardless of how Vitest/Vite normalizes the JSON import paths.
+const playerMock = {
     default: {
         id: 'player',
         name: 'Hero',
@@ -13,21 +15,38 @@ vi.mock('/gamedata/playerdata.json', () => ({
         hp: 100,
         keys: { yellow: 0, blue: 0, red: 0 },
     },
-}));
+};
 
-vi.mock('/gamedata/leveldata.json', () => ({
+const levelMock = {
     default: [
         { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
         { level: 2, exp_needed: 100, maxhp: 120, attack: 12, defense: 12, speed: 11 },
         { level: 3, exp_needed: 250, maxhp: 140, attack: 14, defense: 14, speed: 12 },
     ],
-}));
+};
+
+vi.mock('/gamedata/playerdata.json', () => playerMock);
+vi.mock('/gamedata/leveldata.json', () => levelMock);
+
+vi.mock('../../../../gamedata/playerdata.json', () => playerMock);
+vi.mock('../../../../gamedata/leveldata.json', () => levelMock);
 
 describe('Plan 021: Leveling and Experience System', () => {
     beforeEach(async () => {
-        // Reset and load fresh data for each test
-        vi.resetModules();
-        await dataManager.loadAllData();
+        // Reset data manager state and inject test fixtures directly so tests
+        // don't depend on module ID normalization or import.meta.glob behavior.
+        // We still keep the vi.mock entries above as a fallback, but prefer
+        // injecting predictable data here.
+        dataManager.monsters.clear();
+        dataManager.items.clear();
+        dataManager.equipments.clear();
+        dataManager.buffs.clear();
+        dataManager.maps.clear();
+
+        await dataManager.loadAllData({
+            playerData: playerMock.default,
+            levelData: levelMock.default,
+        });
     });
 
     it('should load player and level data correctly', () => {

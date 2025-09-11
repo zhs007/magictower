@@ -5,11 +5,9 @@ export default defineConfig({
   resolve: {
     alias: {
   '@': path.resolve(__dirname, './src'),
-  // Resolve game data and map data to the repo root so imports like
-  // import('/gamedata/playerdata.json') work in vitest and Vite.
-  '/gamedata': path.resolve(__dirname, '../../gamedata'),
-  '/mapdata': path.resolve(__dirname, '../../mapdata'),
-  '/assets': path.resolve(__dirname, '../../assets'),
+  // Note: removed repo-root aliases for gamedata/mapdata/assets to keep
+  // module resolution consistent in tsc/vitest/Node environments. Use
+  // explicit relative imports from source files instead.
     },
   },
   test: {

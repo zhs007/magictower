@@ -65,7 +65,7 @@ export class Renderer {
 
         // Auto-generate asset manifest: alias = <folder>_<filename> for files under subfolders,
         // or filename for top-level assets (e.g. 'player'). Use import.meta.glob to get URLs.
-        const modules = import.meta.glob('/assets/**/*.{png,jpg,jpeg,webp}', {
+        const modules = import.meta.glob('../../../../assets/**/*.{png,jpg,jpeg,webp}', {
             eager: true,
             query: '?url',
             import: 'default',
