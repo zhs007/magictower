@@ -5,7 +5,7 @@ This file provides instructions for AI coding agents working on this project.
 ## Project Overview
 
 This project is a web-based "Magic Tower" style game developed with Pixi.js and TypeScript. The project is structured as a **monorepo** using `pnpm` and `Turborepo` to manage two separate packages:
--   `packages/game`: The main game application, including the renderer, state management, and assets.
+-   `apps/game`: The main game application, including the renderer, state management, and assets.
 -   `packages/logic-core`: A pure, framework-agnostic library containing all the core game rules and type definitions.
 
 This separation ensures the core logic is highly portable and testable in isolation. For more details on the architecture, refer to `jules.md`.

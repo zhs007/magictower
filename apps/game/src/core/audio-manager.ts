@@ -15,7 +15,7 @@ export class AudioManager {
 
     public loadSounds() {
         // Assume sound files are located in the repo-level `assets/sounds/`.
-        // From this file (packages/game/src/core) the relative path to repo root is
+        // From this file (apps/game/src/core) the relative path to repo root is
         // ../../../../assets/sounds/<file>. Use URL imports at runtime via the
         // Vite asset pipeline; during tests the files are resolved by import.meta.glob
         this.sounds['attack'] = new Howl({ src: ['../../../../assets/sounds/attack.wav'] });
