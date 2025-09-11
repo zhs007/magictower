@@ -11,9 +11,9 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "logic-core": ["../logic-core/src"]
+      "logic-core": ["../../packages/logic-core/src"]
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../logic-core" }]
+  "references": [{ "path": "../../packages/logic-core" }]
 }

@@ -12,42 +12,32 @@ A core principle of this project is its deterministic nature—there are no rand
 
 ## Directory Structure
 
-The project follows a modular structure to maintain a clean and scalable codebase.
+The project is a monorepo managed by `pnpm` and `Turborepo`.
 
 ```
 .
-├── assets/              # Game assets (images)
-│   ├── item/
-│   ├── map/
-│   └── monster/
-├── gamedata/            # Game data configuration (JSON)
-│   ├── buffs/           # Buff definitions
-│   ├── equipments/      # Equipment definitions
-│   ├── items/           # Item definitions
-│   └── monsters/        # Monster definitions
-├── mapdata/             # Map layout data (JSON)
-├── src/                 # Source code
-│   ├── core/            # Core game logic (rendering-agnostic)
-│   │   ├── state.ts     # State management
-│   │   ├── logic.ts     # Combat, item, and movement logic
-│   │   └── tests/       # Unit tests for core logic
-│   ├── data/            # Data loading and management
-│   ├── renderer/        # Rendering layer (Pixi.js)
-│   └── scenes/          # Game scenes (e.g., Start, Game)
-├── scripts/             # Helper scripts (e.g., map generation)
-├── index.html
-├── package.json
-└── tsconfig.json
+├── apps/
+│   └── game/            # The main game application
+├── packages/
+│   └── logic-core/      # Shared, framework-agnostic game logic
+├── gamedata/            # Global game data (monsters, items, etc.)
+├── mapdata/             # Global map data
+├── assets/              # Global static assets (images, sounds)
+├── scripts/             # Helper scripts
+├── package.json         # Root package.json
+├── pnpm-workspace.yaml  # pnpm workspace configuration
+└── turbo.json           # Turborepo configuration
 ```
 
 ## Code Structure
 
 The project's architecture is designed to strictly separate game logic from rendering.
 
-*   **Core Logic (`src/core/`)**: This module is the "brain" of the game. It manages the game state (`GameStateManager`), handles all game rules (combat, item usage, player movement), and calculates stats. It has **no dependency** on Pixi.js or any other rendering library, which allows for easy testing and potential migration to other platforms (e.g., a server-authoritative model).
-*   **Data-Driven Design**: All game entities—monsters, items, equipment, and map layouts—are defined in external JSON files (`gamedata/`, `mapdata/`). The `DataManager` (`src/data/`) is responsible for loading and providing this data to the game. This allows game designers and developers to tweak game balance and level design without touching the source code.
-*   **Renderer (`src/renderer/`)**: This module is responsible for all visual aspects of the game. It uses Pixi.js to draw the map, characters, UI, and any visual effects (like floating damage text). It reads from the core game state but does not modify it directly.
-*   **Scene Management (`src/scenes/`)**: The game flow is managed through scenes (e.g., `StartScene`, `GameScene`). The `SceneManager` handles transitions between scenes. The `GameScene` acts as a controller, listening for player input, passing it to the `core` logic to process, and then telling the `renderer` to update the display based on the new state.
+*   **`packages/logic-core`**: This package is the "brain" of the game. It contains all the core game rules (combat, item usage, player movement), stat calculation, and type definitions. It has **no dependency** on Pixi.js or any other rendering library, which allows for easy testing and portability.
+*   **`apps/game`**: This is the main game application.
+    *   **Data-Driven Design**: The game loads all entity data (monsters, items, etc.) and map layouts from the global `gamedata/` and `mapdata/` directories. This allows designers to tweak game balance and level design without touching the source code.
+    *   **Renderer (`src/renderer/`)**: This module is responsible for all visual aspects of the game, using Pixi.js to draw the map, characters, and UI. It reads from the core game state but does not modify it directly.
+    *   **Scene Management (`src/scenes/`)**: The `GameScene` acts as a controller, listening for player input, passing it to the `logic-core` to process, and then telling the `renderer` to update the display based on the new state.
 
 This separation ensures that the game's rules are robust and testable in isolation, while the visual presentation can be developed and modified independently.
 
@@ -57,24 +47,26 @@ To get the project running locally, follow these steps:
 
 1.  **Install dependencies:**
     ```bash
-    npm install
+    pnpm install
     ```
 
 2.  **Run the development server:**
     ```bash
-    npm run dev
+    pnpm dev
     ```
-    This will start a Vite development server, and you can access the game in your browser at the provided URL (usually `http://localhost:5173`).
+    This will start a Vite development server for the `game` app, and you can access it in your browser at the provided URL (usually `http://localhost:5173`).
 
-### Available NPM Scripts
+### Available pnpm Scripts
 
-*   `npm run dev`: Starts the Vite development server.
-*   `npm run build`: Builds the project for production.
-*   `npm run test`: Runs the unit tests using Vitest.
-*   `npm run lint`: Lints the codebase for style and error checking.
-*   `npm run check-gamedata`: Runs a validation script to check the balance and integrity of the game data in `gamedata/`.
-*   `npm run gen-map`: Runs the first version of the procedural map generator.
-*   `npm run gen-map:v2`: Runs the template-based v2 map generator.
+All scripts should be run from the repository root.
+
+*   `pnpm dev`: Starts the development server.
+*   `pnpm build`: Builds all packages and apps.
+*   `pnpm test`: Runs all unit tests.
+*   `pnpm lint`: Lints the entire codebase.
+*   `pnpm check-gamedata`: Runs a validation script to check the balance and integrity of the game data.
+*   `pnpm gen-map`: Runs the first version of the procedural map generator.
+*   `pnpm gen-map:v2`: Runs the template-based v2 map generator.
 
 ## Core Game Logic
 
