@@ -7,9 +7,10 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b",
-    "test": "vitest",
-    "test:ci": "vitest run"
+  "build": "tsc -b",
+  "test": "vitest run",
+  "test:watch": "vitest",
+  "test:ci": "vitest run"
   },
   "dependencies": {
     "lodash": "^4.17.21"
