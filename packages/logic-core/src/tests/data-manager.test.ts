@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeAll } from 'vitest';
 import { dataManager } from '../data-manager';
 
 describe('DataManager', () => {

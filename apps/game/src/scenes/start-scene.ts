@@ -1,7 +1,7 @@
 import { Container, Text, Graphics } from 'pixi.js';
 import { BaseScene } from './base-scene';
 import { SceneManager } from './scene-manager';
-import { SaveManager } from '../core/save-manager';
+import { SaveManager } from '@proj-tower/logic-core';
 
 /**
  * The start menu scene.

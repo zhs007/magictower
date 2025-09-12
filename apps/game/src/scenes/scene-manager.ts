@@ -2,8 +2,12 @@ import { Application } from 'pixi.js';
 import { BaseScene } from './base-scene';
 import { StartScene } from './start-scene';
 import { GameScene } from './game-scene';
+import { GameStateManager } from '@proj-tower/logic-core';
 
-type SceneConstructor = new (sceneManager: SceneManager) => BaseScene;
+type SceneConstructor = new (
+    sceneManager: SceneManager,
+    gameStateManager?: GameStateManager
+) => BaseScene;
 
 /**
  * Manages the scenes of the game, handling transitions and the current scene.
@@ -12,9 +16,13 @@ export class SceneManager {
     private app: Application;
     private currentScene: BaseScene | null = null;
     private scenes: Record<string, SceneConstructor> = {};
+    private gameStateManager: GameStateManager;
 
     constructor(app: Application) {
         this.app = app;
+
+        // Shared GameStateManager instance for scenes
+        this.gameStateManager = new GameStateManager();
 
         // Register all scenes
         this.scenes['start'] = StartScene;
@@ -35,7 +43,8 @@ export class SceneManager {
 
         const SceneToAdd = this.scenes[sceneName];
         if (SceneToAdd) {
-            this.currentScene = new SceneToAdd(this);
+            // Pass the shared GameStateManager to scenes that accept it
+            this.currentScene = new SceneToAdd(this, this.gameStateManager as any);
             this.app.stage.addChild(this.currentScene);
             this.currentScene.onEnter(options);
         } else {

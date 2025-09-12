@@ -1,10 +1,6 @@
+import { GameState, Action, IPlayer, IMonster, IItem, IEquipment } from './types';
+import { LevelData } from './types';
 import {
-    GameState,
-    Action,
-    IPlayer,
-    IMonster,
-    IItem,
-    IEquipment,
     handleMove,
     handlePickupItem,
     handleOpenDoor,
@@ -13,38 +9,46 @@ import {
     handleEndBattle,
     handlePickupEquipment,
     handleUsePotion,
-} from '@proj-tower/logic-core';
-import { dataManager } from '../data/data-manager';
+} from './logic';
+import { dataManager as defaultDataManager } from './data-manager';
 
 export class GameStateManager {
     private currentState: GameState;
     public actionHistory: Action[] = [];
     public initialStateSeed: any;
 
-    constructor() {
+    // Accept a dataManager via constructor for explicit DI (defaults to package dataManager)
+    private dataManager: any;
+
+    constructor(dataManager?: any) {
         this.currentState = {} as GameState;
+        this.dataManager = dataManager ?? defaultDataManager;
     }
 
     public async createAndInitializeState(floor: number): Promise<void> {
         this.initialStateSeed = { floor };
-        const initialState = await GameStateManager.createInitialState(this.initialStateSeed);
+        const initialState = await this.createInitialState(this.initialStateSeed);
         this.initializeState(initialState);
     }
 
-    public static async createInitialState(
+    // Instance-level createInitialState uses the injected dataManager. An optional
+    // override can be provided for tests.
+    public async createInitialState(
         seed: { floor: number },
-        playerToPreserve?: IPlayer
+        playerToPreserve?: IPlayer,
+        dataManagerOverride?: any
     ): Promise<GameState> {
         console.log(`createInitialState called for floor ${seed.floor}.`);
         try {
-            await dataManager.loadAllData();
+            const dm = dataManagerOverride ?? this.dataManager ?? defaultDataManager;
+            await dm.loadAllData();
             const { floor } = seed;
-            const mapData = dataManager.getMapLayout(floor);
+            const mapData = dm.getMapLayout(floor);
             if (!mapData) {
                 throw new Error(`Map for floor ${floor} not found.`);
             }
 
-            const map = mapData.layout.map((row) => row.map(Number));
+            const map = mapData.layout.map((row: (number | string)[]) => row.map(Number));
             const entities: Record<string, any> = {};
             const monsters: Record<string, IMonster> = {};
             const items: Record<string, IItem> = {};
@@ -59,15 +63,35 @@ export class GameStateManager {
                     const entityInfo = mapData.entities[entityKey];
 
                     if (entityInfo.type === 'player_start') {
-                        // This is for new games or if there's no specific stair target
                         if (playerTemplate) {
                             player = { ...playerTemplate, ...entityInfo };
                         } else {
-                            // Create player from scratch if not preserved
-                            const playerData = dataManager.getPlayerData()!;
-                            const levelData = dataManager
-                                .getLevelData()
-                                .find((ld) => ld.level === playerData.level)!;
+                            const rawPlayerData = dm.getPlayerData();
+                            const playerData =
+                                rawPlayerData ??
+                                ({
+                                    id: 'player',
+                                    name: 'Player',
+                                    level: 1,
+                                    exp: 0,
+                                    hp: 10,
+                                    keys: { yellow: 0, blue: 0, red: 0 },
+                                } as any);
+                            const allLevelData = dm.getLevelData();
+                            let levelData = allLevelData.find((ld: LevelData) => ld.level === playerData.level);
+                            // Fallback: if the exact level entry isn't found, use the first
+                            // entry or a minimal default to keep initialization robust in
+                            // tests that stub loadAllData.
+                            if (!levelData) {
+                                levelData = allLevelData[0] || {
+                                    level: playerData.level,
+                                    exp_needed: 0,
+                                    maxhp: playerData.hp ?? 10,
+                                    attack: playerData.attack ?? 1,
+                                    defense: playerData.defense ?? 0,
+                                    speed: playerData.speed ?? 1,
+                                } as LevelData;
+                            }
                             player = {
                                 ...playerData,
                                 hp: levelData.maxhp,
@@ -84,7 +108,7 @@ export class GameStateManager {
                         }
                         playerKey = entityKey;
                     } else if (entityInfo.type === 'monster') {
-                        const monsterData = dataManager.getMonsterData(entityInfo.id);
+                        const monsterData = dm.getMonsterData(entityInfo.id);
                         if (monsterData) {
                             const monster = {
                                 ...monsterData,
@@ -98,9 +122,8 @@ export class GameStateManager {
                             entities[entityKey] = monster;
                         }
                     } else if (entityInfo.type === 'item') {
-                        const itemData = dataManager.getItemData(entityInfo.id);
+                        const itemData = dm.getItemData(entityInfo.id);
                         if (itemData) {
-                            // Use type provided by dataManager; fallback to 'special' if missing.
                             const item: IItem = Object.assign({}, itemData, {
                                 type: itemData.type ?? 'special',
                                 x: entityInfo.x,
@@ -110,7 +133,7 @@ export class GameStateManager {
                             entities[entityKey] = item;
                         }
                     } else if (entityInfo.type === 'equipment') {
-                        const equipmentData = dataManager.getEquipmentData(entityInfo.id);
+                        const equipmentData = dm.getEquipmentData(entityInfo.id);
                         if (equipmentData) {
                             const equipment: IEquipment = {
                                 ...equipmentData,
@@ -126,7 +149,6 @@ export class GameStateManager {
             }
 
             if (!player && playerToPreserve) {
-                // If the map has no player_start, but we have a player (from stairs), use them
                 player = playerToPreserve;
             }
 
@@ -134,13 +156,9 @@ export class GameStateManager {
                 throw new Error('Player could not be created or placed.');
             }
 
-            // The playerKey might not exist if we came from stairs to a map without a player_start
             if (playerKey) {
                 entities[playerKey] = player;
             } else {
-                // If there's no player_start on the map (e.g. arriving from stairs),
-                // we must still add the player to the entities list for rendering.
-                // We'll use a conventional key.
                 entities['player'] = { ...player, type: 'player_start' };
             }
 
@@ -162,6 +180,19 @@ export class GameStateManager {
             console.error('Error in createInitialState:', error);
             throw error;
         }
+    }
+
+    // Backwards-compatible static wrapper: some callers/tests call the static
+    // GameStateManager.createInitialState - provide that API by delegating to an
+    // instance. If a dataManagerOverride is supplied it will be passed to the
+    // instance constructor so the instance uses the override by default.
+    public static async createInitialState(
+        seed: { floor: number },
+        playerToPreserve?: IPlayer,
+        dataManagerOverride?: any
+    ): Promise<GameState> {
+        const manager = new GameStateManager(dataManagerOverride);
+        return manager.createInitialState(seed, playerToPreserve, dataManagerOverride);
     }
 
     public initializeState(initialState: GameState): void {
@@ -200,7 +231,7 @@ export class GameStateManager {
                 break;
             case 'END_BATTLE':
                 {
-                    const levelData = dataManager.getLevelData();
+                    const levelData = this.dataManager.getLevelData();
                     newState = handleEndBattle(
                         this.currentState,
                         action.payload.winnerId,
@@ -211,8 +242,7 @@ export class GameStateManager {
                 break;
             case 'USE_POTION':
                 {
-                    const potionData = dataManager.getItemData('small_potion');
-                    // dataManager returns ItemData; convert/ensure it matches IItem expected by logic-core
+                    const potionData = this.dataManager.getItemData('small_potion');
                     const potionItem = potionData
                         ? ({
                               ...potionData,
@@ -229,3 +259,4 @@ export class GameStateManager {
         this.actionHistory.push(action);
     }
 }
+

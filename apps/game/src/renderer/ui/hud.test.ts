@@ -37,14 +37,18 @@ vi.mock('../../core/event-manager', () => ({
     },
 }));
 
-vi.mock('../../data/data-manager', () => ({
-    dataManager: {
-        getLevelData: vi.fn().mockReturnValue([
-            { level: 1, exp_needed: 0 },
-            { level: 2, exp_needed: 100 },
-        ]),
-    },
-}));
+vi.mock('@proj-tower/logic-core', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@proj-tower/logic-core')>();
+    return {
+        ...original,
+        dataManager: {
+            getLevelData: vi.fn().mockReturnValue([
+                { level: 1, exp_needed: 0 },
+                { level: 2, exp_needed: 100 },
+            ]),
+        },
+    };
+});
 
 describe('HUD', () => {
     let hud: HUD;

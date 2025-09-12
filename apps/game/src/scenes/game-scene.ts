@@ -1,9 +1,7 @@
-import { GameState, calculateDamage } from '@proj-tower/logic-core';
-import { GameStateManager } from '../core/state';
-import { SaveManager } from '../core/save-manager';
+import { GameState, calculateDamage, dataManager, GameStateManager } from '@proj-tower/logic-core';
+import { SaveManager } from '@proj-tower/logic-core';
 import { Renderer } from '../renderer/renderer';
 import { InputManager } from '../core/input-manager';
-import { dataManager } from '../data/data-manager';
 import { BaseScene } from './base-scene';
 import { SceneManager } from './scene-manager';
 
@@ -19,10 +17,12 @@ export class GameScene extends BaseScene {
     private isAnimating: boolean = false;
     private playerEntityKey: string | undefined;
 
-    constructor(sceneManager: SceneManager) {
+    // Accept an optional GameStateManager to support dependency injection
+    constructor(sceneManager: SceneManager, gameStateManager?: GameStateManager) {
         super(sceneManager);
         this.renderer = new Renderer(this);
         this.inputManager = new InputManager();
+        this.gameStateManager = gameStateManager ?? null;
     }
 
     public async onEnter(options: GameSceneOptions): Promise<void> {
@@ -38,15 +38,20 @@ export class GameScene extends BaseScene {
         await dataManager.loadAllData();
         await this.renderer.loadAssets();
 
+        // Ensure we have a GameStateManager instance (use injected one when available)
+        if (!this.gameStateManager) {
+            this.gameStateManager = new GameStateManager();
+        }
+
         let initialState;
         if (options.loadSlot) {
             const loadedState = await SaveManager.loadGame(options.loadSlot);
-            initialState = loadedState || (await GameStateManager.createInitialState({ floor: 1 }));
+            initialState =
+                loadedState || (await this.gameStateManager.createInitialState({ floor: 1 }));
         } else {
-            initialState = await GameStateManager.createInitialState({ floor: 1 });
+            initialState = await this.gameStateManager.createInitialState({ floor: 1 });
         }
 
-        this.gameStateManager = new GameStateManager();
         this.gameStateManager.initializeState(initialState);
         this.playerEntityKey = Object.keys(initialState.entities).find(
             (k) => initialState.entities[k].type === 'player_start'
@@ -118,7 +123,7 @@ export class GameScene extends BaseScene {
                 };
 
                 console.log(`Creating new state for floor ${target.floor}`);
-                const newState = await GameStateManager.createInitialState(
+                const newState = await new GameStateManager().createInitialState(
                     { floor: target.floor },
                     playerForNextFloor
                 );

@@ -1,31 +1,34 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { GameStateManager } from '../state';
-import { SaveManager } from '../save-manager';
-import { Action, GameState } from '../types';
-import { dataManager } from '../../data/data-manager';
+import { GameStateManager } from '@proj-tower/logic-core';
+import { SaveManager } from '@proj-tower/logic-core';
+import { Action, GameState, dataManager } from '@proj-tower/logic-core';
 
-// Mock the entire data-manager
-vi.mock('../../data/data-manager', () => ({
-    dataManager: {
-        loadAllData: vi.fn().mockResolvedValue(undefined),
-        getMapLayout: vi.fn(),
-        getMonsterData: vi.fn(),
-        getItemData: vi.fn(),
-        getPlayerData: vi.fn().mockReturnValue({
-            id: 'player',
-            name: 'Hero',
-            level: 1,
-            exp: 0,
-            hp: 100,
-            keys: { yellow: 0, blue: 0, red: 0 },
-        }),
-        getLevelData: vi
-            .fn()
-            .mockReturnValue([
-                { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
-            ]),
-    },
-}));
+// Mock the entire data-manager from the logic-core package
+vi.mock('@proj-tower/logic-core', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@proj-tower/logic-core')>();
+    return {
+        ...original,
+        dataManager: {
+            loadAllData: vi.fn().mockResolvedValue(undefined),
+            getMapLayout: vi.fn(),
+            getMonsterData: vi.fn(),
+            getItemData: vi.fn(),
+            getPlayerData: vi.fn().mockReturnValue({
+                id: 'player',
+                name: 'Hero',
+                level: 1,
+                exp: 0,
+                hp: 100,
+                keys: { yellow: 0, blue: 0, red: 0 },
+            }),
+            getLevelData: vi
+                .fn()
+                .mockReturnValue([
+                    { level: 1, exp_needed: 0, maxhp: 100, attack: 10, defense: 10, speed: 10 },
+                ]),
+        },
+    };
+});
 
 // Mock localStorage
 const localStorageMock = (() => {

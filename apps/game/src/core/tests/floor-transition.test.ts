@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { GameStateManager } from '../state';
+import { GameStateManager } from '@proj-tower/logic-core';
 import { handleMove, GameState } from '@proj-tower/logic-core';
 
 describe('Floor Transition Logic', () => {
@@ -7,7 +7,7 @@ describe('Floor Transition Logic', () => {
 
     beforeAll(async () => {
         // Create a state based on floor 1, which has a stair to floor 2
-        initialState = await GameStateManager.createInitialState({ floor: 1 });
+        initialState = await new GameStateManager().createInitialState({ floor: 1 });
     });
 
     it('should set interactionState to "floor_change" when moving onto a stair entity', () => {

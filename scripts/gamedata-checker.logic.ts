@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { glob } from 'glob';
-import { dataManager } from '../src/data/data-manager.js';
-import { PlayerData, LevelData } from '../src/data/types.js';
+import { dataManager } from '../packages/logic-core/src/data-manager.js';
+import { PlayerData, LevelData } from '../packages/logic-core/src/types.js';
 
 /**
  * A Node.js implementation of import.meta.glob.

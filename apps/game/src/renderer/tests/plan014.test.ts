@@ -59,12 +59,16 @@ vi.mock('pixi.js', async () => {
     };
 });
 
-vi.mock('../../data/data-manager', () => ({
-    dataManager: {
-        loadAllData: vi.fn().mockResolvedValue(undefined),
-        getMapLayout: vi.fn(),
-    },
-}));
+vi.mock('@proj-tower/logic-core', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@proj-tower/logic-core')>();
+    return {
+        ...original,
+        dataManager: {
+            loadAllData: vi.fn().mockResolvedValue(undefined),
+            getMapLayout: vi.fn(),
+        },
+    };
+});
 
 vi.mock('../ui/hud', () => ({
     HUD: vi.fn(() => ({

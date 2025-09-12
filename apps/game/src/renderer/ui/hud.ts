@@ -1,7 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { GameState, IPlayer } from '../../core/types';
+import { GameState, IPlayer, dataManager } from '@proj-tower/logic-core';
 import { eventManager } from '../../core/event-manager';
-import { dataManager } from '../../data/data-manager';
 
 const HUD_WIDTH = 1080;
 const HUD_HEIGHT = 400;

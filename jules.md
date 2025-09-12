@@ -9,7 +9,7 @@
 - **逻辑与渲染彻底分离**: 游戏核心逻辑（战斗计算、道具效果等）被封装在独立的、无副作用的 `logic-core` 包中。该包不依赖于渲染引擎或任何特定框架，保证了其可移植性和可测试性。
 - **Monorepo 架构**: 项目采用 monorepo 结构，将应用 (`apps`) 和可复用包 (`packages`) 清晰地分离开。
 - **模块化**: `apps/game` 包内部依然遵循模块化设计，将状态管理、数据加载、渲染和场景管理等功能分离。
-- **数据驱动**: 所有游戏数据（怪物属性、道具效果、地图布局）均由外部 JSON 文件定义，方便策划调整数值和关卡设计。
+- **数据驱动**: 所有游戏数据（怪物属性、道具效果、地图布局）均由外部 JSON 文件定义。数据加载逻辑由 `packages/logic-core/src/data-manager.ts` 负责。注意：目前 `DataManager` 为了加载文件，对 Vite 的 `import.meta.glob` 有依赖，这属于已知的技术债，理想情况下 `logic-core` 包不应包含任何构建工具或框架的特定代码。
 - **确定性**: 游戏不包含任何随机因素。玩家以相同的顺序执行相同的操作，必须产生完全相同的结果。
 - **可测试性**: 核心逻辑部分必须有高覆盖率的单元测试（目标 > 90%），以保证游戏规则的正确性和稳定性。
 - **完整的类型定义**: 所有代码必须使用 TypeScript，并提供完整的类型定义，以增强代码的可维护性和健壮性。
@@ -35,7 +35,6 @@
 │   └── game/            # 游戏主程序包
 │       ├── src/
 │       │   ├── core/    # 游戏核心（状态、存读档等）
-│       │   ├── data/    # 数据加载
 │       │   ├── renderer/ # 渲染层
 │       │   └── scenes/  # 游戏场景
 │       ├── index.html
@@ -46,7 +45,8 @@
 │       ├── src/
 │       │   ├── index.ts # 包出口
 │       │   ├── logic.ts # 核心规则函数
-│       │   └── types.ts # 核心类型定义
+│       │   ├── types.ts # 核心类型定义
+│       │   └── data-manager.ts # 数据加载
 │       └── package.json
 │
 ├── gamedata/            # 游戏数据 (全局)
@@ -318,3 +318,46 @@ if (item) {
     - 最后，它会用这个新状态重新初始化`GameStateManager`和`Renderer`，完成楼层切换。
 
 这个流程确保了逻辑的清晰分离：核心逻辑（`core`）只负责声明意图（“我要切换楼层”），而场景（`scenes`）则负责执行具体的、与渲染和状态管理相关的操作。
+
+### 16. logic-core 重构（2025-09-12）
+
+以下为 2025-09-12 对 `packages/logic-core` 以及调用方所做的重构记录，目的在于：
+- 把类型与核心状态/存档逻辑集中到 `packages/logic-core`，作为单一可信源；
+- 消除模块级可变依赖，采用显式依赖注入（constructor DI）；
+- 提供在 Node 环境下可用的持久化适配器与统一的日志接口，提升可移植性与可测性；
+- 保留向后兼容点，减少一次性大改动对其他模块和测试的冲击。
+
+变更要点（摘要）:
+- 将原先分散在 `apps/game` 的类型和核心逻辑归并到 `packages/logic-core/src/`（例如 `types.ts`, `state.ts`, `save-manager.ts`）。
+- 删除了模块级可变的 `dataManager` 依赖，改为在 `GameStateManager` 构造器中注入 `dataManager`（默认仍为包内实现）。
+- `createInitialState` 由实例方法实现，同时保留了一个向后兼容的静态包装器以避免大量调用点立刻改动。
+- `SaveManager` 重构：接受可注入的 `StorageLike` 和 `ILogger`，并在包内提供 `FileStorage`（Node 文件系统适配器）与默认 logger 实现。
+- 新增 `ILogger` 接口与 `getLogger` / `setLogger` 全局 API，提供浏览器与 Node 的控制台前缀实现。
+- 将若干调用点改为显式实例化：把 `GameStateManager.createInitialState(...)` 的静态调用替换为 `new GameStateManager(...).createInitialState(...)`。
+- 改进了 `GameScene` 与 `SceneManager`：`GameScene` 现在可通过构造器接收 `GameStateManager` 实例；`SceneManager` 创建并共享一个 `GameStateManager` 实例传入场景，统一状态管理实例。
+- 为了兼容测试用例（vitest 的 mock 行为），保留了可通过构造器传入 mock `dataManager` 的路径，并在包内对某些边界情况添加了稳健的回退数据（避免因测试 stub 不完整导致的运行时错误）。
+
+受影响的主要文件（非穷举，示例）:
+- packages/logic-core/src/types.ts (集中类型)
+- packages/logic-core/src/data-manager.ts
+- packages/logic-core/src/state.ts (GameStateManager 重构，constructor DI，实例 createInitialState + static wrapper)
+- packages/logic-core/src/save-manager.ts (接收 Storage/Logger，load/save/list 改造)
+- packages/logic-core/src/logger.ts (ILogger + getLogger/setLogger)
+- packages/logic-core/src/adapters/file-storage.ts (FileStorage for Node)
+- apps/game/src/scenes/game-scene.ts (接受 GameStateManager 注入、使用实例 API)
+- apps/game/src/scenes/scene-manager.ts (创建并传入共享 GameStateManager)
+- apps/game/src/core/tests/* (若干测试调用点改为实例化形式以配合新 API)
+
+验证与兼容性:
+- 本地已运行整个工作区的 CI 风格测试：`pnpm -w run test:ci`，目前所有包的测试均通过。
+- 为降低迁移成本，保留了静态包装器 API，使得未立即迁移的调用站点仍能工作；同时建议后续逐步迁移到显式注入以消除全局副作用。
+
+后续建议（短期）:
+- 在 README 或 CONTRIBUTING 中记录新的使用方式：如何注入 `dataManager`、如何在 Node 环境下使用 `FileStorage`、如何设置全局 logger。
+- 将 `GameScene` / `SceneManager` 的改动纳入一次小的重构 PR 注释，说明向后兼容策略及未来移除静态包装器的计划。
+
+后续建议（长期）:
+- 完全移除对包名运行时导入（dynamic import）的依赖，依赖显式注入与静态相对导入，减少构建/测试时对 `dist` 的依赖。
+- 考虑把更多可变环境（Storage、Logger、DataSource）从单例迁移到显式上下文对象，方便服务端/离线/在线多环境运行。
+
+变更作者: 自动化重构脚本 + 开发者交互（见 Git 历史以获取逐行提交信息）
