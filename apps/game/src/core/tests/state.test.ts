@@ -123,7 +123,10 @@ describe('GameStateManager', () => {
 
             // Act & Assert
             await expect(
-                new GameStateManager(vi.mocked(dataManager)).createInitialState({ floor: 1 }, undefined)
+                new GameStateManager(vi.mocked(dataManager)).createInitialState(
+                    { floor: 1 },
+                    undefined
+                )
             ).rejects.toThrow('Player could not be created or placed.');
         });
 

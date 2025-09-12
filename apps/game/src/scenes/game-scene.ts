@@ -46,7 +46,8 @@ export class GameScene extends BaseScene {
         let initialState;
         if (options.loadSlot) {
             const loadedState = await SaveManager.loadGame(options.loadSlot);
-            initialState = loadedState || (await this.gameStateManager.createInitialState({ floor: 1 }));
+            initialState =
+                loadedState || (await this.gameStateManager.createInitialState({ floor: 1 }));
         } else {
             initialState = await this.gameStateManager.createInitialState({ floor: 1 });
         }

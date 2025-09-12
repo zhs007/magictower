@@ -4,7 +4,10 @@ import { StartScene } from './start-scene';
 import { GameScene } from './game-scene';
 import { GameStateManager } from '@proj-tower/logic-core';
 
-type SceneConstructor = new (sceneManager: SceneManager, gameStateManager?: GameStateManager) => BaseScene;
+type SceneConstructor = new (
+    sceneManager: SceneManager,
+    gameStateManager?: GameStateManager
+) => BaseScene;
 
 /**
  * Manages the scenes of the game, handling transitions and the current scene.
@@ -18,8 +21,8 @@ export class SceneManager {
     constructor(app: Application) {
         this.app = app;
 
-    // Shared GameStateManager instance for scenes
-    this.gameStateManager = new GameStateManager();
+        // Shared GameStateManager instance for scenes
+        this.gameStateManager = new GameStateManager();
 
         // Register all scenes
         this.scenes['start'] = StartScene;
