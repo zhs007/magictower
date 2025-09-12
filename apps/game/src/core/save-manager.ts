@@ -1,4 +1,4 @@
-import { GameStateManager } from './state';
+import { GameStateManager } from '@proj-tower/logic-core';
 import { SaveData, GameState } from '@proj-tower/logic-core';
 
 export class SaveManager {

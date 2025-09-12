@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { GameStateManager } from '../state';
+import { GameStateManager } from '@proj-tower/logic-core';
 import { SaveManager } from '../save-manager';
 import { Action, GameState, dataManager } from '@proj-tower/logic-core';
 

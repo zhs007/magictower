@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameStateManager } from '../state';
+import { GameStateManager } from '@proj-tower/logic-core';
 import {
     GameState,
     IEquipment,
@@ -89,7 +89,11 @@ describe('GameStateManager', () => {
             vi.mocked(dataManager.getMonsterData).mockReturnValue(mockMonsterData);
 
             // Act
-            const gameState = await GameStateManager.createInitialState({ floor: 1 });
+            const gameState = await GameStateManager.createInitialState(
+                { floor: 1 },
+                undefined,
+                vi.mocked(dataManager)
+            );
 
             // Assert
             expect(gameState).toBeDefined();
@@ -119,9 +123,9 @@ describe('GameStateManager', () => {
             vi.mocked(dataManager.getMapLayout).mockReturnValue(mockMapData);
 
             // Act & Assert
-            await expect(GameStateManager.createInitialState({ floor: 1 })).rejects.toThrow(
-                'Player could not be created or placed.'
-            );
+            await expect(
+                GameStateManager.createInitialState({ floor: 1 }, undefined, vi.mocked(dataManager))
+            ).rejects.toThrow('Player could not be created or placed.');
         });
 
         it('should correctly load equipment from map data', async () => {
@@ -148,7 +152,11 @@ describe('GameStateManager', () => {
             vi.mocked(dataManager.getEquipmentData).mockReturnValue(mockEquipmentData);
 
             // Act
-            const gameState = await GameStateManager.createInitialState({ floor: 1 });
+            const gameState = await GameStateManager.createInitialState(
+                { floor: 1 },
+                undefined,
+                vi.mocked(dataManager)
+            );
 
             // Assert
             expect(gameState.equipments).toBeDefined();

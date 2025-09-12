@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GameStateManager } from '../state';
+import { GameStateManager } from '@proj-tower/logic-core';
 import { handleEndBattle, IPlayer, GameState, IMonster, dataManager } from '@proj-tower/logic-core';
 
 // Mock data modules

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameStateManager } from '../state';
+import { GameStateManager } from '@proj-tower/logic-core';
 import * as _ from 'lodash';
 import { checkForLevelUp, dataManager } from '@proj-tower/logic-core';
 
