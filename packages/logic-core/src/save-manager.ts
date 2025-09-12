@@ -11,11 +11,10 @@ export interface StorageLike {
 }
 
 // Minimal Logger interface
-export interface LoggerLike {
-    log(...args: unknown[]): void;
-    warn(...args: unknown[]): void;
-    error(...args: unknown[]): void;
-}
+import { ILogger, getLogger } from './logger';
+
+// Backwards-compatible alias for the previous LoggerLike shape
+export type LoggerLike = ILogger;
 
 export class SaveManager {
     private gameStateManager: GameStateManager;
@@ -28,7 +27,7 @@ export class SaveManager {
     ) {
         this.gameStateManager = gameStateManager;
         this.storage = options?.storage ?? (globalThis as any).localStorage;
-        this.logger = options?.logger ?? console;
+    this.logger = options?.logger ?? getLogger();
     }
 
     // Instance method for saving the current game state
@@ -51,8 +50,8 @@ export class SaveManager {
         slotId: string,
         options?: { storage?: StorageLike; logger?: LoggerLike }
     ): Promise<GameState | null> {
-        const storage = options?.storage ?? (globalThis as any).localStorage;
-        const logger = options?.logger ?? console;
+    const storage = options?.storage ?? (globalThis as any).localStorage;
+    const logger = options?.logger ?? getLogger();
         try {
             const jsonData = storage.getItem('save_slot_' + slotId);
             if (!jsonData) {
