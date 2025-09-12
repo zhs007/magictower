@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
-import { GameState, IEquipment, EquipmentSlot, dataManager, MapLayout } from '@proj-tower/logic-core';
+import {
+    GameState,
+    IEquipment,
+    EquipmentSlot,
+    dataManager,
+    MapLayout,
+} from '@proj-tower/logic-core';
 
 // Mock the dataManager from the logic-core package
 vi.mock('@proj-tower/logic-core', async (importOriginal) => {
@@ -19,6 +25,16 @@ vi.mock('@proj-tower/logic-core', async (importOriginal) => {
                 level: 1,
                 exp: 0,
                 hp: 100,
+                maxhp: 100,
+                attack: 10,
+                defense: 10,
+                speed: 10,
+                x: 0,
+                y: 0,
+                direction: 'right' as const,
+                equipment: {},
+                backupEquipment: [],
+                buffs: [],
                 keys: { yellow: 0, blue: 0, red: 0 },
             }),
             getLevelData: vi
@@ -60,6 +76,12 @@ describe('GameStateManager', () => {
                 attack: 5,
                 defense: 2,
                 speed: 3,
+                x: 0,
+                y: 0,
+                direction: 'left' as const,
+                equipment: {},
+                backupEquipment: [],
+                buffs: [],
                 gold: 5,
             };
 

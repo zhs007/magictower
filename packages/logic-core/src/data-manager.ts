@@ -1,13 +1,4 @@
-import { IMonster, IItem, IEquipment, IBuff, IPlayer, LevelData } from './types';
-
-export interface MapLayout {
-    floor: number;
-    layout: number[][];
-    entities: Record<string, any>;
-    doors?: Record<string, any>;
-    stairs?: Record<string, any>;
-    tileAssets?: Record<string, string>;
-}
+import { IMonster, IItem, IEquipment, IBuff, IPlayer, LevelData, MapLayout } from './types';
 
 export class DataManager {
     public monsters: Map<string, IMonster> = new Map();

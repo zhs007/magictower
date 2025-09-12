@@ -1,3 +1,8 @@
+// DEPRECATED: types moved to @proj-tower/logic-core
+// Please import types from '@proj-tower/logic-core' directly.
+export * from '@proj-tower/logic-core';
+// Temporary compatibility re-export: use shared JSON/raw-data types from logic-core
+export * from '@proj-tower/logic-core';
 import {
     EquipmentSlot,
     WeaponType,

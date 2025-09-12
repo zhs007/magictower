@@ -1,23 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GameStateManager } from '../state';
-import {
-    handleEndBattle,
-    IPlayer,
-    GameState,
-    IMonster,
-    dataManager,
-} from '@proj-tower/logic-core';
+import { handleEndBattle, IPlayer, GameState, IMonster, dataManager } from '@proj-tower/logic-core';
 
 // Mock data modules
 // Mock both absolute-style and relative-style module IDs so the mock works
 // regardless of how Vitest/Vite normalizes the JSON import paths.
-const playerMock = {
+const playerMock: { default: IPlayer } = {
     default: {
         id: 'player',
         name: 'Hero',
         level: 1,
         exp: 0,
         hp: 100,
+        maxhp: 100,
+        attack: 10,
+        defense: 10,
+        speed: 10,
+        x: 0,
+        y: 0,
+        direction: 'right',
+        equipment: {},
+        backupEquipment: [],
+        buffs: [],
         keys: { yellow: 0, blue: 0, red: 0 },
     },
 };
