@@ -89,10 +89,9 @@ describe('GameStateManager', () => {
             vi.mocked(dataManager.getMonsterData).mockReturnValue(mockMonsterData);
 
             // Act
-            const gameState = await GameStateManager.createInitialState(
+            const gameState = await new GameStateManager(vi.mocked(dataManager)).createInitialState(
                 { floor: 1 },
-                undefined,
-                vi.mocked(dataManager)
+                undefined
             );
 
             // Assert
@@ -124,7 +123,7 @@ describe('GameStateManager', () => {
 
             // Act & Assert
             await expect(
-                GameStateManager.createInitialState({ floor: 1 }, undefined, vi.mocked(dataManager))
+                new GameStateManager(vi.mocked(dataManager)).createInitialState({ floor: 1 }, undefined)
             ).rejects.toThrow('Player could not be created or placed.');
         });
 
@@ -152,10 +151,9 @@ describe('GameStateManager', () => {
             vi.mocked(dataManager.getEquipmentData).mockReturnValue(mockEquipmentData);
 
             // Act
-            const gameState = await GameStateManager.createInitialState(
+            const gameState = await new GameStateManager(vi.mocked(dataManager)).createInitialState(
                 { floor: 1 },
-                undefined,
-                vi.mocked(dataManager)
+                undefined
             );
 
             // Assert

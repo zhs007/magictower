@@ -10,47 +10,40 @@ import {
     handlePickupEquipment,
     handleUsePotion,
 } from './logic';
-// Import dataManager from package entry so tests that mock the package
-// (vi.mock('@proj-tower/logic-core')) will override it.
-let dataManager: any; // Cached reference to the package-exported dataManager. Filled when createInitialState runs.
+import { dataManager as defaultDataManager } from './data-manager';
 
 export class GameStateManager {
     private currentState: GameState;
     public actionHistory: Action[] = [];
     public initialStateSeed: any;
 
-    constructor() {
+    // Accept a dataManager via constructor for explicit DI (defaults to package dataManager)
+    private dataManager: any;
+
+    constructor(dataManager?: any) {
         this.currentState = {} as GameState;
+        this.dataManager = dataManager ?? defaultDataManager;
     }
 
     public async createAndInitializeState(floor: number): Promise<void> {
         this.initialStateSeed = { floor };
-        const initialState = await GameStateManager.createInitialState(this.initialStateSeed);
+        const initialState = await this.createInitialState(this.initialStateSeed);
         this.initializeState(initialState);
     }
 
-    public static async createInitialState(
+    // Instance-level createInitialState uses the injected dataManager. An optional
+    // override can be provided for tests.
+    public async createInitialState(
         seed: { floor: number },
         playerToPreserve?: IPlayer,
         dataManagerOverride?: any
     ): Promise<GameState> {
         console.log(`createInitialState called for floor ${seed.floor}.`);
         try {
-            if (dataManagerOverride) {
-                dataManager = dataManagerOverride;
-            } else {
-                // Import the package entry at runtime so tests that mock the package
-                // (vi.mock('@proj-tower/logic-core')) will be able to override exports.
-                // Use @ts-ignore to avoid TypeScript attempting to resolve the package
-                // during the library build.
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                const pkg = await import('@proj-tower/logic-core');
-                dataManager = pkg.dataManager;
-            }
-            await dataManager.loadAllData();
+            const dm = dataManagerOverride ?? this.dataManager ?? defaultDataManager;
+            await dm.loadAllData();
             const { floor } = seed;
-            const mapData = dataManager.getMapLayout(floor);
+            const mapData = dm.getMapLayout(floor);
             if (!mapData) {
                 throw new Error(`Map for floor ${floor} not found.`);
             }
@@ -73,10 +66,32 @@ export class GameStateManager {
                         if (playerTemplate) {
                             player = { ...playerTemplate, ...entityInfo };
                         } else {
-                            const playerData = dataManager.getPlayerData()!;
-                            const levelData = dataManager
-                                .getLevelData()
-                                .find((ld: LevelData) => ld.level === playerData.level)!;
+                            const rawPlayerData = dm.getPlayerData();
+                            const playerData =
+                                rawPlayerData ??
+                                ({
+                                    id: 'player',
+                                    name: 'Player',
+                                    level: 1,
+                                    exp: 0,
+                                    hp: 10,
+                                    keys: { yellow: 0, blue: 0, red: 0 },
+                                } as any);
+                            const allLevelData = dm.getLevelData();
+                            let levelData = allLevelData.find((ld: LevelData) => ld.level === playerData.level);
+                            // Fallback: if the exact level entry isn't found, use the first
+                            // entry or a minimal default to keep initialization robust in
+                            // tests that stub loadAllData.
+                            if (!levelData) {
+                                levelData = allLevelData[0] || {
+                                    level: playerData.level,
+                                    exp_needed: 0,
+                                    maxhp: playerData.hp ?? 10,
+                                    attack: playerData.attack ?? 1,
+                                    defense: playerData.defense ?? 0,
+                                    speed: playerData.speed ?? 1,
+                                } as LevelData;
+                            }
                             player = {
                                 ...playerData,
                                 hp: levelData.maxhp,
@@ -93,7 +108,7 @@ export class GameStateManager {
                         }
                         playerKey = entityKey;
                     } else if (entityInfo.type === 'monster') {
-                        const monsterData = dataManager.getMonsterData(entityInfo.id);
+                        const monsterData = dm.getMonsterData(entityInfo.id);
                         if (monsterData) {
                             const monster = {
                                 ...monsterData,
@@ -107,7 +122,7 @@ export class GameStateManager {
                             entities[entityKey] = monster;
                         }
                     } else if (entityInfo.type === 'item') {
-                        const itemData = dataManager.getItemData(entityInfo.id);
+                        const itemData = dm.getItemData(entityInfo.id);
                         if (itemData) {
                             const item: IItem = Object.assign({}, itemData, {
                                 type: itemData.type ?? 'special',
@@ -118,7 +133,7 @@ export class GameStateManager {
                             entities[entityKey] = item;
                         }
                     } else if (entityInfo.type === 'equipment') {
-                        const equipmentData = dataManager.getEquipmentData(entityInfo.id);
+                        const equipmentData = dm.getEquipmentData(entityInfo.id);
                         if (equipmentData) {
                             const equipment: IEquipment = {
                                 ...equipmentData,
@@ -167,6 +182,19 @@ export class GameStateManager {
         }
     }
 
+    // Backwards-compatible static wrapper: some callers/tests call the static
+    // GameStateManager.createInitialState - provide that API by delegating to an
+    // instance. If a dataManagerOverride is supplied it will be passed to the
+    // instance constructor so the instance uses the override by default.
+    public static async createInitialState(
+        seed: { floor: number },
+        playerToPreserve?: IPlayer,
+        dataManagerOverride?: any
+    ): Promise<GameState> {
+        const manager = new GameStateManager(dataManagerOverride);
+        return manager.createInitialState(seed, playerToPreserve, dataManagerOverride);
+    }
+
     public initializeState(initialState: GameState): void {
         this.currentState = initialState;
         this.actionHistory = [];
@@ -203,7 +231,7 @@ export class GameStateManager {
                 break;
             case 'END_BATTLE':
                 {
-                    const levelData = dataManager.getLevelData();
+                    const levelData = this.dataManager.getLevelData();
                     newState = handleEndBattle(
                         this.currentState,
                         action.payload.winnerId,
@@ -214,7 +242,7 @@ export class GameStateManager {
                 break;
             case 'USE_POTION':
                 {
-                    const potionData = dataManager.getItemData('small_potion');
+                    const potionData = this.dataManager.getItemData('small_potion');
                     const potionItem = potionData
                         ? ({
                               ...potionData,

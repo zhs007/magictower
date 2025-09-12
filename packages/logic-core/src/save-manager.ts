@@ -61,9 +61,9 @@ export class SaveManager {
 
             const saveData: SaveData = JSON.parse(jsonData);
 
-            // Recreate the initial state from seed
-            const initialState = await GameStateManager.createInitialState(saveData.initialStateSeed);
+            // Recreate the initial state from seed using an instance (createInitialState is now an instance method)
             const tempGameStateManager = new GameStateManager();
+            const initialState = await tempGameStateManager.createInitialState(saveData.initialStateSeed);
             tempGameStateManager.initializeState(initialState);
             tempGameStateManager.initialStateSeed = saveData.initialStateSeed;
 
