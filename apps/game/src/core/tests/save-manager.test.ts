@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { GameStateManager } from '@proj-tower/logic-core';
-import { SaveManager } from '../save-manager';
+import { SaveManager } from '@proj-tower/logic-core';
 import { Action, GameState, dataManager } from '@proj-tower/logic-core';
 
 // Mock the entire data-manager from the logic-core package
