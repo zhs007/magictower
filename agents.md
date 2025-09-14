@@ -46,6 +46,16 @@ For tasks that should be run from the command line (e.g., data generation, build
 
 - **Testability**: To ensure that utility scripts can be unit-tested without issues, keep the script file itself free of side effects. All core logic should be in exported functions. Create a separate "runner" script (e.g., `scripts/run-my-script.ts`) that imports the main function and calls it. The `npm` script should then execute this runner file. This pattern prevents module loading issues with `vitest`.
 
+## Services
+
+This project may contain services that are independent of the main game application.
+
+### `rmbg` gRPC Service
+- **Location**: `services/rmbg`
+- **Description**: A Python-based gRPC service for removing the background from images.
+- **Environment**: This service is designed to be run within a Docker container. The `Dockerfile` and dependencies are located in its directory. Refer to the main `jules.md` documentation for instructions on how to build and run the service.
+- **Note**: This service uses a separate Python environment and does not interact directly with the Node.js/TypeScript parts of the monorepo at the code level.
+
 ## Code Style
 
 - **Language**: TypeScript
