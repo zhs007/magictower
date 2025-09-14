@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package rmbg;
+
+service RmbgService {
+  rpc RemoveBackground(RemoveBackgroundRequest) returns (RemoveBackgroundResponse);
+}
+
+message RemoveBackgroundRequest {
+  bytes image_data = 1;
+}
+
+message RemoveBackgroundResponse {
+  bytes image_data = 1;
+}

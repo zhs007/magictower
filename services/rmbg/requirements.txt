@@ -1,0 +1,5 @@
+grpcio
+grpcio-tools
+Pillow
+rembg==2.0.67
+onnxruntime

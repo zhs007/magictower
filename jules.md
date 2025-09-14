@@ -281,11 +281,55 @@ if (item) {
   ```
   该命令会加载所有游戏数据并运行所有校验。如果任何平衡性约束被破坏，脚本将失败并报告详细错误。强烈建议在对`gamedata`目录下的任何文件进行修改后，都运行此脚本进行验证。
 
-## 15. 楼层切换系统 (Floor Transition System)
+## 15. rmbg gRPC 服务
+
+项目包含一个用于移除图片背景的 gRPC 服务。该服务使用 Python 实现，并被容器化以便于部署和管理。
+
+### 15.1 服务概述
+- **功能**: 提供一个 gRPC 端点，接收图片数据，移除背景后返回处理过的图片数据。
+- **技术栈**: Python 3.12, gRPC, Docker, `rembg` 库。
+- **位置**:
+    - **协议定义**: `protos/rmbg.proto`
+    - **服务实现**: `services/rmbg/`
+
+### 15.2 如何运行服务
+该服务通过 Docker 运行。
+
+1.  **构建 Docker 镜像**:
+    在项目根目录下，运行以下命令来构建镜像。
+    ```bash
+    sudo docker build -t rmbg-service services/rmbg
+    ```
+
+2.  **启动 Docker 容器**:
+    构建成功后，运行以下命令来启动服务。
+    ```bash
+    sudo docker run -d -p 50051:50051 --name rmbg-container rmbg-service
+    ```
+    服务将在后台运行，并监听 `50051` 端口。
+
+3.  **验证服务 (可选)**:
+    项目包含一个测试客户端，可以用来验证服务是否正常工作。
+    ```bash
+    python services/rmbg/src/client.py
+    ```
+    该客户端会使用 `assets/player.png` 作为输入，并将移除背景后的图片保存为 `assets/player_no_bg.png`。
+
+    *注意：* `rembg` 库在第一次运行时需要下载机器学习模型，这可能需要一些时间。测试客户端的超时时间已设置为120秒以适应这种情况。
+
+### 15.3 gRPC API
+- **服务**: `RmbgService`
+- **RPC**: `RemoveBackground`
+- **请求**: `RemoveBackgroundRequest`
+    - `image_data` (`bytes`): 输入的图片文件数据。
+- **响应**: `RemoveBackgroundResponse`
+    - `image_data` (`bytes`): 移除背景后的 PNG 图片数据。
+
+## 16. 楼层切换系统 (Floor Transition System)
 
 游戏现在支持多楼层以及在它们之间的切换。
 
-### 15.1 数据定义
+### 16.1 数据定义
 - **楼梯实体**: 楼层间的切换是通过地图数据中的“楼梯”实体实现的。
 - **文件**: `mapdata/floor_XX.json`
 - **结构**: 每个地图文件可以包含一个`stairs`对象，其中定义了该层所有的楼梯。同时，在`entities`对象中也要有对应的实体来让它显示在地图上。
@@ -307,7 +351,7 @@ if (item) {
   ```
   `target`对象指定了目标楼层的编号和玩家在新楼层出现时的坐标。
 
-### 15.2 逻辑流程
+### 16.2 逻辑流程
 该功能的逻辑在代码中已经存在，并且设计得相当完善。
 1.  当玩家移动时，`handleMove` (`src/core/logic.ts`) 会检测目标位置的实体。
 2.  如果实体是一个楼梯（通过检查`state.stairs[entityId]`是否存在来判断），`handleMove`会返回一个将`interactionState`设置为`{ type: 'floor_change', stairId: ... }`的新游戏状态。
@@ -319,7 +363,7 @@ if (item) {
 
 这个流程确保了逻辑的清晰分离：核心逻辑（`core`）只负责声明意图（“我要切换楼层”），而场景（`scenes`）则负责执行具体的、与渲染和状态管理相关的操作。
 
-### 16. logic-core 重构（2025-09-12）
+## 17. logic-core 重构（2025-09-12）
 
 以下为 2025-09-12 对 `packages/logic-core` 以及调用方所做的重构记录，目的在于：
 - 把类型与核心状态/存档逻辑集中到 `packages/logic-core`，作为单一可信源；
