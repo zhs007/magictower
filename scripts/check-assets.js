@@ -81,9 +81,12 @@ for (const jf of mapdataJsonFiles) {
 
     if (obj.tileAssets && typeof obj.tileAssets === 'object') {
         for (const tileValue in obj.tileAssets) {
-            const assetId = obj.tileAssets[tileValue];
-            if (assetId && !aliasMap.has(assetId)) {
-                missing.push({ file: jf, assetId: assetId, context: `tileAssets[${tileValue}]` });
+            const tileAsset = obj.tileAssets[tileValue];
+            if (tileAsset && typeof tileAsset === 'object' && tileAsset.assetId) {
+                const assetId = tileAsset.assetId;
+                if (!aliasMap.has(assetId)) {
+                    missing.push({ file: jf, assetId: assetId, context: `tileAssets[${tileValue}]` });
+                }
             }
         }
     }

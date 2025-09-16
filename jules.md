@@ -166,7 +166,20 @@
 - **资源别名规则**：`<type>_<filename>` 或 顶层 `filename`（例如：`monster_monster`, `item_item`, `player`）。
 - **renderer 使用**：`import.meta.glob` 自动生成 manifest，alias 按上述规则生成。
 - **gamedata 优先字段**：`gamedata` 中新增 `assetId` 字段，渲染与校验逻辑优先使用 `assetId`；若缺失则回退到 `id` 字段。
-- **map 贴图映射**: `mapdata` 中的 JSON 文件现在包含 `tileAssets` 字段，该字段将 `layout` 中的数字直接映射到 `assetId`。这取代了旧的基于别名的回退逻辑，使得地图渲染更加明确和可维护。
+- **map 贴图映射 (tileAssets)**: `mapdata` 中的 JSON 文件包含 `tileAssets` 字段，用于定义地图 `layout` 中数值与贴图资源的映射关系。该结构经过重构，以提供更丰富的元数据。
+  - **结构**: `tileAssets` 是一个对象，其键是 `layout` 中的数值（如 "0", "1"），其值是一个包含以下字段的对象：
+    - `assetId` (string): 对应于资源别名的ID。
+    - `isEntity` (boolean): 一个布尔值，用于标识该贴图是否为“实体”。
+      - `true`: 表示该贴图是实体（如墙、柱子），会参与y轴排序以实现遮挡效果，并被渲染在 `entityContainer` 中。
+      - `false`: 表示该贴图是地面的一部分，会被渲染在 `floorContainer` 中。
+  - **示例**:
+    ```json
+    "tileAssets": {
+      "0": { "assetId": "map_floor", "isEntity": false },
+      "1": { "assetId": "map_wall", "isEntity": true }
+    }
+    ```
+  - **渲染逻辑**: `MapRender` 会使用此信息来决定渲染哪个纹理以及如何渲染它。对于标记为 `isEntity: true` 的瓦片，渲染器总会在其下方绘制一个基础的地面瓦片，以确保视觉效果的正确性。
 
 ## 12. 浮动文字系统 (Floating Text System)
 

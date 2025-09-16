@@ -33,33 +33,32 @@ export class MapRender extends Container {
             for (let x = 0; x < state.map[y].length; x++) {
                 const tileValue = state.map[y][x];
                 let tileTexture;
+                let isEntity = false;
 
                 if (useNewTiles) {
-                    const assetId = state.tileAssets![tileValue];
-                    if (assetId) {
-                        tileTexture = Assets.get(assetId);
+                    const tileAsset = state.tileAssets![tileValue];
+                    if (tileAsset) {
+                        tileTexture = Assets.get(tileAsset.assetId);
+                        isEntity = tileAsset.isEntity;
                     } else {
-                        const floorAssetId = state.tileAssets!['0'];
-                        tileTexture = floorAssetId ? Assets.get(floorAssetId) : Texture.EMPTY;
+                        // Fallback to floor tile if tileValue is not in tileAssets
+                        const floorTileAsset = state.tileAssets!['0'];
+                        tileTexture = floorTileAsset ? Assets.get(floorTileAsset.assetId) : Texture.EMPTY;
                     }
                 } else {
+                    // Legacy support for maps without tileAssets
                     if (tileValue === 1) {
                         tileTexture = Assets.get('map_wall');
+                        isEntity = true;
                     } else {
                         tileTexture = Assets.get('map_floor');
                     }
                 }
 
-                if (tileValue === 0) {
-                    const floorSprite = new Sprite(tileTexture);
-                    floorSprite.x = x * TILE_SIZE;
-                    floorSprite.y = y * TILE_SIZE;
-                    floorSprite.width = TILE_SIZE;
-                    floorSprite.height = TILE_SIZE;
-                    this.floorContainer.addChild(floorSprite);
-                } else if (tileValue === 1) {
-                    const floorAssetId = useNewTiles ? state.tileAssets!['0'] : 'map_floor';
-                    const floorTexture = Assets.get(floorAssetId);
+                if (isEntity) {
+                    // Always draw a floor tile underneath an entity tile
+                    const floorAsset = useNewTiles ? state.tileAssets!['0'] : { assetId: 'map_floor', isEntity: false };
+                    const floorTexture = Assets.get(floorAsset.assetId);
                     const floorSprite = new Sprite(floorTexture);
                     floorSprite.x = x * TILE_SIZE;
                     floorSprite.y = y * TILE_SIZE;
@@ -67,13 +66,22 @@ export class MapRender extends Container {
                     floorSprite.height = TILE_SIZE;
                     this.floorContainer.addChild(floorSprite);
 
-                    const wallSprite = new Sprite(tileTexture);
-                    wallSprite.anchor.set(0.5, 1); // Bottom-center
-                    wallSprite.x = x * TILE_SIZE + TILE_SIZE / 2;
-                    wallSprite.y = (y + 1) * TILE_SIZE;
-                    wallSprite.zIndex = y;
-                    this.entityContainer.addChild(wallSprite);
-                    this.wallSprites.push(wallSprite);
+                    // Draw the entity tile itself
+                    const entitySprite = new Sprite(tileTexture);
+                    entitySprite.anchor.set(0.5, 1); // Bottom-center
+                    entitySprite.x = x * TILE_SIZE + TILE_SIZE / 2;
+                    entitySprite.y = (y + 1) * TILE_SIZE;
+                    entitySprite.zIndex = y; // For correct occlusion
+                    this.entityContainer.addChild(entitySprite);
+                    this.wallSprites.push(entitySprite); // Keep track to remove them later
+                } else {
+                    // Just draw a floor tile
+                    const floorSprite = new Sprite(tileTexture);
+                    floorSprite.x = x * TILE_SIZE;
+                    floorSprite.y = y * TILE_SIZE;
+                    floorSprite.width = TILE_SIZE;
+                    floorSprite.height = TILE_SIZE;
+                    this.floorContainer.addChild(floorSprite);
                 }
             }
         }

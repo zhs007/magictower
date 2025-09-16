@@ -140,10 +140,15 @@ export interface IStair {
     };
 }
 
+export interface ITileAsset {
+    assetId: string;
+    isEntity: boolean;
+}
+
 export interface GameState {
     currentFloor: number;
     map: number[][];
-    tileAssets?: Record<string, string>;
+    tileAssets?: Record<string, ITileAsset>;
     player: IPlayer;
     entities: Record<string, any>; // A dictionary of all entities on the map
     monsters: Record<string, IMonster>;
@@ -244,7 +249,7 @@ export interface BuffData {
 export interface MapLayout {
     floor: number;
     layout: (number | string)[][];
-    tileAssets?: Record<string, string>;
+    tileAssets?: Record<string, ITileAsset>;
     entities?: {
         [id: string]: {
             type: 'monster' | 'item' | 'equipment' | 'door' | 'player_start' | 'stair';
