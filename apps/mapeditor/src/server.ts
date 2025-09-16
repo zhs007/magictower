@@ -2,11 +2,15 @@ import Fastify from 'fastify';
 import fastifyDev from 'vite-plugin-fastify';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { resolve, join } from 'path';
+import { fileURLToPath } from 'url';
 
 const app = Fastify({
   logger: true,
 });
 
+// ESM-safe __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = resolve(__filename, '..');
 const rootDir = resolve(__dirname, '../../../../');
 const mapDir = resolve(rootDir, 'mapdata');
 const assetsDir = resolve(rootDir, 'assets/map');
@@ -66,14 +70,14 @@ app.post('/api/maps/:mapId', async (request, reply) => {
 });
 
 
-export default (options: any) => {
-  // This is the entry point for the Fastify server
-  // when running in development mode.
-  // The 'app' instance is passed from vite-plugin-fastify.
-  // We use 'as any' to bypass a complex type mismatch between fastify and the vite plugin.
-  app.register(fastifyDev as any, options);
+// Export the Fastify instance for the vite plugin to use. The vite-plugin-fastify
+// will import this file and handle registering itself. Do NOT register the
+// plugin here to avoid recursive registration / plugin timeouts.
+export function createApp() {
   return app;
-};
+}
+
+export default createApp;
 
 // This is the entry point for the Fastify server
 // when running in production mode.
