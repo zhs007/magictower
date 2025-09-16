@@ -47,7 +47,11 @@ function main() {
 
   const { layout, areaGrid } = generateMapLayout(exampleParams);
 
-  const tileAssetsString = JSON.stringify({ '0': 'map_floor', '1': 'map_wall' }, null, 2);
+  const tileAssets = {
+    '0': { assetId: 'map_floor', isEntity: false },
+    '1': { assetId: 'map_wall', isEntity: true },
+  };
+  const tileAssetsString = JSON.stringify(tileAssets, null, 2);
   const layoutString = formatLayoutForDisplay(layout);
 
   const outputString = `{

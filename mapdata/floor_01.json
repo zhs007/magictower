@@ -1,8 +1,14 @@
 {
     "floor": 1,
     "tileAssets": {
-        "0": "map_floor",
-        "1": "map_wall"
+        "0": {
+            "assetId": "map_floor",
+            "isEntity": false
+        },
+        "1": {
+            "assetId": "map_wall",
+            "isEntity": true
+        }
     },
     "layout": [
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
