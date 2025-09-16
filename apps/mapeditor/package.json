@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-  "dev": "vite",
+  "dev": "tsx src/run-server.ts",
   "dev:server": "tsx src/run-server.ts",
-  "dev:all": "node ./scripts/dev-launch.cjs",
+  "dev:all": "tsx src/run-server.ts",
     "build": "vite build",
     "test": "vitest --run",
     "test:watch": "vitest",
@@ -20,6 +20,7 @@
     "typescript": "^5.9.2"
   },
   "devDependencies": {
+    "@fastify/middie": "^8.0.1",
     "@types/node": "^24.3.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",

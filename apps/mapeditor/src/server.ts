@@ -1,3 +1,4 @@
+import fastify from 'fastify';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { resolve, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -5,17 +6,11 @@ import { fileURLToPath } from 'url';
 // ESM-safe __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = resolve(__filename, '..');
-const rootDir = resolve(__dirname, '../../../../');
+const rootDir = resolve(__dirname, '../../..');
 const mapDir = resolve(rootDir, 'mapdata');
-const assetsDir = resolve(rootDir, 'assets/map');
+const assetsDir = resolve(rootDir, 'assets', 'map');
 
-/**
- * Register routes on the Fastify instance provided by vite-plugin-fastify.
- * This ensures Vite's middleware is mounted and module requests are
- * handled by Vite instead of our routes.
- */
-export default function register(app: any, options?: any) {
-  // Get list of map files
+function registerRoutes(app: any) {
   app.get('/api/maps', async (request: any, reply: any) => {
     try {
       const files = await readdir(mapDir);
@@ -27,7 +22,6 @@ export default function register(app: any, options?: any) {
     }
   });
 
-  // List tile assets
   app.get('/api/assets/tiles', async (request: any, reply: any) => {
     try {
       const files = await readdir(assetsDir);
@@ -39,7 +33,6 @@ export default function register(app: any, options?: any) {
     }
   });
 
-  // Get a specific map's data
   app.get('/api/maps/:mapId', async (request: any, reply: any) => {
     const { mapId } = request.params as { mapId: string };
     const filePath = join(mapDir, `${mapId}.json`);
@@ -52,7 +45,6 @@ export default function register(app: any, options?: any) {
     }
   });
 
-  // Save map data
   app.post('/api/maps/:mapId', async (request: any, reply: any) => {
     const { mapId } = request.params as { mapId: string };
     const filePath = join(mapDir, `${mapId}.json`);
@@ -66,7 +58,6 @@ export default function register(app: any, options?: any) {
     }
   });
 
-  // Serve the SPA index for navigation requests
   app.get('/', async (request: any, reply: any) => {
     try {
       const indexPath = join(__dirname, '..', 'index.html');
@@ -94,5 +85,42 @@ export default function register(app: any, options?: any) {
     reply.status(404).send({ message: 'Not Found' });
   });
 
+  app.get('/assets/map/:file', async (request: any, reply: any) => {
+    const { file } = request.params as { file: string };
+    let filePath = join(assetsDir, file);
+    try {
+      const data = await readFile(filePath);
+      reply.header('Content-Type', 'image/png').send(data);
+      return;
+    } catch (err) {
+      try {
+        filePath = join(rootDir, 'assets', file);
+        const data = await readFile(filePath);
+        reply.header('Content-Type', 'image/png').send(data);
+        return;
+      } catch (err2) {
+        app.log?.error?.(err2);
+        reply.status(404).send({ error: 'Asset not found' });
+        return;
+      }
+    }
+  });
+}
+
+export default async function createApp() {
+  const app = fastify({ logger: true });
+  registerRoutes(app);
+
+  // Add routing helper so the plugin can forward raw req/res
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  app.routing = (req: any, res: any) => {
+    (app.server as any).emit('request', req, res);
+  };
+
+  await app.ready();
   return app;
 }
+
+// Keep a named export for compatibility if other code imports register
+export { registerRoutes as register };
