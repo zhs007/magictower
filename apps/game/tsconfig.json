@@ -1,14 +1,7 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "strict": true,
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "types": ["vitest/globals", "vite/client"],
-    "composite": true,
     "baseUrl": ".",
     "paths": {
       "@proj-tower/logic-core": ["../../packages/logic-core/src"],
