@@ -1,7 +1,7 @@
 import './style.css';
 import { Application, Assets } from 'pixi.js';
 import { MapRender } from '@proj-tower/maprender';
-import type { GameState, TileAsset } from '@proj-tower/logic-core';
+import type { GameState, MapLayout, ITileAsset } from '@proj-tower/logic-core';
 
 // --- DOM Elements ---
 const mapSelector = document.getElementById('map-selector') as HTMLSelectElement;
@@ -20,7 +20,7 @@ const rendererPanel = document.getElementById('renderer-panel') as HTMLDivElemen
 let state: {
     maps: string[];
     currentMapId: string | null;
-    currentMapData: GameState | null;
+    currentMapData: MapLayout | null; // Correct data type for map files
     tileAssets: string[];
     selectedTileId: string | null;
 } = {
@@ -49,20 +49,18 @@ class EditorRenderer {
         rendererPanel.appendChild(this.app.canvas);
     }
 
-    async renderMap(mapData: GameState) {
+    async renderMap(mapLayout: MapLayout) {
         if (this.mapRender) {
             this.mapRender.destroy({ children: true });
         }
 
-        // Load assets required by the map
-        const tileAssetValues = Object.values(mapData.tileAssets);
+        if (!mapLayout.tileAssets) return;
+        const tileAssetValues = Object.values(mapLayout.tileAssets);
 
         for (const tileAsset of tileAssetValues) {
             try {
-                // assetId is e.g. "map_floor", filename is "floor"
                 const filename = tileAsset.assetId.replace('map_', '');
                 const url = `/assets/map/${filename}.png`;
-                // Load asset if not already loaded
                 if (!Assets.get(tileAsset.assetId)) {
                     await Assets.load({ alias: tileAsset.assetId, src: url });
                 }
@@ -71,7 +69,22 @@ class EditorRenderer {
             }
         }
 
-        this.mapRender = new MapRender(mapData);
+        // MapRender expects a GameState, so we create a dummy one.
+        const dummyGameState: GameState = {
+            currentFloor: mapLayout.floor,
+            map: mapLayout.layout as number[][], // Assuming layout is number[][]
+            tileAssets: mapLayout.tileAssets,
+            player: null!, // Not used by MapRender
+            entities: {}, // Not used by MapRender
+            monsters: {}, // Not used by MapRender
+            items: {}, // Not used by MapRender
+            equipments: {}, // Not used by MapRender
+            doors: {}, // Not used by MapRender
+            stairs: {}, // Not used by MapRender
+            interactionState: { type: 'none' }, // Not used by MapRender
+        };
+
+        this.mapRender = new MapRender(dummyGameState);
         this.app.stage.addChild(this.mapRender);
     }
 }
@@ -94,7 +107,7 @@ function renderTileAssetSelector() {
     newTileAssetSelect.innerHTML = '';
     state.tileAssets.forEach(assetName => {
         const option = document.createElement('option');
-        option.value = assetName; // e.g. "floor"
+        option.value = assetName;
         option.textContent = assetName;
         newTileAssetSelect.appendChild(option);
     });
@@ -102,7 +115,7 @@ function renderTileAssetSelector() {
 
 function renderTilePalette() {
     tileList.innerHTML = '';
-    if (!state.currentMapData) return;
+    if (!state.currentMapData || !state.currentMapData.tileAssets) return;
 
     for (const tileId in state.currentMapData.tileAssets) {
         const tileAsset = state.currentMapData.tileAssets[tileId];
@@ -111,7 +124,7 @@ function renderTilePalette() {
         if (state.selectedTileId === tileId) {
             tileItem.classList.add('selected');
         }
-        tileItem.dataset.tileId = tileId;
+        (tileItem as HTMLElement).dataset.tileId = tileId;
 
         const img = document.createElement('img');
         const filename = tileAsset.assetId.replace('map_', '');
@@ -132,26 +145,24 @@ function renderTilePalette() {
 
 function renderMapGrid() {
     mapGrid.innerHTML = '';
-    if (!state.currentMapData || !state.currentMapData.map.layout) {
-        // Clear grid styles if no map is loaded
+    if (!state.currentMapData || !state.currentMapData.layout) {
         mapGrid.style.gridTemplateColumns = '';
         mapGrid.style.gridTemplateRows = '';
         return;
     }
 
-    const height = state.currentMapData.map.layout.length;
-    const width = state.currentMapData.map.layout[0]?.length || 0;
+    const height = state.currentMapData.layout.length;
+    const width = state.currentMapData.layout[0]?.length || 0;
 
-    // Dynamically set the grid dimensions
     mapGrid.style.gridTemplateColumns = `repeat(${width}, 20px)`;
     mapGrid.style.gridTemplateRows = `repeat(${height}, 20px)`;
 
-    state.currentMapData.map.layout.forEach((row, y) => {
+    state.currentMapData.layout.forEach((row, y) => {
         row.forEach((tileId, x) => {
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
-            cell.dataset.x = String(x);
-            cell.dataset.y = String(y);
+            (cell as HTMLElement).dataset.x = String(x);
+            (cell as HTMLElement).dataset.y = String(y);
             cell.textContent = String(tileId);
             mapGrid.appendChild(cell);
         });
@@ -221,33 +232,19 @@ newMapButton.addEventListener('click', () => {
 
     const newLayout = Array.from({ length: height }, () => Array(width).fill(0));
 
-    const newMapData: GameState = {
+    const newMapData: MapLayout = {
         floor: parseInt(mapId.split('_').pop() || '1', 10),
         tileAssets: {
             "0": { assetId: "map_floor", isEntity: false },
             "1": { assetId: "map_wall", isEntity: true },
         },
-        map: {
-            layout: newLayout,
-            entities: {},
-        },
-        // Fill in other required GameState properties with defaults
-        player: { id: 'player', hp: 0, attack: 0, defense: 0, speed: 0, experience: 0, level: 1, gold: 0, keys: {}, position: {x: 1, y: 1}, direction: 'right' },
-        monsters: {},
-        items: {},
-        doors: {},
-        stairs: {},
-        npcs: {},
-        gameInfo: {
-            title: 'New Map',
-            initialGold: 0,
-            initialKeys: {},
-        }
+        layout: newLayout,
+        entities: {},
     };
 
     state.currentMapId = mapId;
     state.currentMapData = newMapData;
-    state.maps.push(mapId); // Add to map list
+    state.maps.push(mapId);
     state.maps.sort();
     rerenderAll();
 });
@@ -256,17 +253,17 @@ saveButton.addEventListener('click', saveMap);
 
 tileList.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    const tileItem = target.closest('.tile-item');
+    const tileItem = target.closest('.tile-item') as HTMLElement;
     if (tileItem && tileItem.dataset.tileId) {
         state.selectedTileId = tileItem.dataset.tileId;
-        renderTilePalette(); // Rerender to show selection
+        renderTilePalette();
     }
 });
 
 addTileButton.addEventListener('click', () => {
-    if (!state.currentMapData) return;
+    if (!state.currentMapData || !state.currentMapData.tileAssets) return;
     const newId = newTileIdInput.value;
-    const selectedAssetName = newTileAssetSelect.value; // e.g. "floor"
+    const selectedAssetName = newTileAssetSelect.value;
     if (!newId || !selectedAssetName) {
         alert('Please provide a tile ID and select an asset.');
         return;
@@ -277,7 +274,7 @@ addTileButton.addEventListener('click', () => {
     }
 
     state.currentMapData.tileAssets[newId] = {
-        assetId: `map_${selectedAssetName}`, // Create the alias, e.g. "map_floor"
+        assetId: `map_${selectedAssetName}`,
         isEntity: newTileIsEntityCheckbox.checked,
     };
     newTileIdInput.value = '';
@@ -286,13 +283,12 @@ addTileButton.addEventListener('click', () => {
 
 mapGrid.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    if (!target.classList.contains('grid-cell') || !state.selectedTileId || !state.currentMapData) return;
+    if (!target.classList.contains('grid-cell') || !state.selectedTileId || !state.currentMapData || !state.currentMapData.layout) return;
 
-    const x = parseInt(target.dataset.x!);
-    const y = parseInt(target.dataset.y!);
+    const x = parseInt((target as HTMLElement).dataset.x!);
+    const y = parseInt((target as HTMLElement).dataset.y!);
 
-    state.currentMapData.map.layout[y][x] = parseInt(state.selectedTileId, 10);
-    // Rerender everything to reflect the change in the grid and the map preview
+    (state.currentMapData.layout[y][x] as number) = parseInt(state.selectedTileId, 10);
     rerenderAll();
 });
 

@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import { fastifyDev } from 'vite-plugin-fastify';
+import fastifyDev from 'vite-plugin-fastify';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { resolve, join } from 'path';
 
@@ -70,7 +70,8 @@ export default (options: any) => {
   // This is the entry point for the Fastify server
   // when running in development mode.
   // The 'app' instance is passed from vite-plugin-fastify.
-  app.register(fastifyDev, options);
+  // We use 'as any' to bypass a complex type mismatch between fastify and the vite plugin.
+  app.register(fastifyDev as any, options);
   return app;
 };
 
