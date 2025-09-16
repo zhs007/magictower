@@ -11,10 +11,21 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@proj-tower/logic-core": ["packages/logic-core/src"],
-      "@proj-tower/logic-core/*": ["packages/logic-core/src/*"],
-      "@proj-tower/maprender": ["packages/maprender/src"],
-      "@proj-tower/maprender/*": ["packages/maprender/src/*"]
+      "@proj-tower/*": [
+        "packages/*/src",
+        "packages/*/dist",
+        "node_modules/@proj-tower/*/dist"
+      ],
+      "@proj-tower/logic-core": [
+        "packages/logic-core/src",
+        "packages/logic-core/dist",
+        "node_modules/@proj-tower/logic-core/dist"
+      ],
+      "@proj-tower/maprender": [
+        "packages/maprender/src",
+        "packages/maprender/dist",
+        "node_modules/@proj-tower/maprender/dist"
+      ]
     }
   },
   "files": [],
