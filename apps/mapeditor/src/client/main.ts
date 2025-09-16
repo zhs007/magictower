@@ -1,5 +1,5 @@
 import './style.css';
-import { Application, Assets } from 'pixi.js';
+import { Application, Assets, Container } from 'pixi.js';
 import { MapRender } from '@proj-tower/maprender';
 import type { GameState, MapLayout, ITileAsset } from '@proj-tower/logic-core';
 
@@ -14,6 +14,15 @@ const newTileAssetSelect = document.getElementById('new-tile-asset') as HTMLSele
 const newTileIsEntityCheckbox = document.getElementById('new-tile-is-entity') as HTMLInputElement;
 const mapGrid = document.getElementById('map-grid') as HTMLDivElement;
 const rendererPanel = document.getElementById('renderer-panel') as HTMLDivElement;
+const hintEl = document.getElementById('hint') as HTMLDivElement | null;
+const zoomInBtn = document.getElementById('zoom-in') as HTMLButtonElement | null;
+const zoomOutBtn = document.getElementById('zoom-out') as HTMLButtonElement | null;
+const zoomDisplay = document.getElementById('zoom-display') as HTMLSpanElement | null;
+
+// Painting state for drag-to-paint
+let isPainting = false;
+let pendingRender = false;
+let lastPaintKey: string | null = null;
 
 
 // --- State ---
@@ -35,9 +44,12 @@ let state: {
 class EditorRenderer {
     app: Application;
     mapRender: MapRender | null = null;
+    zoom = 1;
+    viewport: Container;
 
     constructor() {
         this.app = new Application();
+        this.viewport = new Container();
     }
 
     async init() {
@@ -47,6 +59,9 @@ class EditorRenderer {
             backgroundColor: 0x1099bb,
         });
         rendererPanel.appendChild(this.app.canvas);
+        // mount viewport container
+        this.app.stage.addChild(this.viewport);
+        this.updateZoomUI();
     }
 
     async renderMap(mapLayout: MapLayout) {
@@ -85,8 +100,37 @@ class EditorRenderer {
         };
 
         this.mapRender = new MapRender(dummyGameState);
-        this.app.stage.addChild(this.mapRender);
+        this.viewport.addChild(this.mapRender);
     }
+
+        setZoom(next: number) {
+        const newZoom = Math.max(0.25, Math.min(4, next));
+        const factor = newZoom / this.zoom;
+        // zoom around the center of the renderer panel
+        const rect = this.app.canvas.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        // Convert point (cx, cy) as screen point to adjust container position
+        // Using standard zoom-to-point formula in container's parent coordinates
+        const worldPosX = (cx - this.viewport.x) / this.viewport.scale.x;
+        const worldPosY = (cy - this.viewport.y) / this.viewport.scale.y;
+
+        this.viewport.scale.set(this.viewport.scale.x * factor, this.viewport.scale.y * factor);
+
+        const newScreenPosX = worldPosX * this.viewport.scale.x + this.viewport.x;
+        const newScreenPosY = worldPosY * this.viewport.scale.y + this.viewport.y;
+        this.viewport.x += cx - newScreenPosX;
+        this.viewport.y += cy - newScreenPosY;
+
+        this.zoom = newZoom;
+            this.updateZoomUI();
+        }
+
+        updateZoomUI() {
+            if (zoomDisplay) {
+                zoomDisplay.textContent = `${Math.round(this.zoom * 100)}%`;
+            }
+        }
 }
 const editorRenderer = new EditorRenderer();
 
@@ -174,6 +218,7 @@ function rerenderAll() {
     renderTileAssetSelector();
     renderTilePalette();
     renderMapGrid();
+    updateHint();
     if (state.currentMapData) {
         editorRenderer.renderMap(state.currentMapData);
     }
@@ -257,6 +302,7 @@ tileList.addEventListener('click', (e) => {
     if (tileItem && tileItem.dataset.tileId) {
         state.selectedTileId = tileItem.dataset.tileId;
         renderTilePalette();
+        updateHint();
     }
 });
 
@@ -281,16 +327,68 @@ addTileButton.addEventListener('click', () => {
     rerenderAll();
 });
 
+function paintCell(cell: HTMLElement) {
+    if (!state.selectedTileId) {
+        if (hintEl) hintEl.classList.remove('hidden');
+        return;
+    }
+    if (!state.currentMapData || !state.currentMapData.layout) return;
+    const x = parseInt(cell.dataset.x || '0', 10);
+    const y = parseInt(cell.dataset.y || '0', 10);
+    const key = `${x},${y}`;
+    if (lastPaintKey === key) return; // avoid redundant updates
+    (state.currentMapData.layout[y][x] as number) = parseInt(state.selectedTileId, 10);
+    cell.textContent = String(state.selectedTileId);
+    pendingRender = true;
+    lastPaintKey = key;
+}
+
+// Single click paint (e.g., touchpad tap)
 mapGrid.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    if (!target.classList.contains('grid-cell') || !state.selectedTileId || !state.currentMapData || !state.currentMapData.layout) return;
-
-    const x = parseInt((target as HTMLElement).dataset.x!);
-    const y = parseInt((target as HTMLElement).dataset.y!);
-
-    (state.currentMapData.layout[y][x] as number) = parseInt(state.selectedTileId, 10);
-    rerenderAll();
+    const cell = target.closest('.grid-cell') as HTMLElement | null;
+    if (!cell) return;
+    paintCell(cell);
+    if (pendingRender && state.currentMapData) {
+        editorRenderer.renderMap(state.currentMapData);
+        pendingRender = false;
+        lastPaintKey = null;
+    }
 });
+
+// Drag-to-paint: left mouse button
+mapGrid.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // left only
+    const target = e.target as HTMLElement;
+    const cell = target.closest('.grid-cell') as HTMLElement | null;
+    if (!cell) return;
+    isPainting = true;
+    paintCell(cell);
+});
+
+mapGrid.addEventListener('mousemove', (e) => {
+    if (!isPainting) return;
+    const target = e.target as HTMLElement;
+    const cell = target.closest('.grid-cell') as HTMLElement | null;
+    if (!cell) return;
+    paintCell(cell);
+});
+
+window.addEventListener('mouseup', () => {
+    if (!isPainting) return;
+    isPainting = false;
+    lastPaintKey = null;
+    if (pendingRender && state.currentMapData) {
+        editorRenderer.renderMap(state.currentMapData);
+        pendingRender = false;
+    }
+});
+
+function updateHint() {
+    if (!hintEl) return;
+    const shouldShow = !state.selectedTileId;
+    hintEl.classList.toggle('hidden', !shouldShow);
+}
 
 
 // --- Initialization ---
@@ -304,3 +402,15 @@ async function init() {
 }
 
 init();
+
+// Wire zoom controls
+if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', () => {
+        editorRenderer.setZoom(editorRenderer.zoom * 1.25);
+    });
+}
+if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', () => {
+        editorRenderer.setZoom(editorRenderer.zoom / 1.25);
+    });
+}

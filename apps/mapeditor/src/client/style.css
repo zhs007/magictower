@@ -37,6 +37,7 @@ body, html {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .panel-header {
@@ -52,6 +53,17 @@ body, html {
 #tile-palette {
   margin-bottom: 20px;
 }
+
+.hint {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border: 1px dashed #666;
+  color: #ddd;
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+
+.hidden { display: none; }
 
 #tile-list {
   display: grid;
@@ -99,3 +111,31 @@ body, html {
 .grid-cell:hover {
     background-color: #444;
 }
+
+.overlay-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 6px 8px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+}
+
+.overlay-controls button {
+  color: #fff;
+  background: #2d2d2d;
+  border: 1px solid #555;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.overlay-controls button:hover { background: #3a3a3a; }
+
+#zoom-display { min-width: 48px; text-align: center; }
