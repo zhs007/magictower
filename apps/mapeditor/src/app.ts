@@ -66,15 +66,25 @@ export default function createApp() {
 
 		// Serve map asset images directly
 		app.get('/assets/map/:file', async (request, reply) => {
+			const { file } = request.params as { file: string };
+			// Try assets/map/<file> first
+			let filePath = join(assetsDir, file);
 			try {
-				const { file } = request.params as { file: string };
-				const filePath = join(assetsDir, file);
 				const data = await readFile(filePath);
-				// only png is used currently
 				reply.header('Content-Type', 'image/png').send(data);
+				return;
 			} catch (err) {
-				app.log.error(err as Error);
-				reply.status(404).send({ error: 'Asset not found' });
+				// fallback to repo-root assets/<file>
+				try {
+					filePath = join(rootDir, 'assets', file);
+					const data = await readFile(filePath);
+					reply.header('Content-Type', 'image/png').send(data);
+					return;
+				} catch (err2) {
+					app.log.error(err2 as Error);
+					reply.status(404).send({ error: 'Asset not found' });
+					return;
+				}
 			}
 		});
 

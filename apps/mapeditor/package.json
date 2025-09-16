@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:server": "tsx src/run-server.ts",
+  "dev": "vite",
+  "dev:server": "tsx src/run-server.ts",
+  "dev:all": "node ./scripts/dev-launch.cjs",
     "build": "vite build",
     "test": "vitest --run",
     "test:watch": "vitest",
