@@ -57,3 +57,21 @@
 ## 4. 结论
 
 本次重构成功地将地图渲染逻辑解耦到一个独立的包中，提高了代码的模块化程度和可维护性。主渲染器的职责更加清晰，只负责管理动态实体和UI的更新，而地图的静态部分则完全由 `maprender` 包自治。整个过程顺利，遇到的构建问题也是 monorepo 开发中的常见问题，并得到了快速解决。
+
+## 4.1 后续修复（运行时问题）
+
+在将 `maprender` 包集成到 `apps/game` 并运行开发服务器时，Vite 报错：
+
+> Failed to resolve entry for package "@proj-tower/maprender". The package may have incorrect main/module/exports specified in its package.json.
+
+排查后发现 `packages/maprender/package.json` 只有 `main` 指向 `dist/index.js`（构建产物），但在开发模式下我们希望 Vite 能直接从工作区源码加载包（`src/index.ts`）。解决方法：在 `packages/maprender/package.json` 中添加 `module` 字段并补充 `exports` 指向源码入口，使 Vite 能解析该包为 ESM/TS 源码。具体改动如下：
+
+- 修改文件： `packages/maprender/package.json`
+- 新增字段： `"module": "src/index.ts"` 和 `"exports"` 条目，指向 `./src/index.ts`（供 ESM 导入）和 `./dist/index.js`（供 require）
+
+验证步骤：
+
+- 在 `apps/game` 中运行 `pnpm run dev`，Vite 能够成功启动并在 http://localhost:5173 提供服务（不再出现包入口解析错误）。
+- 在仓库根运行 `pnpm -w build`，三包成功构建，证明在生产构建下也能正确处理 `maprender` 包。
+
+这些改动已经应用在仓库中（参见上面 `packages/maprender/package.json` 的提交）。

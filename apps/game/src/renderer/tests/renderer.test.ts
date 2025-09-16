@@ -13,15 +13,21 @@ vi.mock('pixi.js', async () => {
         y: 0,
         children: [],
         sortableChildren: false,
-        addChild: vi.fn(function(this: any, child: any) { this.children.push(child); }),
-        addChildAt: vi.fn(function(this: any, child: any) { this.children.push(child); }),
+        addChild: vi.fn(function (this: any, child: any) {
+            this.children.push(child);
+        }),
+        addChildAt: vi.fn(function (this: any, child: any) {
+            this.children.push(child);
+        }),
         removeChild: vi.fn(),
-        removeChildren: vi.fn(function(this: any) { this.children = []; }),
+        removeChildren: vi.fn(function (this: any) {
+            this.children = [];
+        }),
         destroy: vi.fn(),
     };
     return {
         ...actualPixi,
-        Container: vi.fn(() => (mockContainer)),
+        Container: vi.fn(() => mockContainer),
         Assets: {
             get: vi.fn((key) => ({ texture: key })),
             init: vi.fn().mockResolvedValue(undefined),
@@ -67,7 +73,6 @@ vi.mock('../ui/hud', () => {
     });
     return { HUD: MockHUD };
 });
-
 
 vi.mock('@proj-tower/logic-core', async (importOriginal) => {
     const original = await importOriginal<typeof import('@proj-tower/logic-core')>();
@@ -177,13 +182,48 @@ describe('Renderer', () => {
 });
 
 function createMockGameState(): GameState {
-    const player: IPlayer = { id: 'player', name: 'Player', level: 1, exp: 0, hp: 100, maxhp: 100, attack: 10, defense: 5, speed: 10, x: 1, y: 1, direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } };
-    const monster: IMonster = { id: 'monster_green_slime', name: 'Green Slime', level: 1, hp: 10, maxhp: 10, attack: 3, defense: 1, speed: 5, x: 0, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
+    const player: IPlayer = {
+        id: 'player',
+        name: 'Player',
+        level: 1,
+        exp: 0,
+        hp: 100,
+        maxhp: 100,
+        attack: 10,
+        defense: 5,
+        speed: 10,
+        x: 1,
+        y: 1,
+        direction: 'right',
+        equipment: {},
+        backupEquipment: [],
+        buffs: [],
+        keys: { yellow: 0, blue: 0, red: 0 },
+    };
+    const monster: IMonster = {
+        id: 'monster_green_slime',
+        name: 'Green Slime',
+        level: 1,
+        hp: 10,
+        maxhp: 10,
+        attack: 3,
+        defense: 1,
+        speed: 5,
+        x: 0,
+        y: 1,
+        direction: 'left',
+        equipment: {},
+        backupEquipment: [],
+        buffs: [],
+    };
     const item: IItem = { id: 'item_yellow_key', name: 'Yellow Key', type: 'key', color: 'yellow' };
 
     return {
         currentFloor: 1,
-        map: [[0, 1], [0, 0]],
+        map: [
+            [0, 1],
+            [0, 0],
+        ],
         player,
         entities: {
             player_start_0_0: { ...player, type: 'player_start' },

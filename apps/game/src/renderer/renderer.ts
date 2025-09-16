@@ -73,7 +73,7 @@ export class Renderer {
 
     public initialize(state: GameState): void {
         // If a map already exists, remove it.
-        if(this.mapRender) {
+        if (this.mapRender) {
             this.worldContainer.removeChild(this.mapRender);
             this.mapRender.destroy();
         }
