@@ -9,6 +9,7 @@
     "skipLibCheck": true,
     "types": ["vitest/globals", "vite/client"],
     "composite": true,
+  "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
       "@proj-tower/logic-core": ["../../packages/logic-core/src"],
