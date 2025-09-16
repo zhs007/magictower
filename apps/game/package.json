@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@proj-tower/logic-core": "workspace:*",
+    "@proj-tower/maprender": "workspace:*",
     "@types/howler": "^2.2.12",
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.3.0",

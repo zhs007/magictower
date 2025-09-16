@@ -1,0 +1,25 @@
+{
+  "name": "@proj-tower/maprender",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:esm": "tsc --outFile dist/index.mjs --module esnext",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@proj-tower/logic-core": "workspace:^",
+    "pixi.js": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

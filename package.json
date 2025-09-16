@@ -15,7 +15,9 @@
   "check": "turbo run check",
     "check-gamedata": "turbo run check-gamedata --filter=@proj-tower/game",
     "gen-map": "turbo run gen-map --filter=@proj-tower/game",
-    "gen-map:v2": "turbo run gen-map:v2 --filter=@proj-tower/game"
+    "gen-map:v2": "turbo run gen-map:v2 --filter=@proj-tower/game",
+    "dev:maprender": "pnpm -w -F @proj-tower/maprender dev",
+    "dev:all": "pnpm -w -r --parallel dev dev:maprender"
   },
   "repository": {
     "type": "git",

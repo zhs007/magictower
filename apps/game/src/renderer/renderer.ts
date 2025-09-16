@@ -1,5 +1,6 @@
-import { Container, Assets, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Assets, Sprite } from 'pixi.js';
 import { GameState, dataManager } from '@proj-tower/logic-core';
+import { MapRender } from '@proj-tower/maprender';
 import { HUD } from './ui/hud';
 import { gsap } from 'gsap';
 import { FloatingTextManager } from './ui/floating-text-manager';
@@ -10,18 +11,16 @@ const MAP_OFFSET_X = 20;
 
 export class Renderer {
     private stage: Container;
-    private floorContainer: Container;
-    private mainContainer: Container;
     private topLayerContainer: Container;
     private hud: HUD;
-    private floatingTextManager: FloatingTextManager;
+    public floatingTextManager: FloatingTextManager;
+    private mapRender?: MapRender;
+    private worldContainer: Container;
 
     private entitySprites: Map<string, Sprite> = new Map();
 
     constructor(stage: Container) {
         this.stage = stage;
-        this.floorContainer = new Container();
-        this.mainContainer = new Container();
         this.topLayerContainer = new Container();
         this.hud = new HUD();
         this.floatingTextManager = new FloatingTextManager(
@@ -29,17 +28,18 @@ export class Renderer {
             this.entitySprites
         );
 
-        this.mainContainer.sortableChildren = true;
         this.topLayerContainer.sortableChildren = true;
 
-        const worldContainer = new Container();
-        worldContainer.x = MAP_OFFSET_X;
-        worldContainer.y = 200;
-        worldContainer.addChild(this.floorContainer, this.mainContainer, this.topLayerContainer);
+        this.worldContainer = new Container();
+        this.worldContainer.x = MAP_OFFSET_X;
+        this.worldContainer.y = 200;
 
-        this.hud.y = MAP_WIDTH_TILES * TILE_SIZE + worldContainer.y;
+        // The mapRender instance will be added to worldContainer in initialize()
+        this.worldContainer.addChild(this.topLayerContainer);
 
-        this.stage.addChild(worldContainer, this.hud);
+        this.hud.y = MAP_WIDTH_TILES * TILE_SIZE + this.worldContainer.y;
+
+        this.stage.addChild(this.worldContainer, this.hud);
     }
 
     public async processAssetModules(modules: Record<string, string>): Promise<void> {
@@ -62,8 +62,6 @@ export class Renderer {
     public async loadAssets(): Promise<void> {
         await dataManager.loadAllData();
 
-        // Auto-generate asset manifest: alias = <folder>_<filename> for files under subfolders,
-        // or filename for top-level assets (e.g. 'player'). Use import.meta.glob to get URLs.
         const modules = import.meta.glob('../../../../assets/**/*.{png,jpg,jpeg,webp}', {
             eager: true,
             query: '?url',
@@ -74,100 +72,37 @@ export class Renderer {
     }
 
     public initialize(state: GameState): void {
-        this.drawMap(state);
+        // If a map already exists, remove it.
+        if (this.mapRender) {
+            this.worldContainer.removeChild(this.mapRender);
+            this.mapRender.destroy();
+        }
+
+        this.mapRender = new MapRender(state);
+        this.worldContainer.addChildAt(this.mapRender, 0); // Add map behind top layer
+
         this.syncSprites(state);
         this.hud.update(state);
     }
 
-    // Resolve texture alias: try <folder>_<base> then fallback to base.
-    private resolveTextureAlias(base: string, folder?: string) {
-        if (folder) {
-            const withFolder = `${folder}_${base}`;
-            const t = Assets.get(withFolder);
-            if (t) return t;
-        }
-        return Assets.get(base);
-    }
+    public syncSprites(state: GameState): void {
+        if (!this.mapRender) return;
 
-    private wallSprites: Sprite[] = [];
+        const allEntityIds = new Set(Object.keys(state.entities));
 
-    private drawMap(state: GameState): void {
-        this.floorContainer.removeChildren();
-
-        // Clear previous wall sprites
-        for (const sprite of this.wallSprites) {
-            this.mainContainer.removeChild(sprite);
-        }
-        this.wallSprites = [];
-
-        const useNewTiles = state.tileAssets && Object.keys(state.tileAssets).length > 0;
-
-        for (let y = 0; y < state.map.length; y++) {
-            for (let x = 0; x < state.map[y].length; x++) {
-                const tileValue = state.map[y][x];
-                let tileTexture;
-
-                if (useNewTiles) {
-                    const assetId = state.tileAssets![tileValue];
-                    if (assetId) {
-                        tileTexture = Assets.get(assetId);
-                    } else {
-                        // Fallback for tiles not in tileAssets (e.g. treat as floor)
-                        const floorAssetId = state.tileAssets!['0'];
-                        tileTexture = floorAssetId ? Assets.get(floorAssetId) : Texture.EMPTY;
-                    }
-                } else {
-                    // Fallback to old system
-                    if (tileValue === 1) {
-                        tileTexture = this.resolveTextureAlias('wall', 'map');
-                    } else {
-                        tileTexture = this.resolveTextureAlias('floor', 'map');
-                    }
-                }
-
-                if (tileValue === 0) {
-                    // It's a floor tile
-                    const floorSprite = new Sprite(tileTexture);
-                    floorSprite.x = x * TILE_SIZE;
-                    floorSprite.y = y * TILE_SIZE;
-                    floorSprite.width = TILE_SIZE;
-                    floorSprite.height = TILE_SIZE;
-                    this.floorContainer.addChild(floorSprite);
-                } else if (tileValue === 1) {
-                    // Always draw a floor tile underneath walls
-                    const floorAssetId = useNewTiles
-                        ? state.tileAssets!['0']
-                        : this.resolveTextureAlias('floor', 'map');
-                    const floorTexture = useNewTiles ? Assets.get(floorAssetId) : floorAssetId;
-                    const floorSprite = new Sprite(floorTexture);
-                    floorSprite.x = x * TILE_SIZE;
-                    floorSprite.y = y * TILE_SIZE;
-                    floorSprite.width = TILE_SIZE;
-                    floorSprite.height = TILE_SIZE;
-                    this.floorContainer.addChild(floorSprite);
-
-                    // It's a wall
-                    const wallSprite = new Sprite(tileTexture);
-                    wallSprite.anchor.set(0.5, 1); // Bottom-center
-                    wallSprite.x = x * TILE_SIZE + TILE_SIZE / 2;
-                    wallSprite.y = (y + 1) * TILE_SIZE;
-                    wallSprite.zIndex = y;
-                    this.mainContainer.addChild(wallSprite);
-                    this.wallSprites.push(wallSprite);
-                }
+        // Hide or remove sprites for entities that no longer exist
+        for (const [entityId, sprite] of this.entitySprites.entries()) {
+            if (!allEntityIds.has(entityId)) {
+                sprite.visible = false;
+                // this.mapRender.entityContainer.removeChild(sprite);
+                // this.entitySprites.delete(entityId);
             }
         }
-    }
-
-    public syncSprites(state: GameState): void {
-        const allEntityIds = new Set(Object.keys(state.entities));
-        const processedSpriteIds = new Set();
 
         for (const entityId of allEntityIds) {
             const entity = state.entities[entityId];
             if (!entity) continue;
 
-            processedSpriteIds.add(entityId);
             let sprite = this.entitySprites.get(entityId);
 
             if (!sprite) {
@@ -175,8 +110,7 @@ export class Renderer {
                 if (entity.type === 'player_start') {
                     textureAlias = 'player';
                 } else if (entity.type === 'stair') {
-                    // TODO: Use a real stair asset when one is created.
-                    textureAlias = 'item_item'; // Reusing item asset as a placeholder.
+                    textureAlias = 'item_item';
                 } else if (
                     entity.type === 'monster' ||
                     entity.type === 'item' ||
@@ -187,15 +121,14 @@ export class Renderer {
 
                 if (textureAlias) {
                     sprite = new Sprite(Assets.get(textureAlias));
-                    sprite.anchor.set(0.5, 1); // Bottom-center alignment
+                    sprite.anchor.set(0.5, 1);
 
-                    // Add a tint to the placeholder stair sprite to make it visually distinct.
                     if (entity.type === 'stair') {
-                        sprite.tint = 0x800080; // Purple
+                        sprite.tint = 0x800080;
                     }
 
                     this.entitySprites.set(entityId, sprite);
-                    this.mainContainer.addChild(sprite);
+                    this.mapRender.entityContainer.addChild(sprite);
                 }
             }
 
@@ -205,29 +138,16 @@ export class Renderer {
                 sprite.zIndex = entity.y;
                 sprite.visible = true;
 
-                // Handle direction for characters
                 if ('direction' in entity) {
                     sprite.scale.x = entity.direction === 'left' ? -1 : 1;
                     sprite.scale.y = 1;
                 }
             }
         }
-
-        // Hide or remove sprites for entities that no longer exist
-        for (const [entityId, sprite] of this.entitySprites.entries()) {
-            if (!allEntityIds.has(entityId)) {
-                sprite.visible = false;
-                // Optional: remove from container and map if they won't reappear
-                // this.mainContainer.removeChild(sprite);
-                // this.entitySprites.delete(entityId);
-            }
-        }
     }
 
     public render(state: GameState): void {
         this.syncSprites(state);
-        // The HUD is now event-driven and does not need a manual render call.
-        // this.hud.update(state);
     }
 
     public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
@@ -260,24 +180,20 @@ export class Renderer {
         const duration = 0.3;
 
         if (player.x === item.x) {
-            // Vertical Jumps
             let jumpHeight;
             let peakY;
             if (player.y > item.y) {
-                // Jumping UP (e.g. from y=2 to y=1)
                 jumpHeight = TILE_SIZE / 4;
-                peakY = targetY - jumpHeight; // Peak is relative to destination
+                peakY = targetY - jumpHeight;
             } else {
-                // Jumping DOWN (e.g. from y=1 to y=2)
                 jumpHeight = TILE_SIZE / 4;
-                peakY = playerSprite.y - jumpHeight; // Peak is relative to start
+                peakY = playerSprite.y - jumpHeight;
             }
             tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }).to(
                 playerSprite,
                 { y: targetY, duration: duration / 2, ease: 'power1.in' }
             );
         } else {
-            // Horizontal or Diagonal Jumps (Symmetric Arc)
             const jumpHeight = TILE_SIZE / 2;
             const peakY = playerSprite.y - jumpHeight;
             tl.to(playerSprite, { x: targetX, duration: duration, ease: 'linear' }, 0);
@@ -287,7 +203,6 @@ export class Renderer {
             );
         }
 
-        // Item fade-out animation runs concurrently
         tl.to(
             itemSprite,
             {
@@ -373,16 +288,18 @@ export class Renderer {
     }
 
     public moveToTopLayer(sprite: Sprite): void {
-        if (sprite.parent === this.mainContainer) {
-            this.mainContainer.removeChild(sprite);
+        if (!this.mapRender) return;
+        if (sprite.parent === this.mapRender.entityContainer) {
+            this.mapRender.entityContainer.removeChild(sprite);
             this.topLayerContainer.addChild(sprite);
         }
     }
 
     public moveToMainLayer(sprite: Sprite): void {
+        if (!this.mapRender) return;
         if (sprite.parent === this.topLayerContainer) {
             this.topLayerContainer.removeChild(sprite);
-            this.mainContainer.addChild(sprite);
+            this.mapRender.entityContainer.addChild(sprite);
         }
     }
 }

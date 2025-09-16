@@ -9,6 +9,7 @@ export default defineConfig({
   // that use the package name. This mirrors the TS path mapping used by
   // `tsc --noEmit` in CI and keeps runtime transforms consistent.
   '@proj-tower/logic-core': path.resolve(__dirname, '../../packages/logic-core/src'),
+  '@proj-tower/maprender': path.resolve(__dirname, '../../packages/maprender/src'),
   // Note: removed repo-root aliases for gamedata/mapdata/assets to keep
   // module resolution consistent in tsc/vitest/Node environments. Use
   // explicit relative imports from source files instead.
