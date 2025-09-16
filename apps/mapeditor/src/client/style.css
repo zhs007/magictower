@@ -80,9 +80,8 @@ body, html {
 
 #map-grid {
   display: grid;
-  grid-template-columns: repeat(32, 20px);
-  grid-template-rows: repeat(32, 20px);
   border: 1px solid #555;
+  /* Grid template columns and rows are now set dynamically by JS */
 }
 
 .grid-cell {

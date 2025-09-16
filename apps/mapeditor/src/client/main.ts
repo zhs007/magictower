@@ -5,6 +5,7 @@ import type { GameState, TileAsset } from '@proj-tower/logic-core';
 
 // --- DOM Elements ---
 const mapSelector = document.getElementById('map-selector') as HTMLSelectElement;
+const newMapButton = document.getElementById('new-map-button') as HTMLButtonElement;
 const saveButton = document.getElementById('save-button') as HTMLButtonElement;
 const tileList = document.getElementById('tile-list') as HTMLDivElement;
 const addTileButton = document.getElementById('add-tile-button') as HTMLButtonElement;
@@ -131,7 +132,19 @@ function renderTilePalette() {
 
 function renderMapGrid() {
     mapGrid.innerHTML = '';
-    if (!state.currentMapData) return;
+    if (!state.currentMapData || !state.currentMapData.map.layout) {
+        // Clear grid styles if no map is loaded
+        mapGrid.style.gridTemplateColumns = '';
+        mapGrid.style.gridTemplateRows = '';
+        return;
+    }
+
+    const height = state.currentMapData.map.layout.length;
+    const width = state.currentMapData.map.layout[0]?.length || 0;
+
+    // Dynamically set the grid dimensions
+    mapGrid.style.gridTemplateColumns = `repeat(${width}, 20px)`;
+    mapGrid.style.gridTemplateRows = `repeat(${height}, 20px)`;
 
     state.currentMapData.map.layout.forEach((row, y) => {
         row.forEach((tileId, x) => {
@@ -192,6 +205,51 @@ async function saveMap() {
 // --- Event Listeners ---
 mapSelector.addEventListener('change', () => {
     loadMap(mapSelector.value);
+});
+
+newMapButton.addEventListener('click', () => {
+    const mapId = prompt('Enter new map name (e.g., floor_04):');
+    if (!mapId) return;
+
+    if (state.maps.includes(mapId)) {
+        alert(`Map '${mapId}' already exists.`);
+        return;
+    }
+
+    const width = parseInt(import.meta.env.VITE_DEFAULT_MAP_WIDTH || '16', 10);
+    const height = parseInt(import.meta.env.VITE_DEFAULT_MAP_HEIGHT || '16', 10);
+
+    const newLayout = Array.from({ length: height }, () => Array(width).fill(0));
+
+    const newMapData: GameState = {
+        floor: parseInt(mapId.split('_').pop() || '1', 10),
+        tileAssets: {
+            "0": { assetId: "map_floor", isEntity: false },
+            "1": { assetId: "map_wall", isEntity: true },
+        },
+        map: {
+            layout: newLayout,
+            entities: {},
+        },
+        // Fill in other required GameState properties with defaults
+        player: { id: 'player', hp: 0, attack: 0, defense: 0, speed: 0, experience: 0, level: 1, gold: 0, keys: {}, position: {x: 1, y: 1}, direction: 'right' },
+        monsters: {},
+        items: {},
+        doors: {},
+        stairs: {},
+        npcs: {},
+        gameInfo: {
+            title: 'New Map',
+            initialGold: 0,
+            initialKeys: {},
+        }
+    };
+
+    state.currentMapId = mapId;
+    state.currentMapData = newMapData;
+    state.maps.push(mapId); // Add to map list
+    state.maps.sort();
+    rerenderAll();
 });
 
 saveButton.addEventListener('click', saveMap);
