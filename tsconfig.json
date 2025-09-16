@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["vite/client"],
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@proj-tower/*": [
+        "packages/*/src",
+        "packages/*/dist",
+        "node_modules/@proj-tower/*/dist"
+      ],
+      "@proj-tower/logic-core": [
+        "packages/logic-core/src",
+        "packages/logic-core/dist",
+        "node_modules/@proj-tower/logic-core/dist"
+      ],
+      "@proj-tower/maprender": [
+        "packages/maprender/src",
+        "packages/maprender/dist",
+        "node_modules/@proj-tower/maprender/dist"
+      ]
+    }
+  },
+  "files": [],
+  "references": [
+    { "path": "./packages/logic-core" },
+    { "path": "./packages/maprender" },
+    { "path": "./apps/game" },
+    { "path": "./apps/mapeditor" }
+  ]
+}

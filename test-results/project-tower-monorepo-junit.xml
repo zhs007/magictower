@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="113" failures="0" errors="0" time="0.615428459">
+    <testsuite name="scripts/gen-map-v2.test.ts" timestamp="2025-09-16T10:52:35.782Z" hostname="ZerrodeMacBook-Air.local" tests="7" failures="0" errors="0" skipped="0" time="0.231334292">
+        <testcase classname="scripts/gen-map-v2.test.ts" name="Map Generator V2 &gt; should generate a map with the correct dimensions" time="0.044797708">
+        </testcase>
+        <testcase classname="scripts/gen-map-v2.test.ts" name="Map Generator V2 &gt; should have a border of walls" time="0.040440584">
+        </testcase>
+        <testcase classname="scripts/gen-map-v2.test.ts" name="Map Generator V2 &gt; should be deterministic for a given seed" time="0.036896625">
+        </testcase>
+        <testcase classname="scripts/gen-map-v2.test.ts" name="Map Generator V2 &gt; should not produce the same map for different seeds" time="0.039809459">
+        </testcase>
+        <testcase classname="scripts/gen-map-v2.test.ts" name="Map Generator V2 &gt; should respect forceFloorPos constraint" time="0.026345125">
+        </testcase>
+        <testcase classname="scripts/gen-map-v2.test.ts" name="Map Generator V2 &gt; should preserve door candidates (-2) in the final layout" time="0.04154825">
+        </testcase>
+        <testcase classname="scripts/gen-map-v2.test.ts" name="Map Generator V2 &gt; should not place any templates if constraints are impossible" time="0.000248625">
+        </testcase>
+    </testsuite>
+    <testsuite name="scripts/gen-map.test.ts" timestamp="2025-09-16T10:52:35.783Z" hostname="ZerrodeMacBook-Air.local" tests="4" failures="0" errors="0" skipped="0" time="0.006186375">
+        <testcase classname="scripts/gen-map.test.ts" name="Map Generator &gt; should generate a map with the correct dimensions" time="0.002023166">
+        </testcase>
+        <testcase classname="scripts/gen-map.test.ts" name="Map Generator &gt; should have a border of walls" time="0.001261625">
+        </testcase>
+        <testcase classname="scripts/gen-map.test.ts" name="Map Generator &gt; should place required positions in the correct area" time="0.000368334">
+        </testcase>
+        <testcase classname="scripts/gen-map.test.ts" name="Map Generator &gt; should respect the minimum area size" time="0.000973541">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/floor-transition.test.ts" timestamp="2025-09-16T10:52:35.784Z" hostname="ZerrodeMacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.020758958">
+        <testcase classname="apps/game/src/core/tests/floor-transition.test.ts" name="Floor Transition Logic &gt; should set interactionState to &quot;floor_change&quot; when moving onto a stair entity" time="0.002160542">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/input-manager.test.ts" timestamp="2025-09-16T10:52:35.784Z" hostname="ZerrodeMacBook-Air.local" tests="15" failures="0" errors="0" skipped="0" time="0.012894958">
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should add a keydown event listener on initialization" time="0.008560542">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should remove the keydown event listener on destroy" time="0.000298417">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;ArrowUp&quot; key" time="0.000535125">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;w&quot; key" time="0.000124">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;W&quot; key" time="0.000302458">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;ArrowDown&quot; key" time="0.000129708">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;s&quot; key" time="0.000104333">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;S&quot; key" time="0.000101125">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;ArrowLeft&quot; key" time="0.0000985">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;a&quot; key" time="0.00019525">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;A&quot; key" time="0.000130875">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;ArrowRight&quot; key" time="0.000094625">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;d&quot; key" time="0.000181791">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should emit a MOVE action for the &quot;D&quot; key" time="0.000109916">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/input-manager.test.ts" name="InputManager &gt; should not emit an action for an unmapped key" time="0.000237334">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/new_logic.test.ts" timestamp="2025-09-16T10:52:35.785Z" hostname="ZerrodeMacBook-Air.local" tests="7" failures="0" errors="0" skipped="0" time="0.005239708">
+        <testcase classname="apps/game/src/core/tests/new_logic.test.ts" name="Game Logic with Interactions &gt; handleMove (Item Interaction) &gt; should set interactionState to &quot;item_pickup&quot; when moving onto an item" time="0.00188175">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/new_logic.test.ts" name="Game Logic with Interactions &gt; handlePickupItem &gt; should correctly handle picking up an item" time="0.000372916">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/new_logic.test.ts" name="Game Logic with Interactions &gt; handleMove (Combat Interaction) &gt; should set interactionState to &quot;battle&quot; when moving onto a monster" time="0.000429334">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/new_logic.test.ts" name="Game Logic with Interactions &gt; handleStartBattle &gt; should give player first turn if faster" time="0.000196459">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/new_logic.test.ts" name="Game Logic with Interactions &gt; handleStartBattle &gt; should give monster first turn if faster" time="0.000177125">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/new_logic.test.ts" name="Game Logic with Interactions &gt; handleAttack &gt; should correctly apply damage and switch turns" time="0.0005395">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/new_logic.test.ts" name="Game Logic with Interactions &gt; handleEndBattle &gt; should correctly end the battle when the player wins" time="0.000790041">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/plan009.test.ts" timestamp="2025-09-16T10:52:35.785Z" hostname="ZerrodeMacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.004707917">
+        <testcase classname="apps/game/src/core/tests/plan009.test.ts" name="plan009 features &gt; should allow picking up a magic bomb" time="0.001919041">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan009.test.ts" name="plan009 features &gt; should use a magic bomb to destroy all slimes" time="0.000514875">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan009.test.ts" name="plan009 features &gt; should pick up monster manual" time="0.000203042">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan009.test.ts" name="plan009 features &gt; should pick up cross and gain stats" time="0.00016125">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan009.test.ts" name="plan009 features &gt; should open a special door after defeating the required monster" time="0.00046775">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/plan015.test.ts" timestamp="2025-09-16T10:52:35.786Z" hostname="ZerrodeMacBook-Air.local" tests="14" failures="0" errors="0" skipped="0" time="0.004360333">
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Stat Calculation (calculateFinalStats) &gt; should return base stats when no equipment is worn" time="0.001009">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Stat Calculation (calculateFinalStats) &gt; should apply flat stat bonuses correctly" time="0.000133292">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Stat Calculation (calculateFinalStats) &gt; should apply percentage stat bonuses correctly" time="0.00009225">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Stat Calculation (calculateFinalStats) &gt; should combine flat and percentage bonuses" time="0.000073458">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Stat Calculation (calculateFinalStats) &gt; should enforce the minimum stat value of 1" time="0.000064875">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Combat Turn Order (handleStartBattle) &gt; should give player the first turn if they are faster" time="0.000602625">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Combat Turn Order (handleStartBattle) &gt; should give monster the first turn if they are faster" time="0.000140833">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Combat Turn Order (handleStartBattle) &gt; should give player the first turn in a speed tie" time="0.000123">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Equipment Swapping Logic (compareEquipment) &gt; should AUTO_EQUIP on an empty slot" time="0.000230708">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Equipment Swapping Logic (compareEquipment) &gt; should AUTO_EQUIP on a pure upgrade" time="0.000246875">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Equipment Swapping Logic (compareEquipment) &gt; should AUTO_DISCARD on a pure downgrade" time="0.000099917">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Equipment Swapping Logic (compareEquipment) &gt; should PROMPT_SWAP on mixed stat changes" time="0.000126875">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Equipment Swapping Logic (compareEquipment) &gt; should PROMPT_SWAP when going from 1H to 2H weapon" time="0.000119208">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan015.test.ts" name="Plan 015: Speed and Equipment Overhaul &gt; Equipment Swapping Logic (compareEquipment) &gt; should PROMPT_SWAP when going from 2H to 1H weapon" time="0.000194333">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/plan021.test.ts" timestamp="2025-09-16T10:52:35.787Z" hostname="ZerrodeMacBook-Air.local" tests="4" failures="0" errors="0" skipped="0" time="0.004499791">
+        <testcase classname="apps/game/src/core/tests/plan021.test.ts" name="Plan 021: Leveling and Experience System &gt; should load player and level data correctly" time="0.001395792">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan021.test.ts" name="Plan 021: Leveling and Experience System &gt; should award correct experience points after a battle" time="0.000816916">
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan021.test.ts" name="Plan 021: Leveling and Experience System &gt; should level up the player when experience threshold is met" time="0.000923709">
+            <system-out>
+Player leveled up from 1 to 2!
+
+            </system-out>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan021.test.ts" name="Plan 021: Leveling and Experience System &gt; should handle multiple level-ups from a single experience gain" time="0.000577875">
+            <system-out>
+Player leveled up from 1 to 2!
+Player leveled up from 2 to 3!
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/plan023.test.ts" timestamp="2025-09-16T10:52:35.788Z" hostname="ZerrodeMacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.018453875">
+        <testcase classname="apps/game/src/core/tests/plan023.test.ts" name="Plan 023 Stat Refactoring &gt; should create a player with correct stats based on level 1 data" time="0.015792667">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan023.test.ts" name="Plan 023 Stat Refactoring &gt; should update player stats correctly on level up" time="0.00143675">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+Player leveled up from 1 to 2!
+
+            </system-out>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/plan023.test.ts" name="Plan 023 Stat Refactoring &gt; should not affect monster stats initialization" time="0.000447">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/save-manager.test.ts" timestamp="2025-09-16T10:52:35.788Z" hostname="ZerrodeMacBook-Air.local" tests="4" failures="0" errors="0" skipped="0" time="0.017807917">
+        <testcase classname="apps/game/src/core/tests/save-manager.test.ts" name="SaveManager &gt; should save and load a game" time="0.011813042">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/save-manager.test.ts" name="SaveManager &gt; should list all saved game slot IDs" time="0.003874959">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/save-manager.test.ts" name="SaveManager &gt; should return null when loading a non-existent slot" time="0.00053425">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+            <system-err>
+[logic-core] No save data found for slot: non_existent_slot
+
+            </system-err>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/save-manager.test.ts" name="SaveManager &gt; should handle corrupted save data gracefully" time="0.000292042">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+            <system-err>
+[logic-core] Failed to load game: SyntaxError: Unexpected token &apos;h&apos;, &quot;this is not json&quot; is not valid JSON
+
+            </system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/core/tests/state.test.ts" timestamp="2025-09-16T10:52:35.789Z" hostname="ZerrodeMacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.016685459">
+        <testcase classname="apps/game/src/core/tests/state.test.ts" name="GameStateManager &gt; createInitialState &gt; should create a valid initial game state from map data" time="0.0024745">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/state.test.ts" name="GameStateManager &gt; createInitialState &gt; should throw an error if player start is not found" time="0.012393417">
+            <system-out>
+createInitialState called for floor 1.
+
+            </system-out>
+            <system-err>
+Error in createInitialState: Error: Player could not be created or placed.
+    at GameStateManager.createInitialState [90m(/Users/zerrozhao/zhs007.github.com/magictower/[39mpackages/logic-core/dist/state.js:134:23[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+        </testcase>
+        <testcase classname="apps/game/src/core/tests/state.test.ts" name="GameStateManager &gt; createInitialState &gt; should correctly load equipment from map data" time="0.000757">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/scenes/tests/scene-manager.test.ts" timestamp="2025-09-16T10:52:35.789Z" hostname="ZerrodeMacBook-Air.local" tests="6" failures="0" errors="0" skipped="0" time="0.218907125">
+        <testcase classname="apps/game/src/scenes/tests/scene-manager.test.ts" name="SceneManager &gt; should be created successfully" time="0.214883625">
+        </testcase>
+        <testcase classname="apps/game/src/scenes/tests/scene-manager.test.ts" name="SceneManager &gt; should transition to a new scene" time="0.000546834">
+        </testcase>
+        <testcase classname="apps/game/src/scenes/tests/scene-manager.test.ts" name="SceneManager &gt; should pass options to the new scene" time="0.0010375">
+        </testcase>
+        <testcase classname="apps/game/src/scenes/tests/scene-manager.test.ts" name="SceneManager &gt; should clean up the old scene when transitioning" time="0.000408708">
+        </testcase>
+        <testcase classname="apps/game/src/scenes/tests/scene-manager.test.ts" name="SceneManager &gt; should call the update method of the current scene" time="0.000287292">
+        </testcase>
+        <testcase classname="apps/game/src/scenes/tests/scene-manager.test.ts" name="SceneManager &gt; should log an error if scene is not found" time="0.000373833">
+        </testcase>
+    </testsuite>
+    <testsuite name="packages/logic-core/src/tests/damage.test.ts" timestamp="2025-09-16T10:52:35.789Z" hostname="ZerrodeMacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.005172292">
+        <testcase classname="packages/logic-core/src/tests/damage.test.ts" name="calculateDamage &gt; should calculate positive damage correctly" time="0.002927833">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/damage.test.ts" name="calculateDamage &gt; should deal a minimum of 1 damage when attack is less than defense" time="0.0003145">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/damage.test.ts" name="calculateDamage &gt; should deal a minimum of 1 damage when attack is equal to defense" time="0.000160792">
+        </testcase>
+    </testsuite>
+    <testsuite name="packages/logic-core/src/tests/data-manager.test.ts" timestamp="2025-09-16T10:52:35.790Z" hostname="ZerrodeMacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.005643625">
+        <testcase classname="packages/logic-core/src/tests/data-manager.test.ts" name="DataManager &gt; should load all monster data from files" time="0.000932375">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/data-manager.test.ts" name="DataManager &gt; should load all item data from files" time="0.000109917">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/data-manager.test.ts" name="DataManager &gt; should load all equipment data from files" time="0.000084334">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/data-manager.test.ts" name="DataManager &gt; should load the map layout for floor 1 correctly" time="0.000076834">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/data-manager.test.ts" name="DataManager &gt; should return undefined for non-existent data" time="0.000054333">
+        </testcase>
+    </testsuite>
+    <testsuite name="packages/logic-core/src/tests/file-storage.test.ts" timestamp="2025-09-16T10:52:35.790Z" hostname="ZerrodeMacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.005588875">
+        <testcase classname="packages/logic-core/src/tests/file-storage.test.ts" name="FileStorage &gt; should set/get/remove items and report length/key correctly" time="0.004054166">
+        </testcase>
+    </testsuite>
+    <testsuite name="packages/logic-core/src/tests/logic.test.ts" timestamp="2025-09-16T10:52:35.790Z" hostname="ZerrodeMacBook-Air.local" tests="14" failures="0" errors="0" skipped="0" time="0.006077292">
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should allow player to move to an empty tile" time="0.001494334">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should not allow player to move out of bounds" time="0.000167666">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should not allow player to move into a wall" time="0.000204375">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should make monster turn left to face player" time="0.000421666">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should make monster turn right to face player" time="0.000365333">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should only turn player on first press in a new direction" time="0.000148542">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should move player on second press in the same direction" time="0.000128083">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should turn, then do nothing when moving into a wall" time="0.000194">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should set interactionState to item_pickup when moving onto an item" time="0.000242125">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleMove &gt; should correctly pick up a key and update player state" time="0.000420459">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleOpenDoor &gt; should allow player to open a door" time="0.0001615">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleUsePotion &gt; should heal the player and consume the potion" time="0.000641375">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleUsePotion &gt; should not heal beyond maxhp" time="0.000162834">
+        </testcase>
+        <testcase classname="packages/logic-core/src/tests/logic.test.ts" name="handleUsePotion &gt; should do nothing if player has no potion" time="0.000380916">
+        </testcase>
+    </testsuite>
+    <testsuite name="packages/logic-core/src/tests/save-manager-file-integration.test.ts" timestamp="2025-09-16T10:52:35.791Z" hostname="ZerrodeMacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.006092459">
+        <testcase classname="packages/logic-core/src/tests/save-manager-file-integration.test.ts" name="SaveManager + FileStorage integration &gt; should save and load a game using FileStorage" time="0.0037015">
+            <system-out>
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+createInitialState called for floor 1.
+
+Successfully created new game state.
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/renderer/tests/plan014.test.ts" timestamp="2025-09-16T10:52:35.791Z" hostname="ZerrodeMacBook-Air.local" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="apps/game/src/renderer/tests/plan014.test.ts" name="Renderer Z-Ordering and Sizing (Plan014) &gt; Tests for map rendering logic should be moved to the @proj-tower/maprender package." time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/renderer/tests/plan018.test.ts" timestamp="2025-09-16T10:52:35.791Z" hostname="ZerrodeMacBook-Air.local" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="apps/game/src/renderer/tests/plan018.test.ts" name="Renderer tileAssets mapping (Plan018) &gt; Tests for map rendering and tile asset mapping should be moved to the @proj-tower/maprender package." time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/renderer/tests/renderer.test.ts" timestamp="2025-09-16T10:52:35.791Z" hostname="ZerrodeMacBook-Air.local" tests="6" failures="0" errors="0" skipped="0" time="0.007895583">
+        <testcase classname="apps/game/src/renderer/tests/renderer.test.ts" name="Renderer &gt; should call syncSprites on render" time="0.003149875">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/tests/renderer.test.ts" name="Renderer &gt; should create and add MapRender on initialize" time="0.000697958">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/tests/renderer.test.ts" name="Renderer &gt; should add entity sprites to the mapRender entityContainer" time="0.000255875">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/tests/renderer.test.ts" name="Renderer &gt; should position sprites correctly" time="0.000345583">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/tests/renderer.test.ts" name="Renderer &gt; should call onComplete callback after item pickup animation" time="0.000520791">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/tests/renderer.test.ts" name="Renderer &gt; should show floating text on an entity" time="0.001329584">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/renderer/ui/floating-text-manager.test.ts" timestamp="2025-09-16T10:52:35.792Z" hostname="ZerrodeMacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.008472291">
+        <testcase classname="apps/game/src/renderer/ui/floating-text-manager.test.ts" name="FloatingTextManager &gt; should add a request to the queue" time="0.003191583">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/ui/floating-text-manager.test.ts" name="FloatingTextManager &gt; should process the queue immediately if not animating" time="0.000808917">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/ui/floating-text-manager.test.ts" name="FloatingTextManager &gt; should process requests sequentially" time="0.001054916">
+        </testcase>
+    </testsuite>
+    <testsuite name="apps/game/src/renderer/ui/hud.test.ts" timestamp="2025-09-16T10:52:35.792Z" hostname="ZerrodeMacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.008649334">
+        <testcase classname="apps/game/src/renderer/ui/hud.test.ts" name="HUD &gt; should register listeners on creation" time="0.006685667">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/ui/hud.test.ts" name="HUD &gt; should update player info on playerUpdate event" time="0.000446125">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/ui/hud.test.ts" name="HUD &gt; should update keys on KEYS_CHANGED event" time="0.000200667">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/ui/hud.test.ts" name="HUD &gt; should hide monster stats and update player info on BATTLE_ENDED event" time="0.000211666">
+        </testcase>
+        <testcase classname="apps/game/src/renderer/ui/hud.test.ts" name="HUD &gt; should unregister listeners on destroy" time="0.000336916">
+        </testcase>
+    </testsuite>
+</testsuites>

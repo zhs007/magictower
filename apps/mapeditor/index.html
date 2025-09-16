@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Map Editor</title>
+  </head>
+  <body>
+    <div id="root">
+      <div id="editor-panel">
+        <div class="panel-header">
+          <select id="map-selector"></select>
+          <button id="new-map-button">New Map</button>
+          <button id="save-button">Save</button>
+        </div>
+        <div id="hint" class="hint hidden">Tip: select a tile in the palette, then click the grid to paint.</div>
+        <div id="tile-palette">
+          <h3>Tile Palette</h3>
+          <div id="tile-list"></div>
+          <div id="add-tile-form">
+              <input type="text" id="new-tile-id" placeholder="Tile ID">
+              <select id="new-tile-asset"></select>
+              <label><input type="checkbox" id="new-tile-is-entity"> Is Entity</label>
+              <button id="add-tile-button">Add Tile</button>
+          </div>
+        </div>
+        <div id="map-grid"></div>
+      </div>
+      <div id="renderer-panel">
+        <div id="renderer-controls" class="overlay-controls">
+          <button id="zoom-out" title="Zoom Out">−</button>
+          <span id="zoom-display">100%</span>
+          <button id="zoom-in" title="Zoom In">+</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/client/main.ts"></script>
+  </body>
+</html>
