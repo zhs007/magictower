@@ -2,17 +2,17 @@
   "name": "@proj-tower/maprender",
   "version": "1.0.0",
   "main": "dist/index.js",
-  "module": "src/index.ts",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./src/index.ts",
-      "require": "./dist/index.js",
-      "default": "./src/index.ts"
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "tsc",
+    "build:esm": "tsc --outFile dist/index.mjs --module esnext",
     "dev": "tsc -w"
   },
   "dependencies": {
