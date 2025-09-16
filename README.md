@@ -19,7 +19,8 @@ The project is a monorepo managed by `pnpm` and `Turborepo`.
 ├── apps/
 │   └── game/            # The main game application
 ├── packages/
-│   └── logic-core/      # Shared, framework-agnostic game logic
+│   ├── logic-core/      # Shared, framework-agnostic game logic
+│   └── maprender/       # Reusable map rendering component
 ├── gamedata/            # Global game data (monsters, items, etc.)
 ├── mapdata/             # Global map data
 ├── assets/              # Global static assets (images, sounds)
@@ -33,7 +34,8 @@ The project is a monorepo managed by `pnpm` and `Turborepo`.
 
 The project's architecture is designed to strictly separate game logic from rendering.
 
-*   **`packages/logic-core`**: This package is the "brain" of the game. It contains all the core game rules (combat, item usage, player movement), stat calculation, and type definitions. It has **no dependency** on Pixi.js or any other rendering library, which allows for easy testing and portability.
+*   **`packages/logic-core`**: This package is the "brain" of the game. It contains all the core game rules (combat, item usage, player movement), stat calculation, and type definitions. It has **no dependency** on Pixi.js or any other rendering library.
+*   **`packages/maprender`**: This package provides a reusable `MapRender` component for Pixi.js. It takes the game state and is responsible for drawing the map tiles and managing the z-order of all game entities (walls, characters, items) to create the 2.5D perspective.
 *   **`apps/game`**: This is the main game application.
     *   **Data-Driven Design**: The game loads all entity data (monsters, items, etc.) and map layouts from the global `gamedata/` and `mapdata/` directories. This allows designers to tweak game balance and level design without touching the source code.
     *   **Renderer (`src/renderer/`)**: This module is responsible for all visual aspects of the game, using Pixi.js to draw the map, characters, and UI. It reads from the core game state but does not modify it directly.
@@ -106,42 +108,34 @@ The equipment system automatically manages gear upgrades to streamline the playe
 
 ## 项目目录结构
 
-项目采用模块化结构，以保持代码库的清晰和可扩展性。
+项目采用 `pnpm` 和 `Turborepo` 管理的 monorepo 结构。
 
 ```
 .
-├── assets/              # 游戏资源 (图片)
-│   ├── item/
-│   ├── map/
-│   └── monster/
-├── gamedata/            # 游戏数据配置 (JSON)
-│   ├── buffs/           # 增益效果配置
-│   ├── equipments/      # 装备配置
-│   ├── items/           # 道具配置
-│   └── monsters/        # 怪物配置
-├── mapdata/             # 地图数据 (JSON)
-├── src/                 # 源码
-│   ├── core/            # 核心逻辑 (无渲染依赖)
-│   │   ├── state.ts     # 状态管理
-│   │   ├── logic.ts     # 战斗、道具、移动等逻辑
-│   │   └── tests/       # 核心逻辑的单元测试
-│   ├── data/            # 数据加载和管理
-│   ├── renderer/        # 渲染层 (Pixi.js)
-│   └── scenes/          # 游戏场景 (如：开始、游戏)
-├── scripts/             # 辅助脚本 (如：地图生成器)
-├── index.html
-├── package.json
-└── tsconfig.json
+├── apps/
+│   └── game/            # 游戏主程序
+├── packages/
+│   ├── logic-core/      # 共享的、与框架无关的游戏逻辑
+│   └── maprender/       # 可复用的地图渲染组件
+├── gamedata/            # 全局游戏数据 (怪物、道具等)
+├── mapdata/             # 全局地图数据
+├── assets/              # 全局静态资源 (图片、声音等)
+├── scripts/             # 辅助脚本
+├── package.json         # 根 package.json
+├── pnpm-workspace.yaml  # pnpm 工作区配置
+└── turbo.json           # Turborepo 配置
 ```
 
 ## 项目代码结构
 
 项目的顶层设计严格遵循“逻辑与渲染分离”的原则。
 
-*   **核心逻辑 (`src/core/`)**: 这是游戏的“大脑”。它负责管理游戏状态 (`GameStateManager`)，处理所有游戏规则（战斗、道具使用、玩家移动），并计算各项属性。该模块完全独立，**不包含任何对 Pixi.js 或其他渲染库的引用**。这使得核心逻辑易于进行单元测试，并为未来迁移到其他平台（例如客户端-服务器架构）提供了可能。
-*   **数据驱动设计**: 所有游戏实体——怪物、道具、装备和地图布局——都由外部的 JSON 文件 (`gamedata/`, `mapdata/`) 定义。`DataManager` (`src/data/`) 负责加载这些数据并提供给游戏使用。这种设计允许游戏策划和开发者在不修改源码的情况下，方便地调整游戏平衡和关卡设计。
-*   **渲染层 (`src/renderer/`)**: 该模块负责游戏的所有视觉表现。它使用 Pixi.js 来绘制地图、角色、UI 以及各种视觉效果（如浮动伤害文字）。它会读取核心游戏状态来决定显示内容，但不会直接修改状态。
-*   **场景管理 (`src/scenes/`)**: 游戏流程由场景（例如 `StartScene`, `GameScene`）来管理。`SceneManager` 负责处理场景之间的切换。`GameScene` 扮演着控制器的角色，它监听玩家输入，将其传递给 `core` 模块进行处理，然后根据返回的新状态，通知 `renderer` 更新画面。
+*   **`packages/logic-core`**: 这是游戏的“大脑”。它包含所有的核心游戏规则（战斗、道具使用、玩家移动）、属性计算和类型定义。它**不依赖**任何渲染库（如 Pixi.js）。
+*   **`packages/maprender`**: 这个包提供了一个可复用的 `MapRender` 组件 (基于 Pixi.js)。它接收游戏状态，负责绘制地图瓦片，并管理所有游戏实体（墙体、角色、道具等）的 z-order，以实现 2.5D 的遮挡效果。
+*   **`apps/game`**: 这是游戏的主程序。
+    *   **数据驱动设计**: 游戏从全局的 `gamedata/` 和 `mapdata/` 目录加载所有实体数据和地图布局。
+    *   **渲染器 (`src/renderer/`)**: 该模块负责游戏的所有视觉方面，使用 Pixi.js 绘制地图、角色和UI。它会读取核心游戏状态，但不会直接修改它。
+    *   **场景管理 (`src/scenes/`)**: `GameScene` 作为一个控制器，监听玩家输入，将其传递给 `logic-core` 进行处理，然后根据新状态通知 `renderer` 更新显示。
 
 这种分离确保了游戏规则的健壮性和可测试性，同时允许视觉表现层可以被独立开发和修改。
 

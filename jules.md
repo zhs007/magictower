@@ -41,13 +41,10 @@
 │       └── package.json
 │
 ├── packages/
-│   └── logic-core/      # 纯游戏逻辑核心包
-│       ├── src/
-│       │   ├── index.ts # 包出口
-│       │   ├── logic.ts # 核心规则函数
-│       │   ├── types.ts # 核心类型定义
-│       │   └── data-manager.ts # 数据加载
-│       └── package.json
+│   ├── logic-core/      # 纯游戏逻辑核心包
+│   │   └── src/
+│   └── maprender/       # 地图渲染包
+│       └── src/
 │
 ├── gamedata/            # 游戏数据 (全局)
 ├── mapdata/             # 地图数据 (全局)
@@ -58,6 +55,22 @@
 ├── pnpm-workspace.yaml  # pnpm 工作区定义
 └── turbo.json           # Turborepo 管道定义
 ```
+
+## 4.1. 地图渲染 (`maprender` 包)
+
+为了进一步贯彻“逻辑与渲染分离”的原则，地图的渲染逻辑被提取到了一个独立的、可复用的 `@proj-tower/maprender` 包中。
+
+- **`MapRender` 类**: 这是该包的核心导岀。它是一个继承自 `PIXI.Container` 的组件。
+- **职责**:
+    1.  **初始化**: 构造函数接收一个 `GameState` 对象，并根据其中的地图数据（`map` 和 `tileAssets`）自动绘制基础的地面和墙体。
+    2.  **分层渲染**: 内部包含一个用于渲染地面的 `floorContainer` 和一个用于渲染实体（墙、角色、道具等）的 `entityContainer`。
+    3.  **Y轴排序**: `entityContainer` 启用了 `sortableChildren` 属性。所有加入该容器的 `Sprite` 都会根据其 `zIndex` 属性（通常设置为其逻辑 `y` 坐标）进行自动排序，从而实现正确的遮挡效果。
+- **使用方法**:
+    - 在主渲染器 (`Renderer`) 中，不再手动绘制地图。
+    - 而是创建一个 `MapRender` 实例，并将其添加到主舞台。
+    - 玩家、怪物、道具等动态实体的 `Sprite` 则被添加到 `mapRender.entityContainer` 中，由其统一管理排序和渲染。
+
+这种设计将地图渲染的复杂性封装起来，使得主渲染器的代码更简洁，只专注于管理动态实体和UI。
 
 ## 5. 数据格式约定
 

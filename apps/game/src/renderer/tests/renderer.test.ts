@@ -1,23 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mocked } from 'vitest';
 import { Renderer } from '../renderer';
 import { GameState, IPlayer, IMonster, IItem } from '../../core/types';
-import { Container } from 'pixi.js';
+import { Container, Assets } from 'pixi.js';
+import { MapRender } from '@proj-tower/maprender';
+import { HUD } from '../ui/hud';
 
 // Mock Pixi.js components
 vi.mock('pixi.js', async () => {
     const actualPixi = await vi.importActual('pixi.js');
+    const mockContainer = {
+        x: 0,
+        y: 0,
+        children: [],
+        sortableChildren: false,
+        addChild: vi.fn(function(this: any, child: any) { this.children.push(child); }),
+        addChildAt: vi.fn(function(this: any, child: any) { this.children.push(child); }),
+        removeChild: vi.fn(),
+        removeChildren: vi.fn(function(this: any) { this.children = []; }),
+        destroy: vi.fn(),
+    };
     return {
         ...actualPixi,
-        Container: class {
-            x = 0;
-            y = 0;
-            children: any[] = [];
-            addChild = vi.fn((child) => this.children.push(child));
-            removeChild = vi.fn();
-            removeChildren = vi.fn(() => {
-                this.children = [];
-            });
-        },
+        Container: vi.fn(() => (mockContainer)),
         Assets: {
             get: vi.fn((key) => ({ texture: key })),
             init: vi.fn().mockResolvedValue(undefined),
@@ -33,18 +37,37 @@ vi.mock('pixi.js', async () => {
             anchor: { set: vi.fn() },
             scale: { x: 1, y: 1, set: vi.fn() },
             visible: true,
-        })),
-        Text: vi.fn(() => ({
-            __type: 'Text',
-            x: 0,
-            y: 0,
-            anchor: { set: vi.fn() },
-            position: { set: vi.fn() },
-            text: '',
-            visible: true,
+            parent: null,
         })),
     };
 });
+
+// Mock the maprender package
+vi.mock('@proj-tower/maprender', () => {
+    const MockMapRender = vi.fn().mockImplementation(() => {
+        return {
+            entityContainer: {
+                addChild: vi.fn(),
+                removeChild: vi.fn(),
+                children: [],
+            },
+            destroy: vi.fn(),
+        };
+    });
+    return { MapRender: MockMapRender };
+});
+
+// Mock the HUD
+vi.mock('../ui/hud', () => {
+    const MockHUD = vi.fn().mockImplementation(() => {
+        return {
+            update: vi.fn(),
+            destroy: vi.fn(),
+        };
+    });
+    return { HUD: MockHUD };
+});
+
 
 vi.mock('@proj-tower/logic-core', async (importOriginal) => {
     const original = await importOriginal<typeof import('@proj-tower/logic-core')>();
@@ -52,22 +75,6 @@ vi.mock('@proj-tower/logic-core', async (importOriginal) => {
         ...original,
         dataManager: {
             loadAllData: vi.fn().mockResolvedValue(undefined),
-            getPlayerData: vi.fn().mockReturnValue({
-                id: 'player',
-                name: 'Hero',
-                level: 1,
-                exp: 0,
-                hp: 100,
-                maxhp: 100,
-                attack: 10,
-                defense: 10,
-                speed: 10,
-                keys: { yellow: 0, blue: 0, red: 0 },
-            }),
-            getLevelData: vi.fn().mockReturnValue([
-                { level: 1, exp_needed: 0, hp: 100, attack: 10, defense: 10, speed: 10 },
-                { level: 2, exp_needed: 100, hp: 120, attack: 12, defense: 12, speed: 11 },
-            ]),
         },
     };
 });
@@ -84,81 +91,73 @@ vi.mock('gsap', () => ({
 
 describe('Renderer', () => {
     let renderer: Renderer;
-    let mockStage: any;
+    let mockStage: Container;
 
-    beforeEach(async () => {
+    beforeEach(() => {
         vi.clearAllMocks();
-        const PIXI = await import('pixi.js');
-        mockStage = new PIXI.Container();
+        mockStage = new (vi.mocked(Container))();
         renderer = new Renderer(mockStage);
     });
 
     it('should call syncSprites on render', () => {
         const gameState = createMockGameState();
         const syncSpritesSpy = vi.spyOn(renderer, 'syncSprites');
-
         renderer.render(gameState);
-
         expect(syncSpritesSpy).toHaveBeenCalledWith(gameState);
     });
 
-    it('should render map tiles and entities correctly on initialize', async () => {
+    it('should create and add MapRender on initialize', () => {
         const gameState = createMockGameState();
         renderer.initialize(gameState);
 
-        // 4 floor tiles are always added
-        expect(renderer['floorContainer'].addChild).toHaveBeenCalledTimes(4);
-        // 1 wall + 3 entities are added to the main container
-        expect(renderer['mainContainer'].addChild).toHaveBeenCalledTimes(4);
+        const MockedMapRender = vi.mocked(MapRender);
+        expect(MockedMapRender).toHaveBeenCalledWith(gameState);
 
-        const PIXI = await import('pixi.js');
-        expect(PIXI.Assets.get).toHaveBeenCalledWith('map_wall');
-        expect(PIXI.Assets.get).toHaveBeenCalledWith('map_floor');
-        expect(PIXI.Assets.get).toHaveBeenCalledWith('player');
-        expect(PIXI.Assets.get).toHaveBeenCalledWith('monster_green_slime');
-        expect(PIXI.Assets.get).toHaveBeenCalledWith('item_yellow_key');
+        const worldContainer = (renderer as any).worldContainer;
+        expect(worldContainer.addChildAt).toHaveBeenCalled();
+        // Check that the instance was assigned. `toBeInstanceOf` doesn't work well with Vitest mocks.
+        expect((renderer as any).mapRender).toBeDefined();
+    });
+
+    it('should add entity sprites to the mapRender entityContainer', () => {
+        const gameState = createMockGameState();
+        renderer.initialize(gameState); // This creates the mapRender instance
+
+        const mapRenderInstance = (renderer as any).mapRender;
+        // 3 entities: player, monster, item
+        expect(mapRenderInstance.entityContainer.addChild).toHaveBeenCalledTimes(3);
     });
 
     it('should position sprites correctly', () => {
         const gameState = createMockGameState();
-        renderer.initialize(gameState); // Use initialize to create sprites
+        renderer.initialize(gameState);
 
         const TILE_SIZE = 65;
-        const addedSprites: any[] = renderer['mainContainer'].children as any[];
+        const entitySprites = (renderer as any).entitySprites;
 
-        // Note: The mock player from createMockGameState is at x:1, y:1
-        const playerSprite = addedSprites.find(
-            (s) => (s as any).texture?.texture === 'player'
-        ) as any;
+        const playerSprite = entitySprites.get('player_start_0_0');
         expect(playerSprite).toBeDefined();
-        expect(playerSprite!.x).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
-        expect(playerSprite!.y).toBe((1 + 1) * TILE_SIZE); // New Y calculation
+        expect(playerSprite.x).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
+        expect(playerSprite.y).toBe((1 + 1) * TILE_SIZE);
+        expect(playerSprite.zIndex).toBe(1);
 
-        // Note: The mock monster is at x:0, y:1
-        const monsterSprite = addedSprites.find(
-            (s) => (s as any).texture?.texture === 'monster_green_slime'
-        ) as any;
+        const monsterSprite = entitySprites.get('monster_1');
         expect(monsterSprite).toBeDefined();
-        expect(monsterSprite!.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
-        expect(monsterSprite!.y).toBe((1 + 1) * TILE_SIZE); // New Y calculation
+        expect(monsterSprite.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
+        expect(monsterSprite.y).toBe((1 + 1) * TILE_SIZE);
+        expect(monsterSprite.zIndex).toBe(1);
     });
 
     it('should call onComplete callback after item pickup animation', async () => {
         const gameState = createMockGameState();
-        // Set interaction state for item pickup
         gameState.interactionState = { type: 'item_pickup', itemId: 'item_1' };
-
-        // Initialize renderer to create sprites
         renderer.initialize(gameState);
 
         const onComplete = vi.fn();
         await renderer.animateItemPickup(gameState, onComplete);
 
-        // Manually trigger the onComplete of the mocked timeline
         const gsap = await import('gsap');
         const mockedTimeline = (gsap.gsap.timeline as any).mock.results[0].value;
-
-        // Check if onComplete is actually a function before calling it.
         if (typeof mockedTimeline.vars.onComplete === 'function') {
             mockedTimeline.vars.onComplete();
         }
@@ -168,65 +167,23 @@ describe('Renderer', () => {
 
     it('should show floating text on an entity', () => {
         const gameState = createMockGameState();
-        renderer.initialize(gameState); // To populate entitySprites
+        renderer.initialize(gameState);
 
-        const textManagerAddSpy = vi.spyOn((renderer as any).floatingTextManager, 'add');
+        const textManagerAddSpy = vi.spyOn(renderer.floatingTextManager, 'add');
         const playerEntityKey = 'player_start_0_0';
-
         renderer.showFloatingTextOnEntity('Test Text', 'ITEM_GAIN', playerEntityKey);
-
         expect(textManagerAddSpy).toHaveBeenCalledWith('Test Text', 'ITEM_GAIN', playerEntityKey);
     });
 });
 
 function createMockGameState(): GameState {
-    const player: IPlayer = {
-        id: 'player',
-        name: 'Player',
-        level: 1,
-        exp: 0,
-        hp: 100,
-        maxhp: 100,
-        attack: 10,
-        defense: 5,
-        speed: 10,
-        x: 1,
-        y: 1,
-        direction: 'right',
-        equipment: {},
-        backupEquipment: [],
-        buffs: [],
-        keys: { yellow: 0, blue: 0, red: 0 },
-    };
-    const monster: IMonster = {
-        id: 'monster_green_slime',
-        name: 'Green Slime',
-        level: 1,
-        hp: 10,
-        maxhp: 10,
-        attack: 3,
-        defense: 1,
-        speed: 5,
-        x: 0,
-        y: 1,
-        direction: 'left',
-        equipment: {},
-        backupEquipment: [],
-        buffs: [],
-    };
-    const item: IItem = {
-        id: 'item_yellow_key',
-        name: 'Yellow Key',
-        type: 'key',
-        color: 'yellow',
-    };
+    const player: IPlayer = { id: 'player', name: 'Player', level: 1, exp: 0, hp: 100, maxhp: 100, attack: 10, defense: 5, speed: 10, x: 1, y: 1, direction: 'right', equipment: {}, backupEquipment: [], buffs: [], keys: { yellow: 0, blue: 0, red: 0 } };
+    const monster: IMonster = { id: 'monster_green_slime', name: 'Green Slime', level: 1, hp: 10, maxhp: 10, attack: 3, defense: 1, speed: 5, x: 0, y: 1, direction: 'left', equipment: {}, backupEquipment: [], buffs: [] };
+    const item: IItem = { id: 'item_yellow_key', name: 'Yellow Key', type: 'key', color: 'yellow' };
 
     return {
         currentFloor: 1,
-        map: [
-            [0, 1],
-            [0, 0],
-        ],
+        map: [[0, 1], [0, 0]],
         player,
         entities: {
             player_start_0_0: { ...player, type: 'player_start' },
