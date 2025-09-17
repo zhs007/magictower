@@ -1,36 +1,67 @@
-# Plan 027: Implement Equipment and Item Entities on Maps
+# Plan 027: Leveldata Editor
 
-## 1. Understanding the Original Request
+## 1. Understanding the Goal
 
-The user wants to fix an issue where items and equipment on the game maps are not being treated as entities that the player can pick up. Specifically, on `floor_02.json`, there is a blood vial (potion) and a weapon that should be present on the map for the player to collect. The current implementation does not handle this correctly.
+The main goal is to create a new tool, the "Leveldata Editor," as a standalone application within the `apps/` directory. This tool will provide a user-friendly, visual interface for editing the `gamedata/leveldata.json` file, which is critical for game balancing.
 
-My investigation revealed that while `floor_02.json` correctly defines these entities with `type: "item"` and `type: "equipment"`, the game's state initialization logic in `src/core/state.ts` is missing a handler for the `equipment` type. This causes equipment to be ignored during level setup.
+The editor will be modeled after the existing `mapeditor`, using a similar technology stack (Vite, Fastify, TypeScript) and a client-server architecture. The server will be responsible for all file I/O operations, leveraging the `@proj-tower/logic-core` package to ensure data integrity.
 
-## 2. Goal
+## 2. Key Features
 
-The goal is to modify the game logic to correctly parse and place item and equipment entities from the map data onto the game map, making them available for player interaction (i.e., pickup).
+- **Visualize Data:** Display `leveldata.json` in two formats:
+    1.  **Tabular View:** An editable grid on the left for precise numerical adjustments to all stats except the level itself.
+    2.  **Graphical View:** An ECharts line graph on the right, plotting key statistics (`exp_needed`, `maxhp`, `attack`, `defense`, `speed`) against the `level` to provide an intuitive overview of the player's progression curve.
+- **Edit and Save:** Allow users to modify data in the table and save the changes back to `gamedata/leveldata.json`.
+- **Data Manipulation:**
+    - **Expand Levels:** A feature to programmatically extend the level cap (e.g., from 50 to 100). The new levels will be generated based on the average growth of existing levels, with options for different growth functions (linear, quadratic, etc.).
+    - **Shrink Levels:** A feature to reduce the number of levels, deleting the surplus data.
 
-## 3. Task Decomposition
+## 3. Task Breakdown
 
-I have broken down the task into the following steps:
+1.  **Project Scaffolding:**
+    *   Create the directory structure for `apps/leveldataeditor`.
+    *   Initialize a `package.json` file with necessary dependencies like `fastify`, `vite`, `typescript`, `echarts`, and a workspace dependency on `@proj-tower/logic-core`.
+    *   Set up `tsconfig.json` and `vite.config.ts` based on the `mapeditor`'s configuration.
 
-1.  **Create `jules/plan027.md`**: Document the plan for this task.
-2.  **Modify `src/core/state.ts`**:
-    - Implement a new logic block in the `createInitialState` function to handle entities of type `equipment`.
-    - This block will:
-        - Fetch the base equipment data using `dataManager.getEquipmentData()`.
-        - Create a new equipment object, including its `x` and `y` coordinates from the map data.
-        - Add the new equipment object to the `entities` collection for rendering.
-        - Add the new equipment object to the `equipments` collection in the `GameState` to make it interactable.
-3.  **Add a Test Case**:
-    - Create a new test in `src/core/tests/state.test.ts`.
-    - This test will simulate loading a map that contains an equipment entity and assert that this entity is correctly added to the `equipments` collection in the resulting game state. This will prevent future regressions.
-4.  **Run Tests**:
-    - Execute the full test suite (`npm test`) to verify that the changes are correct and do not introduce any regressions.
-5.  **Create `jules/plan027-report.md`**:
-    - Document the entire process, including the problem analysis, the solution implemented, and the results of the tests.
-6.  **Update `jules.md`**:
-    - Update the main project documentation to reflect the completion of this task and link to the plan and report.
-7.  **Submit**:
-    - Request a code review to ensure the quality of the changes.
-    - After addressing any feedback, submit the code with a descriptive commit message.
+2.  **Backend Server (Fastify):**
+    *   Create a `src/server.ts` file.
+    *   Implement API endpoints:
+        *   `GET /api/leveldata`: Reads `gamedata/leveldata.json` using `logic-core`'s data manager and returns the data as JSON.
+        *   `POST /api/leveldata`: Receives updated level data in the request body, validates it, and writes it back to `gamedata/leveldata.json`.
+
+3.  **Frontend Development (Client):**
+    *   Set up the basic HTML structure in `index.html`.
+    *   Create the main application file `src/client/main.ts`.
+    *   Implement the UI layout with a left panel for the table and a right panel for the chart.
+    *   **Table View:**
+        *   Fetch initial data from the `GET /api/leveldata` endpoint.
+        *   Render the data in an HTML table.
+        *   Make the table cells (except for the 'level' column) editable (`contenteditable`).
+        *   Implement a "Save" button that sends the modified data to the `POST /api/leveldata` endpoint.
+    *   **Chart View:**
+        *   Initialize an ECharts instance in the right panel.
+        *   Format the fetched level data to fit the ECharts series structure.
+        *   Render the line chart with five series: `exp_needed`, `maxhp`, `attack`, `defense`, `speed`, all with `level` as the x-axis.
+        *   Ensure the chart updates automatically after data is saved.
+
+4.  **Advanced Features:**
+    *   **Expand Data:**
+        *   Add a button "Expand Levels".
+        *   On click, show a prompt asking for the new total number of levels and the desired growth function (initially, just "linear" is fine).
+        *   Implement the logic to calculate the new level data based on the average growth of the last few existing levels.
+        *   Update the UI (table and chart) with the newly generated data.
+    *   **Shrink Data:**
+        *   Add a button "Shrink Levels".
+        *   On click, prompt for the new, smaller number of levels.
+        *   Implement the logic to truncate the data array.
+        *   Update the UI.
+
+5.  **Testing and Verification**
+   - Manually test all features: loading, editing, saving, expanding, and shrinking data.
+   - Verify that `gamedata/leveldata.json` is correctly updated after saving.
+   - Ensure the chart accurately reflects the data in the table.
+
+6.  **Documentation:**
+    *   Create a `README.md` for the `leveldataeditor` application.
+    *   Update the root `jules.md` and `README.md` to include information about the new editor, its purpose, and how to run it.
+    *   Write the final `jules/plan027-report.md` to summarize the development process.
