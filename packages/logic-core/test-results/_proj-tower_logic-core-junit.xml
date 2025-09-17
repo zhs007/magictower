@@ -1,61 +1,104 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="24" failures="0" errors="0" time="0.080542708">
-    <testsuite name="src/tests/damage.test.ts" timestamp="2025-09-16T10:49:58.362Z" hostname="ZerrodeMacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.004414792">
-        <testcase classname="src/tests/damage.test.ts" name="calculateDamage &gt; should calculate positive damage correctly" time="0.002562042">
+<testsuites name="vitest tests" tests="32" failures="0" errors="0" time="0.075979946">
+    <testsuite name="src/tests/damage.test.ts" timestamp="2025-09-16T13:52:04.879Z" hostname="devbox" tests="3" failures="0" errors="0" skipped="0" time="0.011166728">
+        <testcase classname="src/tests/damage.test.ts" name="calculateDamage &gt; should calculate positive damage correctly" time="0.008270487">
         </testcase>
-        <testcase classname="src/tests/damage.test.ts" name="calculateDamage &gt; should deal a minimum of 1 damage when attack is less than defense" time="0.000234792">
+        <testcase classname="src/tests/damage.test.ts" name="calculateDamage &gt; should deal a minimum of 1 damage when attack is less than defense" time="0.000520704">
         </testcase>
-        <testcase classname="src/tests/damage.test.ts" name="calculateDamage &gt; should deal a minimum of 1 damage when attack is equal to defense" time="0.000090667">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/tests/data-manager.test.ts" timestamp="2025-09-16T10:49:58.364Z" hostname="ZerrodeMacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.023274833">
-        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load all monster data from files" time="0.00334275">
-        </testcase>
-        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load all item data from files" time="0.000265042">
-        </testcase>
-        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load all equipment data from files" time="0.000154208">
-        </testcase>
-        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load the map layout for floor 1 correctly" time="0.00008625">
-        </testcase>
-        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should return undefined for non-existent data" time="0.00005475">
+        <testcase classname="src/tests/damage.test.ts" name="calculateDamage &gt; should deal a minimum of 1 damage when attack is equal to defense" time="0.000297904">
         </testcase>
     </testsuite>
-    <testsuite name="src/tests/file-storage.test.ts" timestamp="2025-09-16T10:49:58.366Z" hostname="ZerrodeMacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.029684125">
-        <testcase classname="src/tests/file-storage.test.ts" name="FileStorage &gt; should set/get/remove items and report length/key correctly" time="0.011397375">
+    <testsuite name="src/tests/data-manager.test.ts" timestamp="2025-09-16T13:52:04.900Z" hostname="devbox" tests="5" failures="0" errors="0" skipped="0" time="0.018075926">
+        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load all monster data from files" time="0.001905916">
+        </testcase>
+        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load all item data from files" time="0.000672142">
+        </testcase>
+        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load all equipment data from files" time="0.000432424">
+        </testcase>
+        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should load the map layout for floor 1 correctly" time="0.00026815">
+        </testcase>
+        <testcase classname="src/tests/data-manager.test.ts" name="DataManager &gt; should return undefined for non-existent data" time="0.000179973">
         </testcase>
     </testsuite>
-    <testsuite name="src/tests/logic.test.ts" timestamp="2025-09-16T10:49:58.367Z" hostname="ZerrodeMacBook-Air.local" tests="14" failures="0" errors="0" skipped="0" time="0.0086795">
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should allow player to move to an empty tile" time="0.001543333">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should not allow player to move out of bounds" time="0.000822042">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should not allow player to move into a wall" time="0.000649917">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should make monster turn left to face player" time="0.000837792">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should make monster turn right to face player" time="0.00033525">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should only turn player on first press in a new direction" time="0.000142917">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should move player on second press in the same direction" time="0.000105375">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should turn, then do nothing when moving into a wall" time="0.000248292">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should set interactionState to item_pickup when moving onto an item" time="0.000795">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should correctly pick up a key and update player state" time="0.000553417">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleOpenDoor &gt; should allow player to open a door" time="0.0001525">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleUsePotion &gt; should heal the player and consume the potion" time="0.000654042">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleUsePotion &gt; should not heal beyond maxhp" time="0.000086167">
-        </testcase>
-        <testcase classname="src/tests/logic.test.ts" name="handleUsePotion &gt; should do nothing if player has no potion" time="0.0002945">
+    <testsuite name="src/tests/file-storage.test.ts" timestamp="2025-09-16T13:52:04.910Z" hostname="devbox" tests="1" failures="0" errors="0" skipped="0" time="0.008233">
+        <testcase classname="src/tests/file-storage.test.ts" name="FileStorage &gt; should set/get/remove items and report length/key correctly" time="0.005954914">
         </testcase>
     </testsuite>
-    <testsuite name="src/tests/save-manager-file-integration.test.ts" timestamp="2025-09-16T10:49:58.374Z" hostname="ZerrodeMacBook-Air.local" tests="1" failures="0" errors="0" skipped="0" time="0.014489458">
-        <testcase classname="src/tests/save-manager-file-integration.test.ts" name="SaveManager + FileStorage integration &gt; should save and load a game using FileStorage" time="0.012840375">
+    <testsuite name="src/tests/logic.test.ts" timestamp="2025-09-16T13:52:04.911Z" hostname="devbox" tests="20" failures="0" errors="0" skipped="0" time="0.025724595">
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should allow player to move to an empty tile" time="0.003675065">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should not allow player to move out of bounds" time="0.000787186">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should not allow player to move into a wall" time="0.000548352">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should make monster turn left to face player" time="0.001153752">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should make monster turn right to face player" time="0.000725013">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should only turn player on first press in a new direction" time="0.000540473">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should move player on second press in the same direction" time="0.000566746">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should turn, then do nothing when moving into a wall" time="0.000449188">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should set interactionState to item_pickup when moving onto an item" time="0.000582254">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should correctly pick up a key and update player state" time="0.00105643">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleMove &gt; should handle movement on a ragged map correctly" time="0.000538889">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleOpenDoor &gt; should allow player to open a door" time="0.000477972">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleUsePotion &gt; should heal the player and consume the potion" time="0.001554543">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleUsePotion &gt; should not heal beyond maxhp" time="0.000292519">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handleUsePotion &gt; should do nothing if player has no potion" time="0.000808394">
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handlePickupEquipment &gt; should equip a 1H weapon to an empty hand" time="0.003762717">
+            <system-out>
+Auto-equipping Iron Sword.
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handlePickupEquipment &gt; should auto-equip a better 1H weapon and move old one to backup" time="0.001547387">
+            <system-out>
+Auto-equipping Iron Sword.
+Storing Iron Sword in backup.
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handlePickupEquipment &gt; should discard a worse 1H weapon" time="0.00117852">
+            <system-out>
+New equipment Iron Sword is worse, discarding.
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handlePickupEquipment &gt; should trigger prompt for 1H to 2H swap and discard item" time="0.001539897">
+            <system-out>
+Prompting user to swap with Iron Sword.
+Stat changes: { hp: [33m0[39m, attack: [33m19[39m, defense: [33m0[39m, speed: [33m0[39m, maxhp: [33m0[39m, level: [33m0[39m, exp: [33m0[39m }
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/tests/logic.test.ts" name="handlePickupEquipment &gt; should trigger prompt for 2H to 1H swap and discard item" time="0.001428884">
+            <system-out>
+Prompting user to swap with Great Axe.
+Stat changes: {
+  hp: [33m0[39m,
+  attack: [33m-19[39m,
+  defense: [33m0[39m,
+  speed: [33m0[39m,
+  maxhp: [33m0[39m,
+  level: [33m0[39m,
+  exp: [33m0[39m
+}
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/tests/save-manager-file-integration.test.ts" timestamp="2025-09-16T13:52:04.943Z" hostname="devbox" tests="3" failures="0" errors="0" skipped="0" time="0.012779697">
+        <testcase classname="src/tests/save-manager-file-integration.test.ts" name="SaveManager + FileStorage integration &gt; should save and load a game using FileStorage" time="0.006579813">
             <system-out>
 createInitialState called for floor 1.
 
@@ -66,6 +109,10 @@ createInitialState called for floor 1.
 Successfully created new game state.
 
             </system-out>
+        </testcase>
+        <testcase classname="src/tests/save-manager-file-integration.test.ts" name="SaveManager + FileStorage integration &gt; should return null when loading a corrupted save file" time="0.002907043">
+        </testcase>
+        <testcase classname="src/tests/save-manager-file-integration.test.ts" name="SaveManager + FileStorage integration &gt; should return null when loading malformed JSON" time="0.001726204">
         </testcase>
     </testsuite>
 </testsuites>

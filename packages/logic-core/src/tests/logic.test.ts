@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { handleMove, handleOpenDoor, handlePickupItem, handleUsePotion } from '../logic';
-import { GameState, IItem } from '../types';
+import { handleMove, handleOpenDoor, handlePickupItem, handleUsePotion, handlePickupEquipment } from '../logic';
+import { GameState, IItem, IEquipment, EquipmentSlot, WeaponType } from '../types';
 
 describe('handleMove', () => {
     let gameState: GameState;
@@ -227,6 +227,25 @@ describe('handleMove', () => {
         expect(finalState.entities['item_1']).toBeUndefined();
         expect(finalState.interactionState.type).toBe('none');
     });
+
+    it('should handle movement on a ragged map correctly', () => {
+        gameState.map = [
+            [0, 0, 0],
+            [0, 0],
+            [0, 0, 0, 0]
+        ];
+        gameState.player.x = 1;
+        gameState.player.y = 1;
+
+        // Move to a valid tile on a longer row
+        let newState = handleMove(gameState, 0, 1); // Move down to (1, 2)
+        expect(newState.player.y).toBe(2);
+
+        // Try to move off the edge of a shorter row
+        newState = handleMove(gameState, 1, 0); // Move right to (2, 1) - invalid
+        expect(newState.player.x).toBe(1);
+        expect(newState.player.y).toBe(1);
+    });
 });
 
 describe('handleOpenDoor', () => {
@@ -347,5 +366,97 @@ describe('handleUsePotion', () => {
 
         // Game state should be unchanged
         expect(newState).toEqual(gameState);
+    });
+});
+
+describe('handlePickupEquipment', () => {
+    let gameState: GameState;
+    const sword: IEquipment = {
+        id: 'sword1',
+        name: 'Iron Sword',
+        slot: EquipmentSlot.RIGHT_HAND,
+        weaponType: WeaponType.ONE_HANDED,
+        stat_mods: { attack: 5 },
+    };
+    const axe: IEquipment = {
+        id: 'axe1',
+        name: 'Great Axe',
+        slot: [EquipmentSlot.LEFT_HAND, EquipmentSlot.RIGHT_HAND],
+        weaponType: WeaponType.TWO_HANDED,
+        stat_mods: { attack: 12 },
+    };
+
+    beforeEach(() => {
+        gameState = {
+            currentFloor: 1,
+            map: [[0]],
+            player: {
+                id: 'player', name: 'Hero', level: 1, exp: 0, hp: 100, maxhp: 100,
+                attack: 10, defense: 5, speed: 5, x: 0, y: 0, direction: 'right',
+                equipment: {}, backupEquipment: [], buffs: [],
+                keys: { yellow: 0, blue: 0, red: 0 },
+            },
+            entities: {}, monsters: {}, items: {}, equipments: {}, doors: {}, stairs: {},
+            interactionState: { type: 'none' },
+        };
+    });
+
+    it('should equip a 1H weapon to an empty hand', () => {
+        gameState.equipments['sword_entity'] = sword;
+        const newState = handlePickupEquipment(gameState, 'sword_entity');
+        expect(newState.player.equipment[EquipmentSlot.RIGHT_HAND]).toEqual(sword);
+        expect(newState.player.backupEquipment).toHaveLength(0);
+        expect(newState.equipments['sword_entity']).toBeUndefined();
+    });
+
+    it('should auto-equip a better 1H weapon and move old one to backup', () => {
+        gameState.player.equipment[EquipmentSlot.RIGHT_HAND] = { ...sword, id: 'old_sword', stat_mods: { attack: 2 } };
+        const betterSword: IEquipment = { ...sword, id: 'new_sword', stat_mods: { attack: 8 } };
+        gameState.equipments['better_sword_entity'] = betterSword;
+
+        const newState = handlePickupEquipment(gameState, 'better_sword_entity');
+
+        expect(newState.player.equipment[EquipmentSlot.RIGHT_HAND]).toEqual(betterSword);
+        expect(newState.player.backupEquipment).toHaveLength(1);
+        expect(newState.player.backupEquipment[0].id).toBe('old_sword');
+    });
+
+    it('should discard a worse 1H weapon', () => {
+        gameState.player.equipment[EquipmentSlot.RIGHT_HAND] = sword;
+        const worseSword: IEquipment = { ...sword, id: 'worse_sword', stat_mods: { attack: 1 } };
+        gameState.equipments['worse_sword_entity'] = worseSword;
+
+        const newState = handlePickupEquipment(gameState, 'worse_sword_entity');
+
+        expect(newState.player.equipment[EquipmentSlot.RIGHT_HAND]).toEqual(sword);
+        expect(newState.player.backupEquipment).toHaveLength(0);
+        expect(newState.equipments['worse_sword_entity']).toBeUndefined();
+    });
+
+    it('should trigger prompt for 1H to 2H swap and discard item', () => {
+        gameState.player.equipment[EquipmentSlot.RIGHT_HAND] = sword;
+        gameState.equipments['axe_entity'] = axe;
+
+        const newState = handlePickupEquipment(gameState, 'axe_entity');
+
+        // Current logic discards item on prompt
+        expect(newState.player.equipment[EquipmentSlot.RIGHT_HAND]).toEqual(sword);
+        expect(newState.player.equipment[EquipmentSlot.LEFT_HAND]).toBeUndefined();
+        expect(newState.player.backupEquipment).toHaveLength(0);
+        expect(newState.equipments['axe_entity']).toBeUndefined();
+    });
+
+    it('should trigger prompt for 2H to 1H swap and discard item', () => {
+        gameState.player.equipment[EquipmentSlot.LEFT_HAND] = axe;
+        gameState.player.equipment[EquipmentSlot.RIGHT_HAND] = axe;
+        gameState.equipments['sword_entity'] = sword;
+
+        const newState = handlePickupEquipment(gameState, 'sword_entity');
+
+        // Current logic discards item on prompt
+        expect(newState.player.equipment[EquipmentSlot.RIGHT_HAND]).toEqual(axe);
+        expect(newState.player.equipment[EquipmentSlot.LEFT_HAND]).toEqual(axe);
+        expect(newState.player.backupEquipment).toHaveLength(0);
+        expect(newState.equipments['sword_entity']).toBeUndefined();
     });
 });

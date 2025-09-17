@@ -6,14 +6,38 @@ import {
     EquipmentSlot,
     Action,
     IEquipment,
+    ActiveBattleState,
+    BattleTurn,
 } from './types';
 import * as _ from 'lodash';
 import { calculateFinalStats } from './stat-calculator';
 import { compareEquipment } from './equipment-manager';
 import { LevelData, IItem } from './types';
 
-const MAX_COMBAT_ROUNDS = 8;
+export const MAX_COMBAT_ROUNDS = 8;
 
+export function getEntityKeyAt(state: GameState, x: number, y: number): string | undefined {
+    // This is a simple but potentially inefficient way to find an entity.
+    // For larger maps, an index (e.g., a Map object mapping 'x,y' to entity key)
+    // would be much more performant.
+    return Object.keys(state.entities).find(
+        (key) => state.entities[key].x === x && state.entities[key].y === y
+    );
+}
+
+/**
+ * Handles player movement and interactions that result from movement.
+ * This includes turning, walking, and initiating interactions like picking up items or starting battles.
+ *
+ * Note: If the move is invalid (e.g., into a wall), this function returns the original,
+ * unmodified `state` object. Callers can use reference equality (`===`) to detect if a move
+ * resulted in no change.
+ *
+ * @param state The current game state.
+ * @param dx The change in the x-coordinate.
+ * @param dy The change in the y-coordinate.
+ * @returns The new game state after the move.
+ */
 export function handleMove(state: GameState, dx: number, dy: number): GameState {
     const newState = _.cloneDeep(state);
     const player = newState.player;
@@ -42,18 +66,16 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     // Check for collision
     if (
         newX < 0 ||
-        newX >= newState.map[0].length ||
         newY < 0 ||
         newY >= newState.map.length ||
+        newX >= (newState.map[newY]?.length ?? 0) ||
         newState.map[newY][newX] === 1
     ) {
         return state; // No change in position or direction
     }
 
     // Check for entity interaction at the destination
-    const destinationEntityKey = Object.keys(newState.entities).find(
-        (k) => newState.entities[k].x === newX && newState.entities[k].y === newY
-    );
+    const destinationEntityKey = getEntityKeyAt(newState, newX, newY);
 
     if (destinationEntityKey) {
         const destinationEntity = newState.entities[destinationEntityKey];
@@ -75,10 +97,10 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
             return {
                 ...newState,
                 interactionState: {
-                    type: 'PICK_UP_EQUIPMENT',
+                    type: 'equipment_pickup',
                     equipmentId: destinationEntityKey,
-                } as any,
-            }; // Using 'any' to bypass strict type check for custom state
+                },
+            };
         } else if (destinationEntity.type === 'monster') {
             const monster = newState.monsters[destinationEntityKey];
             if (monster) {
@@ -117,7 +139,9 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
 export function handlePickupEquipment(state: GameState, equipmentEntityKey: string): GameState {
     const newState = _.cloneDeep(state);
     const equipmentOnMap = newState.equipments[equipmentEntityKey];
-    if (!equipmentOnMap) return state;
+    if (!equipmentOnMap) {
+        throw new Error(`Equipment with key ${equipmentEntityKey} not found in state.`);
+    }
 
     const comparison = compareEquipment(newState.player, equipmentOnMap);
     let sound = 'pickup'; // Default sound
@@ -133,10 +157,8 @@ export function handlePickupEquipment(state: GameState, equipmentEntityKey: stri
             if (comparison.oldItem) {
                 if (Array.isArray(comparison.oldItem)) {
                     for (const old of comparison.oldItem) {
-                        if (old) {
-                            console.log(`Storing ${old.name} in backup.`);
-                            newState.player.backupEquipment.push(old);
-                        }
+                        console.log(`Storing ${old.name} in backup.`);
+                        newState.player.backupEquipment.push(old);
                     }
                 } else {
                     console.log(`Storing ${comparison.oldItem.name} in backup.`);
@@ -218,7 +240,9 @@ export function calculateDamage(attacker: ICharacter, defender: ICharacter): num
 export function handleStartBattle(state: GameState, monsterEntityKey: string): GameState {
     const newState = _.cloneDeep(state);
     const monster = newState.monsters[monsterEntityKey];
-    if (!monster) return state;
+    if (!monster) {
+        throw new Error(`Monster with key ${monsterEntityKey} not found in state.`);
+    }
 
     const playerStats = calculateFinalStats(newState.player);
     const monsterStats = calculateFinalStats(monster);
@@ -285,18 +309,32 @@ export function handleAttack(state: GameState, attackerId: string, defenderId: s
         };
     }
 
-    if (newState.interactionState.playerHp <= 0 || newState.interactionState.monsterHp <= 0) {
-        newState.interactionState.turn = 'battle_end';
+    const interactionState = newState.interactionState as ActiveBattleState;
+
+    if (interactionState.playerHp <= 0 || interactionState.monsterHp <= 0) {
+        newState.interactionState = {
+            type: 'battle_end',
+            monsterId: interactionState.monsterId,
+            playerHp: interactionState.playerHp,
+            monsterHp: interactionState.monsterHp,
+            round: interactionState.round,
+        };
     } else {
-        if (newState.interactionState.turn === 'monster') {
-            newState.interactionState.round++;
+        if (interactionState.turn === 'monster') {
+            interactionState.round++;
         }
 
-        if (newState.interactionState.round > MAX_COMBAT_ROUNDS) {
-            newState.interactionState.turn = 'battle_end';
+        if (interactionState.round > MAX_COMBAT_ROUNDS) {
+            newState.interactionState = {
+                type: 'battle_end',
+                monsterId: interactionState.monsterId,
+                playerHp: interactionState.playerHp,
+                monsterHp: interactionState.monsterHp,
+                round: interactionState.round,
+            };
         } else {
-            newState.interactionState.turn =
-                newState.interactionState.turn === 'player' ? 'monster' : 'player';
+            interactionState.turn =
+                interactionState.turn === 'player' ? 'monster' : 'player';
         }
     }
 
@@ -359,7 +397,9 @@ export function handleEndBattle(
     levelData: LevelData[]
 ): GameState {
     let newState = _.cloneDeep(state);
-    if (newState.interactionState.type !== 'battle') return state;
+    if (newState.interactionState.type !== 'battle' && newState.interactionState.type !== 'battle_end') {
+        return state;
+    }
 
     const monsterEntityKey = newState.interactionState.monsterId;
     const playerEntityKey = Object.keys(newState.entities).find(
@@ -416,7 +456,9 @@ export function handleEndBattle(
 export function handlePickupItem(state: GameState, itemEntityKey: string): GameState {
     const newState = _.cloneDeep(state);
     const item = newState.items[itemEntityKey];
-    if (!item) return state;
+    if (!item) {
+        throw new Error(`Item with key ${itemEntityKey} not found in state.`);
+    }
 
     const itemEntity = newState.entities[itemEntityKey];
     newState.player.x = itemEntity.x;
@@ -495,7 +537,9 @@ export function handleUsePotion(state: GameState, potionData: IItem | undefined)
 export function handleOpenDoor(state: GameState, doorId: string): GameState {
     const newState = _.cloneDeep(state);
     const door = newState.doors[doorId];
-    if (!door) return state;
+    if (!door) {
+        throw new Error(`Door with key ${doorId} not found in state.`);
+    }
 
     const doorEntityKey = Object.keys(newState.entities).find((k) => k === doorId);
     if (doorEntityKey) {

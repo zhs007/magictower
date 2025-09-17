@@ -1,10 +1,22 @@
-import { ICharacter, IEquipment } from './types';
+import { ICharacter, IEquipment, IPlayer } from './types';
 
 // A type defining the stats that can be calculated.
 export type CalculableStats = 'hp' | 'attack' | 'defense' | 'speed';
 
 /**
+ * Type guard to check if a character is a player.
+ * @param character The character to check.
+ * @returns True if the character is an IPlayer.
+ */
+function isPlayer(character: ICharacter): character is IPlayer {
+    return 'exp' in character;
+}
+
+/**
  * Calculates the final stats of a character, applying all equipment modifiers.
+ * The final value is calculated as: `base + flat_bonuses + floor(base * percent_bonuses)`.
+ * Percentage bonuses are expressed as decimals (e.g., 0.1 for +10%).
+ * All final stats are floored and cannot be less than 1.
  *
  * @param character The character whose stats are to be calculated.
  * @returns A record containing the final calculated stats, plus non-calculable stats.
@@ -13,7 +25,7 @@ export function calculateFinalStats(
     character: ICharacter
 ): Record<CalculableStats, number> & { maxhp: number; level: number; exp: number } {
     const baseStats = {
-        hp: character.hp,
+        hp: character.maxhp, // Note: Using maxhp as the base for HP calculations
         attack: character.attack,
         defense: character.defense,
         speed: character.speed,
@@ -69,10 +81,24 @@ export function calculateFinalStats(
     // Also include non-calculable stats in the final returned object
     const finalStatsWithExtras = {
         ...finalStats,
-        maxhp: character.maxhp,
+        maxhp: finalStats.hp, // The new maxhp is the calculated hp stat
         level: character.level,
-        exp: (character as any).exp ?? 0, // Monsters don't have exp, so default to 0
+        exp: isPlayer(character) ? character.exp : 0,
     };
+
+    // The 'hp' stat in CalculableStats actually represents 'maxhp'.
+    // We return it as `maxhp` in the final object, but the current character's `hp` should be returned as `hp`.
+    // This is a bit of a mix-up in the original design.
+    // The contract of this function is to return the *potential* stats.
+    // The final object has a `maxhp` property, but the `hp` property from `finalStats` is actually the calculated maxhp.
+    // To fix this without a major breaking change, we will rename the calculated `hp` to `maxhp`
+    // and then decide what to do with the `hp` property.
+    // For now, let's assume the `hp` in the returned object should be the character's current hp, clamped to the new maxhp.
+
+    const calculatedMaxHp = finalStats.hp;
+    finalStatsWithExtras.maxhp = calculatedMaxHp;
+    finalStatsWithExtras.hp = Math.min(character.hp, calculatedMaxHp);
+
 
     return finalStatsWithExtras;
 }
