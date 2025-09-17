@@ -37,6 +37,18 @@ function registerRoutes(app: any) {
       reply.status(500).send({ error: 'Failed to save leveldata.json' });
     }
   });
+
+  // Fallback: serve index.html for non-API routes so the SPA can handle routing.
+  app.get('/*', async (request: any, reply: any) => {
+    try {
+      const indexPath = resolve(__dirname, '..', 'index.html');
+      const html = await readFile(indexPath, 'utf-8');
+      reply.header('Content-Type', 'text/html; charset=utf-8').send(html);
+    } catch (err) {
+      app.log?.error?.(err);
+      reply.status(500).send('Failed to read index.html');
+    }
+  });
 }
 
 export default async function createApp() {

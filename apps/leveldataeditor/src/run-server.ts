@@ -19,7 +19,7 @@ const start = async () => {
       res.end('Server initializing');
     });
 
-    const __filename = fileURLToPath(import.meta.-url);
+  const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
     const vite = await createServer({
       root: resolve(__dirname, '..'),
