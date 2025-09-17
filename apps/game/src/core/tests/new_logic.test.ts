@@ -179,10 +179,7 @@ describe('Game Logic with Interactions', () => {
 
             state = handleAttack(state, playerEntityKey, monsterEntityKey);
 
-            expect(state.interactionState.type).toBe('battle');
-            if (state.interactionState.type === 'battle') {
-                expect(state.interactionState.turn).toBe('battle_end');
-            }
+            expect(state.interactionState.type).toBe('battle_end');
 
             const finalState = handleEndBattle(state, playerEntityKey, 'hp_depleted', []);
             expect(finalState.interactionState.type).toBe('none');

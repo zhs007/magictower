@@ -1,6 +1,10 @@
 import { GameStateManager } from './state';
 import { SaveData, GameState } from './types';
 
+const CURRENT_SAVE_VERSION = 1;
+// A simple date-based version for game data. Update this when gamedata changes.
+const CURRENT_DATA_VERSION = '20250916';
+
 // Minimal Storage interface compatible with DOM Storage
 export interface StorageLike {
     getItem(key: string): string | null;
@@ -34,6 +38,8 @@ export class SaveManager {
     public saveGame(slotId: string): void {
         try {
             const saveData: SaveData = {
+                saveVersion: CURRENT_SAVE_VERSION,
+                dataVersion: CURRENT_DATA_VERSION,
                 timestamp: Date.now(),
                 initialStateSeed: this.gameStateManager.initialStateSeed,
                 actions: this.gameStateManager.actionHistory,
@@ -60,6 +66,17 @@ export class SaveManager {
             }
 
             const saveData: SaveData = JSON.parse(jsonData);
+
+            if (saveData.saveVersion !== CURRENT_SAVE_VERSION) {
+                logger.warn(
+                    `Save data version mismatch. Save version: ${saveData.saveVersion}, Current version: ${CURRENT_SAVE_VERSION}. Loading may fail.`
+                );
+            }
+            if (saveData.dataVersion !== CURRENT_DATA_VERSION) {
+                logger.warn(
+                    `Game data version mismatch. Save data version: ${saveData.dataVersion}, Current data version: ${CURRENT_DATA_VERSION}. Game balance may be affected.`
+                );
+            }
 
             // Recreate the initial state from seed using an instance (createInitialState is now an instance method)
             const tempGameStateManager = new GameStateManager();

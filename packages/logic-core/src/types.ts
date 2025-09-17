@@ -72,7 +72,7 @@ export interface ICharacter extends IBaseObject {
         [EquipmentSlot.FEET]?: IEquipment;
     };
     // Backup equipment. Not directly used in combat calculations.
-    backupEquipment: (IEquipment | undefined)[];
+    backupEquipment: IEquipment[];
     buffs: IBuff[];
 }
 
@@ -112,18 +112,43 @@ export enum EntityType {
 
 export type IEntity = (IPlayer | IMonster | IItem | IEquipment) & { type: string };
 
+export type EntityOnMapType = 'monster' | 'item' | 'equipment' | 'door' | 'player_start' | 'stair';
+
+export interface IMapEntity {
+    id: string;
+    type: EntityOnMapType;
+    x: number;
+    y: number;
+    direction?: 'left' | 'right';
+}
+
+// More specific interaction states for battles
+export type BattleTurn = 'player' | 'monster';
+
+export type ActiveBattleState = {
+    type: 'battle';
+    monsterId: string;
+    turn: BattleTurn;
+    playerHp: number;
+    monsterHp: number;
+    round: number;
+};
+
+export type BattleEndState = {
+    type: 'battle_end';
+    monsterId: string;
+    playerHp: number;
+    monsterHp: number;
+round: number;
+};
+
 export type InteractionState =
     | { type: 'none' }
     | { type: 'item_pickup'; itemId: string }
     | { type: 'floor_change'; stairId: string }
-    | {
-          type: 'battle';
-          monsterId: string;
-          turn: 'player' | 'monster' | 'battle_end';
-          playerHp: number;
-          monsterHp: number;
-          round: number;
-      };
+    | { type: 'equipment_pickup'; equipmentId: string }
+    | ActiveBattleState
+    | BattleEndState;
 
 export interface IDoor {
     id: string;
@@ -150,7 +175,7 @@ export interface GameState {
     map: number[][];
     tileAssets?: Record<string, ITileAsset>;
     player: IPlayer;
-    entities: Record<string, any>; // A dictionary of all entities on the map
+    entities: Record<string, IMapEntity>; // A dictionary of all entities on the map
     monsters: Record<string, IMonster>;
     items: Record<string, IItem>;
     equipments: Record<string, IEquipment>;
@@ -175,6 +200,8 @@ export type Action =
     | { type: 'USE_POTION' };
 
 export interface SaveData {
+    saveVersion: number;
+    dataVersion: string;
     timestamp: number;
     initialStateSeed: any; // Used to generate the initial game state
     actions: Action[]; // All actions from game start to the save point

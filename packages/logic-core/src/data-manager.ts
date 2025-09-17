@@ -1,4 +1,5 @@
 import { IMonster, IItem, IEquipment, IBuff, IPlayer, LevelData, MapLayout } from './types';
+import { getLogger } from './logger';
 
 export class DataManager {
     public monsters: Map<string, IMonster> = new Map();
@@ -104,6 +105,7 @@ export class DataManager {
         modules: Record<string, unknown>,
         targetMap: Map<string, any>
     ): void {
+        const logger = getLogger();
         for (const path in modules) {
             // The default export of the JSON module is the actual data.
             const data = (modules[path] as any).default;
@@ -131,8 +133,13 @@ export class DataManager {
                         targetMap.set(filename, data);
                     }
                 } catch (e) {
-                    // ignore filename-derived registration failures
+                    logger.warn(`Failed to create fallback registration for ${path}:`, e);
                 }
+            } else {
+                logger.warn(
+                    `[DataManager] Failed to load data from module at path: ${path}. Missing 'id' or data is malformed.`,
+                    data
+                );
             }
         }
     }
