@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leveldata Editor</title>
+  <link rel="stylesheet" href="/src/client/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="left-panel">
+      <h1>Level Data</h1>
+      <div id="table-container"></div>
+      <button id="save-button">Save</button>
+      <button id="expand-button">Expand Levels</button>
+      <button id="shrink-button">Shrink Levels</button>
+    </div>
+    <div id="right-panel">
+      <h1>Attribute Growth</h1>
+      <div id="chart-container" style="width: 100%; height: 400px;"></div>
+    </div>
+  </div>
+  <script type="module" src="/src/client/main.ts"></script>
+</body>
+</html>

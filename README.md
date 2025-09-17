@@ -70,6 +70,7 @@ All scripts should be run from the repository root.
 *   `pnpm gen-map`: Runs the first version of the procedural map generator.
 *   `pnpm gen-map:v2`: Runs the template-based v2 map generator.
 *   `pnpm dev:mapeditor`: Starts the development server for the visual map editor.
+*   `pnpm dev:leveldataeditor`: Starts the development server for the level data editor.
 
 ## Core Game Logic
 
@@ -165,6 +166,7 @@ The equipment system automatically manages gear upgrades to streamline the playe
 *   `npm run gen-map`: 运行v1版的程序化地图生成器。
 *   `npm run gen-map:v2`: 运行基于模板的v2版地图生成器。
 *   `npm run dev:mapeditor`: 启动可视化地图编辑器的开发服务器。
+*   `npm run dev:leveldataeditor`: 启动等级数据编辑器的开发服务器。
 
 ## 游戏核心算法说明
 

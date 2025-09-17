@@ -1,0 +1,41 @@
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+#left-panel {
+  width: 50%;
+  padding: 20px;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+#right-panel {
+  width: 50%;
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+td[contenteditable="true"] {
+  background-color: #f9f9f9;
+}
