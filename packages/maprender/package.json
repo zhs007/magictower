@@ -13,13 +13,15 @@
   "scripts": {
     "build": "tsc",
     "build:esm": "tsc --outFile dist/index.mjs --module esnext",
-    "dev": "tsc -w"
+    "dev": "tsc -w",
+    "test:ci": "vitest run"
   },
   "dependencies": {
     "@proj-tower/logic-core": "workspace:^",
     "pixi.js": "^8.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   }
 }
