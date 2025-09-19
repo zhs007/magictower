@@ -89,7 +89,6 @@ vi.mock('@proj-tower/maprender', async (importOriginal) => {
     };
 });
 
-
 // Mock the HUD
 vi.mock('../ui/hud', () => {
     const MockHUD = vi.fn().mockImplementation(() => {
@@ -177,8 +176,6 @@ describe('Renderer', () => {
         expect(monsterEntity.y).toBe((1 + 1) * TILE_SIZE);
         expect(monsterEntity.zIndex).toBe(1);
     });
-
-
 
     it('should show floating text on an entity', () => {
         const gameState = createMockGameState();

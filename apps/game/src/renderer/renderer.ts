@@ -151,7 +151,6 @@ export class Renderer {
         this.syncEntities(state);
     }
 
-
     public animateFloorTransition(onComplete: () => void): void {
         const tl = gsap.timeline();
         tl.to(this.stage, {
