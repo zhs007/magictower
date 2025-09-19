@@ -65,6 +65,14 @@ This project may contain services that are independent of the main game applicat
 -   **Key Feature**: It includes a simple action system. You can define behaviors (like 'idle' or 'walk') using `setAction(actionName, callback)` and then trigger them by setting the `entity.action` property.
 -   **Update Loop**: All entities added to `MapRender` via `mapRender.addEntity(entity)` will have their `update(deltaTime)` method called automatically on each frame, which in turn executes the current action's callback. When creating new animated objects, you should almost always create a class that extends `Entity`.
 
+### The `CharacterEntity` Class
+
+-   **Location**: `packages/maprender/src/character-entity.ts`
+-   **Purpose**: This class extends `Entity` and is specifically for characters like the player and monsters.
+-   **Key Features**:
+    -   **Direction Handling**: It automatically manages the character's direction (`'left'` or `'right'`) and flips the sprite accordingly via the `setDirection()` method.
+    -   **Action Animations**: It encapsulates complex animations. Instead of calling an animation method on the main `Renderer`, you should now get the `CharacterEntity` instance and call its action methods directly (e.g., `playerEntity.attack(monsterEntity, ...)`).
+
 ## Code Style
 
 - **Language**: TypeScript

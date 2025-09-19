@@ -1,6 +1,6 @@
 import { Container, Assets, Sprite } from 'pixi.js';
 import { GameState, dataManager } from '@proj-tower/logic-core';
-import { MapRender } from '@proj-tower/maprender';
+import { MapRender, Entity, CharacterEntity } from '@proj-tower/maprender';
 import { HUD } from './ui/hud';
 import { gsap } from 'gsap';
 import { FloatingTextManager } from './ui/floating-text-manager';
@@ -17,16 +17,13 @@ export class Renderer {
     private mapRender?: MapRender;
     private worldContainer: Container;
 
-    private entitySprites: Map<string, Sprite> = new Map();
+    private entities: Map<string, Entity> = new Map();
 
     constructor(stage: Container) {
         this.stage = stage;
         this.topLayerContainer = new Container();
         this.hud = new HUD();
-        this.floatingTextManager = new FloatingTextManager(
-            this.topLayerContainer,
-            this.entitySprites
-        );
+        this.floatingTextManager = new FloatingTextManager(this.topLayerContainer, this.entities);
 
         this.topLayerContainer.sortableChildren = true;
 
@@ -34,12 +31,15 @@ export class Renderer {
         this.worldContainer.x = MAP_OFFSET_X;
         this.worldContainer.y = 200;
 
-        // The mapRender instance will be added to worldContainer in initialize()
         this.worldContainer.addChild(this.topLayerContainer);
 
         this.hud.y = MAP_WIDTH_TILES * TILE_SIZE + this.worldContainer.y;
 
         this.stage.addChild(this.worldContainer, this.hud);
+    }
+
+    public getEntity(id: string): Entity | undefined {
+        return this.entities.get(id);
     }
 
     public async processAssetModules(modules: Record<string, string>): Promise<void> {
@@ -72,192 +72,85 @@ export class Renderer {
     }
 
     public initialize(state: GameState): void {
-        // If a map already exists, remove it.
         if (this.mapRender) {
             this.worldContainer.removeChild(this.mapRender);
             this.mapRender.destroy();
         }
 
         this.mapRender = new MapRender(state);
-        this.worldContainer.addChildAt(this.mapRender, 0); // Add map behind top layer
+        this.worldContainer.addChildAt(this.mapRender, 0);
 
-        this.syncSprites(state);
+        this.syncEntities(state);
         this.hud.update(state);
     }
 
-    public syncSprites(state: GameState): void {
+    public syncEntities(state: GameState): void {
         if (!this.mapRender) return;
 
         const allEntityIds = new Set(Object.keys(state.entities));
 
-        // Hide or remove sprites for entities that no longer exist
-        for (const [entityId, sprite] of this.entitySprites.entries()) {
+        for (const [entityId, entity] of this.entities.entries()) {
             if (!allEntityIds.has(entityId)) {
-                sprite.visible = false;
-                // this.mapRender.entityContainer.removeChild(sprite);
-                // this.entitySprites.delete(entityId);
+                entity.visible = false;
             }
         }
 
         for (const entityId of allEntityIds) {
-            const entity = state.entities[entityId];
-            if (!entity) continue;
+            const entityData = state.entities[entityId];
+            if (!entityData) continue;
 
-            let sprite = this.entitySprites.get(entityId);
+            let entity = this.entities.get(entityId);
 
-            if (!sprite) {
+            if (!entity) {
                 let textureAlias = '';
-                if (entity.type === 'player_start') {
+                if (entityData.type === 'player_start') {
                     textureAlias = 'player';
-                } else if (entity.type === 'stair') {
+                } else if (entityData.type === 'stair') {
                     textureAlias = 'item_item';
                 } else if (
-                    entity.type === 'monster' ||
-                    entity.type === 'item' ||
-                    entity.type === 'equipment'
+                    entityData.type === 'monster' ||
+                    entityData.type === 'item' ||
+                    entityData.type === 'equipment'
                 ) {
-                    textureAlias = (entity as any).assetId ?? entity.id;
+                    textureAlias = (entityData as any).assetId ?? entityData.id;
                 }
 
                 if (textureAlias) {
-                    sprite = new Sprite(Assets.get(textureAlias));
-                    sprite.anchor.set(0.5, 1);
-
-                    if (entity.type === 'stair') {
-                        sprite.tint = 0x800080;
+                    const texture = Assets.get(textureAlias);
+                    if (entityData.type === 'player_start' || entityData.type === 'monster') {
+                        entity = new CharacterEntity(texture);
+                    } else {
+                        entity = new Entity();
+                        const sprite = new Sprite(texture);
+                        sprite.anchor.set(0.5, 1);
+                        if (entityData.type === 'stair') {
+                            sprite.tint = 0x800080;
+                        }
+                        entity.addChild(sprite);
                     }
 
-                    this.entitySprites.set(entityId, sprite);
-                    this.mapRender.entityContainer.addChild(sprite);
+                    this.entities.set(entityId, entity);
+                    this.mapRender.addEntity(entity);
                 }
             }
 
-            if (sprite) {
-                sprite.x = entity.x * TILE_SIZE + TILE_SIZE / 2;
-                sprite.y = (entity.y + 1) * TILE_SIZE;
-                sprite.zIndex = entity.y;
-                sprite.visible = true;
+            if (entity) {
+                entity.x = entityData.x * TILE_SIZE + TILE_SIZE / 2;
+                entity.y = (entityData.y + 1) * TILE_SIZE;
+                entity.zIndex = entityData.y;
+                entity.visible = true;
 
-                if ('direction' in entity) {
-                    sprite.scale.x = entity.direction === 'left' ? -1 : 1;
-                    sprite.scale.y = 1;
+                if (entity instanceof CharacterEntity && 'direction' in entityData) {
+                    entity.setDirection((entityData as any).direction);
                 }
             }
         }
     }
 
     public render(state: GameState): void {
-        this.syncSprites(state);
+        this.syncEntities(state);
     }
 
-    public async animateItemPickup(state: GameState, onComplete: () => void): Promise<void> {
-        if (state.interactionState.type !== 'item_pickup') return;
-
-        const playerKey = Object.keys(state.entities).find(
-            (k) => state.entities[k].type === 'player_start'
-        );
-        if (!playerKey) return;
-
-        const player = state.entities[playerKey];
-        const playerSprite = this.entitySprites.get(playerKey);
-        const itemSprite = this.entitySprites.get(state.interactionState.itemId);
-
-        if (!playerSprite || !itemSprite) {
-            onComplete();
-            return;
-        }
-
-        const item = state.entities[state.interactionState.itemId];
-        if (!item) {
-            onComplete();
-            return;
-        }
-
-        const targetX = item.x * TILE_SIZE + TILE_SIZE / 2;
-        const targetY = (item.y + 1) * TILE_SIZE;
-
-        const tl = gsap.timeline({ onComplete });
-        const duration = 0.3;
-
-        if (player.x === item.x) {
-            let jumpHeight;
-            let peakY;
-            if (player.y > item.y) {
-                jumpHeight = TILE_SIZE / 4;
-                peakY = targetY - jumpHeight;
-            } else {
-                jumpHeight = TILE_SIZE / 4;
-                peakY = playerSprite.y - jumpHeight;
-            }
-            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }).to(
-                playerSprite,
-                { y: targetY, duration: duration / 2, ease: 'power1.in' }
-            );
-        } else {
-            const jumpHeight = TILE_SIZE / 2;
-            const peakY = playerSprite.y - jumpHeight;
-            tl.to(playerSprite, { x: targetX, duration: duration, ease: 'linear' }, 0);
-            tl.to(playerSprite, { y: peakY, duration: duration / 2, ease: 'power1.out' }, 0).to(
-                playerSprite,
-                { y: targetY, duration: duration / 2, ease: 'power1.in' }
-            );
-        }
-
-        tl.to(
-            itemSprite,
-            {
-                y: targetY - TILE_SIZE,
-                alpha: 0,
-                duration: duration,
-                ease: 'power1.in',
-            },
-            0
-        );
-    }
-
-    public async animateAttack(
-        attackerId: string,
-        defenderId: string,
-        damage: number,
-        onComplete: () => void
-    ): Promise<void> {
-        const attackerSprite = this.entitySprites.get(attackerId);
-        const defenderSprite = this.entitySprites.get(defenderId);
-
-        if (!attackerSprite || !defenderSprite) {
-            onComplete();
-            return;
-        }
-
-        const originalX = attackerSprite.x;
-        const originalY = attackerSprite.y;
-        const targetX = defenderSprite.x;
-        const targetY = defenderSprite.y;
-
-        const tl = gsap.timeline({ onComplete });
-
-        tl.to(attackerSprite, {
-            x: (originalX + targetX) / 2,
-            y: (originalY + targetY) / 2,
-            duration: 0.15,
-            ease: 'power1.in',
-            yoyo: true,
-            repeat: 1,
-        });
-
-        tl.to(
-            defenderSprite,
-            {
-                tint: 0xff0000,
-                duration: 0.1,
-                yoyo: true,
-                repeat: 1,
-            },
-            '-=0.1'
-        );
-
-        this.floatingTextManager.add(`-${damage}`, 'DAMAGE', defenderId);
-    }
 
     public animateFloorTransition(onComplete: () => void): void {
         const tl = gsap.timeline();
@@ -281,8 +174,8 @@ export class Renderer {
         type: 'ITEM_GAIN' | 'STAT_INCREASE' | 'HEAL',
         entityId: string
     ): void {
-        const sprite = this.entitySprites.get(entityId);
-        if (sprite) {
+        const entity = this.entities.get(entityId);
+        if (entity) {
             this.floatingTextManager.add(text, type, entityId);
         }
     }

@@ -49,9 +49,29 @@ vi.mock('pixi.js', async () => {
 });
 
 // Mock the maprender package
-vi.mock('@proj-tower/maprender', () => {
+vi.mock('@proj-tower/maprender', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@proj-tower/maprender')>();
+
+    const MockEntity = vi.fn(() => ({
+        x: 0,
+        y: 0,
+        zIndex: 0,
+        visible: true,
+        children: [],
+        addChild: vi.fn(),
+        setDirection: vi.fn(),
+        attack: vi.fn((defender, damage, showDamage, onComplete) => onComplete()),
+        pickup: vi.fn((item, onComplete) => onComplete()),
+    }));
+
+    const MockCharacterEntity = vi.fn(() => ({
+        ...new MockEntity(), // Inherits mock properties
+    }));
+
     const MockMapRender = vi.fn().mockImplementation(() => {
         return {
+            addEntity: vi.fn(),
+            removeEntity: vi.fn(),
             entityContainer: {
                 addChild: vi.fn(),
                 removeChild: vi.fn(),
@@ -60,8 +80,15 @@ vi.mock('@proj-tower/maprender', () => {
             destroy: vi.fn(),
         };
     });
-    return { MapRender: MockMapRender };
+
+    return {
+        ...actual,
+        MapRender: MockMapRender,
+        Entity: MockEntity,
+        CharacterEntity: MockCharacterEntity,
+    };
 });
+
 
 // Mock the HUD
 vi.mock('../ui/hud', () => {
@@ -104,11 +131,11 @@ describe('Renderer', () => {
         renderer = new Renderer(mockStage);
     });
 
-    it('should call syncSprites on render', () => {
+    it('should call syncEntities on render', () => {
         const gameState = createMockGameState();
-        const syncSpritesSpy = vi.spyOn(renderer, 'syncSprites');
+        const syncEntitiesSpy = vi.spyOn(renderer, 'syncEntities');
         renderer.render(gameState);
-        expect(syncSpritesSpy).toHaveBeenCalledWith(gameState);
+        expect(syncEntitiesSpy).toHaveBeenCalledWith(gameState);
     });
 
     it('should create and add MapRender on initialize', () => {
@@ -120,55 +147,38 @@ describe('Renderer', () => {
 
         const worldContainer = (renderer as any).worldContainer;
         expect(worldContainer.addChildAt).toHaveBeenCalled();
-        // Check that the instance was assigned. `toBeInstanceOf` doesn't work well with Vitest mocks.
         expect((renderer as any).mapRender).toBeDefined();
     });
 
-    it('should add entity sprites to the mapRender entityContainer', () => {
+    it('should add entities to the mapRender', () => {
         const gameState = createMockGameState();
-        renderer.initialize(gameState); // This creates the mapRender instance
+        renderer.initialize(gameState);
 
         const mapRenderInstance = (renderer as any).mapRender;
-        // 3 entities: player, monster, item
-        expect(mapRenderInstance.entityContainer.addChild).toHaveBeenCalledTimes(3);
+        expect(mapRenderInstance.addEntity).toHaveBeenCalledTimes(3);
     });
 
-    it('should position sprites correctly', () => {
+    it('should position entities correctly', () => {
         const gameState = createMockGameState();
         renderer.initialize(gameState);
 
         const TILE_SIZE = 65;
-        const entitySprites = (renderer as any).entitySprites;
+        const entities = (renderer as any).entities;
 
-        const playerSprite = entitySprites.get('player_start_0_0');
-        expect(playerSprite).toBeDefined();
-        expect(playerSprite.x).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
-        expect(playerSprite.y).toBe((1 + 1) * TILE_SIZE);
-        expect(playerSprite.zIndex).toBe(1);
+        const playerEntity = entities.get('player_start_0_0');
+        expect(playerEntity).toBeDefined();
+        expect(playerEntity.x).toBe(1 * TILE_SIZE + TILE_SIZE / 2);
+        expect(playerEntity.y).toBe((1 + 1) * TILE_SIZE);
+        expect(playerEntity.zIndex).toBe(1);
 
-        const monsterSprite = entitySprites.get('monster_1');
-        expect(monsterSprite).toBeDefined();
-        expect(monsterSprite.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
-        expect(monsterSprite.y).toBe((1 + 1) * TILE_SIZE);
-        expect(monsterSprite.zIndex).toBe(1);
+        const monsterEntity = entities.get('monster_1');
+        expect(monsterEntity).toBeDefined();
+        expect(monsterEntity.x).toBe(0 * TILE_SIZE + TILE_SIZE / 2);
+        expect(monsterEntity.y).toBe((1 + 1) * TILE_SIZE);
+        expect(monsterEntity.zIndex).toBe(1);
     });
 
-    it('should call onComplete callback after item pickup animation', async () => {
-        const gameState = createMockGameState();
-        gameState.interactionState = { type: 'item_pickup', itemId: 'item_1' };
-        renderer.initialize(gameState);
 
-        const onComplete = vi.fn();
-        await renderer.animateItemPickup(gameState, onComplete);
-
-        const gsap = await import('gsap');
-        const mockedTimeline = (gsap.gsap.timeline as any).mock.results[0].value;
-        if (typeof mockedTimeline.vars.onComplete === 'function') {
-            mockedTimeline.vars.onComplete();
-        }
-
-        expect(onComplete).toHaveBeenCalled();
-    });
 
     it('should show floating text on an entity', () => {
         const gameState = createMockGameState();
