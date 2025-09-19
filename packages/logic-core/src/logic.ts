@@ -47,28 +47,82 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         newY >= newState.map.length ||
         newState.map[newY][newX] === 1
     ) {
+        console.debug(`handleMove: collision at ${newX},${newY} or out-of-bounds`);
         return state; // No change in position or direction
     }
 
     // Check for entity interaction at the destination
-    const destinationEntityKey = Object.keys(newState.entities).find(
-        (k) => newState.entities[k].x === newX && newState.entities[k].y === newY
-    );
+    // First, try to find a map entity with matching coordinates (this is the
+    // map-level key, e.g. 'item_1'). If found but the corresponding entry is
+    // not present in items/monsters/equipments (because those collections use a
+    // different canonical key), resolve the canonical key by searching those
+    // collections for an object with a matching `id`.
+    const entityKeyAtCoords = Object.keys(newState.entities).find((k) => {
+        const e = newState.entities[k];
+        return e.x === newX && e.y === newY;
+    });
 
-    if (destinationEntityKey) {
-        const destinationEntity = newState.entities[destinationEntityKey];
+    let finalDestinationKey: string | undefined = undefined;
+
+    if (entityKeyAtCoords) {
+        // Start with the map key
+        let resolvedKey = entityKeyAtCoords;
+        const entityObj = newState.entities[entityKeyAtCoords];
+
+        // If it's an item but items doesn't have the same key, try to find
+        // the canonical item key by matching the item's id.
+        if (entityObj && entityObj.type === 'item' && !newState.items[resolvedKey]) {
+            const foundItemKey = Object.keys(newState.items).find((k) => newState.items[k].id === entityObj.id);
+            if (foundItemKey) resolvedKey = foundItemKey;
+        }
+
+        // Same for monsters
+        if (entityObj && entityObj.type === 'monster' && !newState.monsters[resolvedKey]) {
+            const foundMonsterKey = Object.keys(newState.monsters).find((k) => newState.monsters[k].id === entityObj.id);
+            if (foundMonsterKey) resolvedKey = foundMonsterKey;
+        }
+
+        // Same for equipments
+        if (entityObj && entityObj.type === 'equipment' && !newState.equipments[resolvedKey]) {
+            const foundEquipKey = Object.keys(newState.equipments).find((k) => newState.equipments[k].id === entityObj.id);
+            if (foundEquipKey) resolvedKey = foundEquipKey;
+        }
+
+        finalDestinationKey = resolvedKey;
+    } else {
+        // No entity found at coords; as a last resort, try to find any entity
+        // whose object id matches an item/monster/equipment id and is located
+        // at the target coords. This covers maps that may not enumerate the
+        // entity under the same key in `entities` for some reason.
+        finalDestinationKey = Object.keys(newState.entities).find((k) => {
+            const e = newState.entities[k];
+            return (
+                (e &&
+                    ((e.id && Object.values(newState.items || {}).some((it: any) => it.id === e.id)) ||
+                        (e.id && Object.values(newState.monsters || {}).some((m: any) => m.id === e.id)) ||
+                        (e.id && Object.values(newState.equipments || {}).some((eq: any) => eq.id === e.id)))) &&
+                e.x === newX &&
+                e.y === newY
+            );
+        });
+    }
+    console.debug(`handleMove: target ${newX},${newY} entityAtCoords=${entityKeyAtCoords} resolved=${finalDestinationKey}`);
+
+    if (finalDestinationKey) {
+        const destinationEntity = newState.entities[finalDestinationKey];
+        const destKey = finalDestinationKey;
         // If the destination entity is an item, set interaction state
-        if (newState.items[destinationEntityKey]) {
+        if (newState.items[destKey]) {
             return {
                 ...newState,
-                interactionState: { type: 'item_pickup', itemId: destinationEntityKey },
+                interactionState: { type: 'item_pickup', itemId: destKey },
             };
         }
 
-        if (newState.stairs[destinationEntityKey]) {
+        if (newState.stairs[destKey]) {
             return {
                 ...newState,
-                interactionState: { type: 'floor_change', stairId: destinationEntityKey },
+                interactionState: { type: 'floor_change', stairId: destKey },
             };
         } else if (destinationEntity.type === 'equipment') {
             // Dispatch equipment pickup action
@@ -76,11 +130,11 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
                 ...newState,
                 interactionState: {
                     type: 'PICK_UP_EQUIPMENT',
-                    equipmentId: destinationEntityKey,
+                    equipmentId: destKey,
                 } as any,
-            }; // Using 'any' to bypass strict type check for custom state
+            };
         } else if (destinationEntity.type === 'monster') {
-            const monster = newState.monsters[destinationEntityKey];
+            const monster = newState.monsters[destKey];
             if (monster) {
                 if (newState.player.x < monster.x) {
                     monster.direction = 'left';
@@ -90,14 +144,14 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
             }
             newState.interactionState = {
                 type: 'battle',
-                monsterId: destinationEntityKey,
+                monsterId: destKey,
                 turn: 'player', // This will be immediately re-evaluated in handleStartBattle
                 playerHp: newState.player.hp,
-                monsterHp: newState.monsters[destinationEntityKey].hp,
+                monsterHp: newState.monsters[destKey].hp,
                 round: 1,
             };
             // Immediately call handleStartBattle to set the correct turn order
-            return handleStartBattle(newState, destinationEntityKey);
+            return handleStartBattle(newState, destKey);
         }
     } else {
         newState.player.x = newX;

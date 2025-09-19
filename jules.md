@@ -111,6 +111,25 @@
       player.action = 'idle'; // 开始执行 idle 动画
       ```
 
+## 4.3. 角色实体 (CharacterEntity) 类
+
+为了专门处理玩家和怪物这类具有更复杂行为的实体，项目在 `Entity` 的基础上引入了 `CharacterEntity`。
+
+- **`CharacterEntity` 类**: 这是一个继承自 `Entity` 的类，专门用于所有可战斗、可移动的角色。
+- **职责**:
+    1.  **方向管理**: 包含 `direction` 属性 (`'left'` 或 `'right'`)，并提供了 `setDirection()` 方法来自动处理精灵图的水平翻转，以反映角色的朝向。
+    2.  **封装动画**: 此类封装了角色特定的复杂动画。例如，`attack()` 和 `pickup()` 方法包含了使用 `gsap` 实现的攻击和拾取物品的动画逻辑。这使得主渲染器 `Renderer` 和游戏场景 `GameScene` 的代码大大简化。
+- **核心 API**:
+    - `character.direction: 'left' | 'right'`: 角色当前的朝向。
+    - `character.setDirection(direction)`: 设置角色的朝向，并自动翻转其内部的 `Sprite`。
+    - `character.attack(defender, damage, showDamageCb, onCompleteCb)`: 对另一个 `CharacterEntity` 执行攻击动画。
+    - `character.pickup(item, onCompleteCb)`: 执行拾取物品的动画。
+- **重构影响**:
+    - **`Renderer`**: 不再直接创建和管理 `Sprite`，而是为玩家和怪物创建 `CharacterEntity` 实例。它通过调用实体的 `setDirection()` 方法来更新朝向，而不是直接操作 `sprite.scale`。
+    - **`GameScene`**: 不再调用渲染器的动画方法（如 `renderer.animateAttack`），而是直接从渲染器获取 `CharacterEntity` 实例，并调用其上的 `attack()` 或 `pickup()` 方法来触发相应的动画。
+
+这种设计进一步将与特定实体相关的视图逻辑（如动画和方向）从通用的渲染和场景代码中分离出来，提高了代码的内聚性和可维护性。
+
 ## 5. 数据格式约定
 
 - **配置数据 (`gamedata/`)**: 使用 JSON 格式。每个对象（怪物、道具、装备、Buff）都有一个唯一的字符串 `id`。

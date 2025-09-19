@@ -1,5 +1,6 @@
 import { GameState, calculateDamage, dataManager, GameStateManager } from '@proj-tower/logic-core';
 import { SaveManager } from '@proj-tower/logic-core';
+import { CharacterEntity } from '@proj-tower/maprender';
 import { Renderer } from '../renderer/renderer';
 import { InputManager } from '../core/input-manager';
 import { BaseScene } from './base-scene';
@@ -63,6 +64,11 @@ export class GameScene extends BaseScene {
 
     private handleAction(action: any): void {
         if (this.isAnimating || !this.gameStateManager) {
+            console.debug('handleAction: ignored action because isAnimating or missing gsm', {
+                action,
+                isAnimating: this.isAnimating,
+                hasGSM: !!this.gameStateManager,
+            });
             return;
         }
 
@@ -146,8 +152,55 @@ export class GameScene extends BaseScene {
     }
 
     private handleItemPickup(state: GameState): void {
+        if (!this.playerEntityKey || state.interactionState.type !== 'item_pickup') return;
         this.isAnimating = true;
-        this.renderer.animateItemPickup(state, () => {
+
+        const playerEntity = this.renderer.getEntity(this.playerEntityKey) as CharacterEntity;
+        const itemEntity = this.renderer.getEntity(state.interactionState.itemId);
+
+        if (!playerEntity || !itemEntity) {
+            console.debug(
+                'handleItemPickup: missing renderer entity (fallback will pick up item)',
+                {
+                    playerEntityKey: this.playerEntityKey,
+                    itemId: state.interactionState.itemId,
+                    playerEntityExists: !!playerEntity,
+                    itemEntityExists: !!itemEntity,
+                }
+            );
+
+            // Fallback: pick item up immediately; ensure isAnimating is
+            // cleared in all cases so the input loop isn't permanently locked.
+            try {
+                if (this.gameStateManager && state.items?.[state.interactionState.itemId]) {
+                    const itemId = state.interactionState.itemId;
+                    this.gameStateManager.dispatch({
+                        type: 'PICK_UP_ITEM',
+                        payload: { itemId },
+                    });
+                    this.renderer.render(this.gameStateManager.getState());
+                    const item = state.items[itemId];
+                    if (item && this.playerEntityKey) {
+                        try {
+                            this.renderer.showFloatingTextOnEntity(
+                                `+1 ${item.name}`,
+                                'ITEM_GAIN',
+                                this.playerEntityKey
+                            );
+                        } catch (e) {
+                            console.warn('showFloatingTextOnEntity failed', e);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('handleItemPickup fallback failed', e);
+            } finally {
+                this.isAnimating = false;
+            }
+            return;
+        }
+
+        playerEntity.pickup(itemEntity, () => {
             if (this.gameStateManager && state.interactionState.type === 'item_pickup') {
                 const itemId = state.interactionState.itemId;
                 const item = state.items[itemId];
@@ -170,9 +223,9 @@ export class GameScene extends BaseScene {
 
     private handleBattle(state: GameState): void {
         if (!this.gameStateManager || !this.playerEntityKey) return;
-        // Narrow interactionState to the 'battle' variant so TS knows `turn` exists.
         if (state.interactionState.type !== 'battle') return;
         const battleState = state.interactionState;
+
         if (battleState.turn === 'battle_end') {
             if (battleState.round > 8) {
                 this.gameStateManager.dispatch({
@@ -200,16 +253,28 @@ export class GameScene extends BaseScene {
             return;
         }
 
-        const attacker = battleState.turn === 'player' ? player : monster;
-        const defender = battleState.turn === 'player' ? monster : player;
+        const attackerData = battleState.turn === 'player' ? player : monster;
+        const defenderData = battleState.turn === 'player' ? monster : player;
         const attackerId =
             battleState.turn === 'player' ? this.playerEntityKey : battleState.monsterId;
         const defenderId =
             battleState.turn === 'player' ? battleState.monsterId : this.playerEntityKey;
 
-        const damage = calculateDamage(attacker, defender);
+        const attackerEntity = this.renderer.getEntity(attackerId) as CharacterEntity;
+        const defenderEntity = this.renderer.getEntity(defenderId) as CharacterEntity;
 
-        this.renderer.animateAttack(attackerId, defenderId, damage, () => {
+        if (!attackerEntity || !defenderEntity) {
+            this.isAnimating = false;
+            return;
+        }
+
+        const damage = calculateDamage(attackerData, defenderData);
+
+        const showDamage = (dmg: number) => {
+            this.renderer.floatingTextManager.add(`-${dmg}`, 'DAMAGE', defenderId);
+        };
+
+        attackerEntity.attack(defenderEntity, damage, showDamage, () => {
             if (this.gameStateManager) {
                 this.gameStateManager.dispatch({
                     type: 'ATTACK',

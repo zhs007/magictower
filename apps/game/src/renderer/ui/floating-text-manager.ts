@@ -1,5 +1,6 @@
-import { Container, Sprite, Text, TextStyleFontWeight } from 'pixi.js';
+import { Container, Text, TextStyleFontWeight } from 'pixi.js';
 import { gsap } from 'gsap';
+import { Entity } from '@proj-tower/maprender';
 
 export type FloatingTextType = 'DAMAGE' | 'HEAL' | 'ITEM_GAIN' | 'STAT_INCREASE';
 
@@ -13,13 +14,13 @@ interface FloatingTextRequest {
 
 export class FloatingTextManager {
     private parent: Container;
-    private entitySprites: Map<string, Sprite>;
+    private entities: Map<string, Entity>;
     private queue: FloatingTextRequest[] = [];
     private isAnimating: boolean = false;
 
-    constructor(parent: Container, entitySprites: Map<string, Sprite>) {
+    constructor(parent: Container, entities: Map<string, Entity>) {
         this.parent = parent;
-        this.entitySprites = entitySprites;
+        this.entities = entities;
     }
 
     public add(text: string, type: FloatingTextType, entityId: string): void {
@@ -59,10 +60,10 @@ export class FloatingTextManager {
     }
 
     private createAndAnimateText(request: FloatingTextRequest): void {
-        const sprite = this.entitySprites.get(request.entityId);
+        const entity = this.entities.get(request.entityId);
 
-        if (!sprite) {
-            // If sprite is not found, we must still process the rest of the queue.
+        if (!entity) {
+            // If entity is not found, we must still process the rest of the queue.
             this.processQueue();
             return;
         }
@@ -78,8 +79,8 @@ export class FloatingTextManager {
             text: request.text,
             style: style,
         });
-        damageText.x = sprite.x;
-        damageText.y = sprite.y - TILE_SIZE; // Spawn above the sprite
+        damageText.x = entity.x;
+        damageText.y = entity.y - TILE_SIZE; // Spawn above the entity
         damageText.anchor.set(0.5);
         this.parent.addChild(damageText);
 
