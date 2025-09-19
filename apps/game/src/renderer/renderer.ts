@@ -1,4 +1,4 @@
-import { Container, Assets, Sprite } from 'pixi.js';
+import { Container, Assets, Sprite, Texture } from 'pixi.js';
 import { GameState, dataManager } from '@proj-tower/logic-core';
 import { MapRender, Entity, CharacterEntity } from '@proj-tower/maprender';
 import { HUD } from './ui/hud';
@@ -101,27 +101,31 @@ export class Renderer {
 
             let entity = this.entities.get(entityId);
 
-            if (!entity) {
-                let textureAlias = '';
-                if (entityData.type === 'player_start') {
-                    textureAlias = 'player';
-                } else if (entityData.type === 'stair') {
-                    textureAlias = 'item_item';
-                } else if (
-                    entityData.type === 'monster' ||
-                    entityData.type === 'item' ||
-                    entityData.type === 'equipment'
-                ) {
-                    textureAlias = (entityData as any).assetId ?? entityData.id;
-                }
+                if (!entity) {
+                    // Determine texture alias if available; otherwise use Texture.EMPTY
+                    let textureAlias = '';
+                    if (entityData.type === 'player_start') {
+                        textureAlias = 'player';
+                    } else if (entityData.type === 'stair') {
+                        textureAlias = 'item_item';
+                    } else if (
+                        entityData.type === 'monster' ||
+                        entityData.type === 'item' ||
+                        entityData.type === 'equipment'
+                    ) {
+                        textureAlias = (entityData as any).assetId ?? entityData.id;
+                    }
 
-                if (textureAlias) {
-                    const texture = Assets.get(textureAlias);
+                    const texture = textureAlias ? Assets.get(textureAlias) : undefined;
+
+                    // Always create an entity placeholder so getEntity(id) never returns undefined
                     if (entityData.type === 'player_start' || entityData.type === 'monster') {
-                        entity = new CharacterEntity(texture);
+                        const tex = texture ?? Assets.get('player') ?? Texture.EMPTY;
+                        entity = new CharacterEntity(tex as any);
                     } else {
+                        const tex = texture ?? Texture.EMPTY;
                         entity = new Entity();
-                        const sprite = new Sprite(texture);
+                        const sprite = new Sprite(tex as any);
                         sprite.anchor.set(0.5, 1);
                         if (entityData.type === 'stair') {
                             sprite.tint = 0x800080;
@@ -132,7 +136,6 @@ export class Renderer {
                     this.entities.set(entityId, entity);
                     this.mapRender.addEntity(entity);
                 }
-            }
 
             if (entity) {
                 entity.x = entityData.x * TILE_SIZE + TILE_SIZE / 2;

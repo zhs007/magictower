@@ -64,6 +64,11 @@ export class GameScene extends BaseScene {
 
     private handleAction(action: any): void {
         if (this.isAnimating || !this.gameStateManager) {
+            console.debug('handleAction: ignored action because isAnimating or missing gsm', {
+                action,
+                isAnimating: this.isAnimating,
+                hasGSM: !!this.gameStateManager,
+            });
             return;
         }
 
@@ -154,7 +159,37 @@ export class GameScene extends BaseScene {
         const itemEntity = this.renderer.getEntity(state.interactionState.itemId);
 
         if (!playerEntity || !itemEntity) {
-            this.isAnimating = false;
+            console.debug('handleItemPickup: missing renderer entity (fallback will pick up item)', {
+                playerEntityKey: this.playerEntityKey,
+                itemId: state.interactionState.itemId,
+                playerEntityExists: !!playerEntity,
+                itemEntityExists: !!itemEntity,
+            });
+
+            // Fallback: pick item up immediately; ensure isAnimating is
+            // cleared in all cases so the input loop isn't permanently locked.
+            try {
+                if (this.gameStateManager && state.items?.[state.interactionState.itemId]) {
+                    const itemId = state.interactionState.itemId;
+                    this.gameStateManager.dispatch({
+                        type: 'PICK_UP_ITEM',
+                        payload: { itemId },
+                    });
+                    this.renderer.render(this.gameStateManager.getState());
+                    const item = state.items[itemId];
+                    if (item && this.playerEntityKey) {
+                        try {
+                            this.renderer.showFloatingTextOnEntity(`+1 ${item.name}`, 'ITEM_GAIN', this.playerEntityKey);
+                        } catch (e) {
+                            console.warn('showFloatingTextOnEntity failed', e);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('handleItemPickup fallback failed', e);
+            } finally {
+                this.isAnimating = false;
+            }
             return;
         }
 
