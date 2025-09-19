@@ -159,3 +159,6 @@ pip-delete-this-directory.txt
 dist/
 build/
 *.so
+
+# Ignore generated test artifacts
+**/test-results/

@@ -7,8 +7,8 @@ const TILE_SIZE = 65;
 export class MapRender extends Container {
     private floorContainer: Container;
     public entityContainer: Container;
-    private wallSprites: Sprite[] = [];
     private entities: Set<Entity> = new Set();
+    private mapEntities: Entity[] = [];
 
     constructor(state: GameState) {
         super();
@@ -40,10 +40,10 @@ export class MapRender extends Container {
     private drawMap(state: GameState): void {
         this.floorContainer.removeChildren();
 
-        for (const sprite of this.wallSprites) {
-            this.entityContainer.removeChild(sprite);
+        for (const entity of this.mapEntities) {
+            this.removeEntity(entity);
         }
-        this.wallSprites = [];
+        this.mapEntities = [];
 
         const useNewTiles = state.tileAssets && Object.keys(state.tileAssets).length > 0;
 
@@ -84,14 +84,18 @@ export class MapRender extends Container {
                     floorSprite.height = TILE_SIZE;
                     this.floorContainer.addChild(floorSprite);
 
-                    // Draw the entity tile itself
-                    const entitySprite = new Sprite(tileTexture);
-                    entitySprite.anchor.set(0.5, 1); // Bottom-center
-                    entitySprite.x = x * TILE_SIZE + TILE_SIZE / 2;
-                    entitySprite.y = (y + 1) * TILE_SIZE;
-                    entitySprite.zIndex = y; // For correct occlusion
-                    this.entityContainer.addChild(entitySprite);
-                    this.wallSprites.push(entitySprite); // Keep track to remove them later
+                    // Create an entity for the tile
+                    const entity = new Entity();
+                    const sprite = new Sprite(tileTexture);
+                    sprite.anchor.set(0.5, 1); // Bottom-center
+                    entity.addChild(sprite);
+
+                    entity.x = x * TILE_SIZE + TILE_SIZE / 2;
+                    entity.y = (y + 1) * TILE_SIZE;
+                    entity.zIndex = y; // For correct occlusion
+
+                    this.addEntity(entity);
+                    this.mapEntities.push(entity);
                 } else {
                     // Just draw a floor tile
                     const floorSprite = new Sprite(tileTexture);
