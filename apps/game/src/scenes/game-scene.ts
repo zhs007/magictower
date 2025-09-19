@@ -159,12 +159,15 @@ export class GameScene extends BaseScene {
         const itemEntity = this.renderer.getEntity(state.interactionState.itemId);
 
         if (!playerEntity || !itemEntity) {
-            console.debug('handleItemPickup: missing renderer entity (fallback will pick up item)', {
-                playerEntityKey: this.playerEntityKey,
-                itemId: state.interactionState.itemId,
-                playerEntityExists: !!playerEntity,
-                itemEntityExists: !!itemEntity,
-            });
+            console.debug(
+                'handleItemPickup: missing renderer entity (fallback will pick up item)',
+                {
+                    playerEntityKey: this.playerEntityKey,
+                    itemId: state.interactionState.itemId,
+                    playerEntityExists: !!playerEntity,
+                    itemEntityExists: !!itemEntity,
+                }
+            );
 
             // Fallback: pick item up immediately; ensure isAnimating is
             // cleared in all cases so the input loop isn't permanently locked.
@@ -179,7 +182,11 @@ export class GameScene extends BaseScene {
                     const item = state.items[itemId];
                     if (item && this.playerEntityKey) {
                         try {
-                            this.renderer.showFloatingTextOnEntity(`+1 ${item.name}`, 'ITEM_GAIN', this.playerEntityKey);
+                            this.renderer.showFloatingTextOnEntity(
+                                `+1 ${item.name}`,
+                                'ITEM_GAIN',
+                                this.playerEntityKey
+                            );
                         } catch (e) {
                             console.warn('showFloatingTextOnEntity failed', e);
                         }

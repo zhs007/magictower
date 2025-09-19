@@ -101,41 +101,41 @@ export class Renderer {
 
             let entity = this.entities.get(entityId);
 
-                if (!entity) {
-                    // Determine texture alias if available; otherwise use Texture.EMPTY
-                    let textureAlias = '';
-                    if (entityData.type === 'player_start') {
-                        textureAlias = 'player';
-                    } else if (entityData.type === 'stair') {
-                        textureAlias = 'item_item';
-                    } else if (
-                        entityData.type === 'monster' ||
-                        entityData.type === 'item' ||
-                        entityData.type === 'equipment'
-                    ) {
-                        textureAlias = (entityData as any).assetId ?? entityData.id;
-                    }
-
-                    const texture = textureAlias ? Assets.get(textureAlias) : undefined;
-
-                    // Always create an entity placeholder so getEntity(id) never returns undefined
-                    if (entityData.type === 'player_start' || entityData.type === 'monster') {
-                        const tex = texture ?? Assets.get('player') ?? Texture.EMPTY;
-                        entity = new CharacterEntity(tex as any);
-                    } else {
-                        const tex = texture ?? Texture.EMPTY;
-                        entity = new Entity();
-                        const sprite = new Sprite(tex as any);
-                        sprite.anchor.set(0.5, 1);
-                        if (entityData.type === 'stair') {
-                            sprite.tint = 0x800080;
-                        }
-                        entity.addChild(sprite);
-                    }
-
-                    this.entities.set(entityId, entity);
-                    this.mapRender.addEntity(entity);
+            if (!entity) {
+                // Determine texture alias if available; otherwise use Texture.EMPTY
+                let textureAlias = '';
+                if (entityData.type === 'player_start') {
+                    textureAlias = 'player';
+                } else if (entityData.type === 'stair') {
+                    textureAlias = 'item_item';
+                } else if (
+                    entityData.type === 'monster' ||
+                    entityData.type === 'item' ||
+                    entityData.type === 'equipment'
+                ) {
+                    textureAlias = (entityData as any).assetId ?? entityData.id;
                 }
+
+                const texture = textureAlias ? Assets.get(textureAlias) : undefined;
+
+                // Always create an entity placeholder so getEntity(id) never returns undefined
+                if (entityData.type === 'player_start' || entityData.type === 'monster') {
+                    const tex = texture ?? Assets.get('player') ?? Texture.EMPTY;
+                    entity = new CharacterEntity(tex as any);
+                } else {
+                    const tex = texture ?? Texture.EMPTY;
+                    entity = new Entity();
+                    const sprite = new Sprite(tex as any);
+                    sprite.anchor.set(0.5, 1);
+                    if (entityData.type === 'stair') {
+                        sprite.tint = 0x800080;
+                    }
+                    entity.addChild(sprite);
+                }
+
+                this.entities.set(entityId, entity);
+                this.mapRender.addEntity(entity);
+            }
 
             if (entity) {
                 entity.x = entityData.x * TILE_SIZE + TILE_SIZE / 2;
