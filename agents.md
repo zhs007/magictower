@@ -56,6 +56,15 @@ This project may contain services that are independent of the main game applicat
 - **Environment**: This service is designed to be run within a Docker container. The `Dockerfile` and dependencies are located in its directory. Refer to the main `jules.md` documentation for instructions on how to build and run the service.
 - **Note**: This service uses a separate Python environment and does not interact directly with the Node.js/TypeScript parts of the monorepo at the code level.
 
+## Core Components
+
+### The `Entity` Class
+
+-   **Location**: `packages/maprender/src/entity.ts`
+-   **Purpose**: The `Entity` class is the base class for all dynamic, rendered objects in the game (e.g., player, monsters). It inherits from `PIXI.Container`.
+-   **Key Feature**: It includes a simple action system. You can define behaviors (like 'idle' or 'walk') using `setAction(actionName, callback)` and then trigger them by setting the `entity.action` property.
+-   **Update Loop**: All entities added to `MapRender` via `mapRender.addEntity(entity)` will have their `update(deltaTime)` method called automatically on each frame, which in turn executes the current action's callback. When creating new animated objects, you should almost always create a class that extends `Entity`.
+
 ## Code Style
 
 - **Language**: TypeScript

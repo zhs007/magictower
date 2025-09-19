@@ -1,5 +1,6 @@
 import { Container, Assets, Sprite, Texture } from 'pixi.js';
 import type { GameState } from '@proj-tower/logic-core';
+import { Entity } from './entity';
 
 const TILE_SIZE = 65;
 
@@ -7,6 +8,7 @@ export class MapRender extends Container {
     private floorContainer: Container;
     public entityContainer: Container;
     private wallSprites: Sprite[] = [];
+    private entities: Set<Entity> = new Set();
 
     constructor(state: GameState) {
         super();
@@ -17,6 +19,22 @@ export class MapRender extends Container {
         this.addChild(this.floorContainer, this.entityContainer);
 
         this.drawMap(state);
+    }
+
+    public addEntity(entity: Entity): void {
+        this.entities.add(entity);
+        this.entityContainer.addChild(entity);
+    }
+
+    public removeEntity(entity: Entity): void {
+        this.entities.delete(entity);
+        this.entityContainer.removeChild(entity);
+    }
+
+    public update(deltaTime: number): void {
+        for (const entity of this.entities) {
+            entity.update(deltaTime);
+        }
     }
 
     private drawMap(state: GameState): void {

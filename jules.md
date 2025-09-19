@@ -65,12 +65,49 @@
     1.  **初始化**: 构造函数接收一个 `GameState` 对象，并根据其中的地图数据（`map` 和 `tileAssets`）自动绘制基础的地面和墙体。
     2.  **分层渲染**: 内部包含一个用于渲染地面的 `floorContainer` 和一个用于渲染实体（墙、角色、道具等）的 `entityContainer`。
     3.  **Y轴排序**: `entityContainer` 启用了 `sortableChildren` 属性。所有加入该容器的 `Sprite` 都会根据其 `zIndex` 属性（通常设置为其逻辑 `y` 坐标）进行自动排序，从而实现正确的遮挡效果。
+    4.  **实体更新**: 新增了 `update(deltaTime)` 方法。该方法会遍历所有通过 `addEntity` 添加的 `Entity` 实例，并调用它们各自的 `update` 方法，从而驱动整个场景的动画和行为。
 - **使用方法**:
     - 在主渲染器 (`Renderer`) 中，不再手动绘制地图。
     - 而是创建一个 `MapRender` 实例，并将其添加到主舞台。
     - 玩家、怪物、道具等动态实体的 `Sprite` 则被添加到 `mapRender.entityContainer` 中，由其统一管理排序和渲染。
+    - 游戏的主循环（`Ticker`）现在需要每帧调用 `mapRender.update(deltaTime)` 来更新所有实体。
 
 这种设计将地图渲染的复杂性封装起来，使得主渲染器的代码更简洁，只专注于管理动态实体和UI。
+
+## 4.2. 实体 (Entity) 类
+
+为了更好地管理游戏世界中的动态对象（如玩家、怪物、NPC、乃至动态的特效），项目在 `@proj-tower/maprender` 包中引入了 `Entity` 类。
+
+- **`Entity` 类**: 这是一个继承自 `PIXI.Container` 的基类，作为所有动态游戏对象的渲染容器。
+- **职责**:
+    1.  **状态管理**: `Entity` 自身可以包含子 `Sprite` 或其他 `PIXI` 对象，形成一个独立的、可移动的单元。
+    2.  **动画与行为**: `Entity` 包含一个简单的行为系统，允许它根据当前的状态（`action`）执行不同的逻辑。
+- **核心 API**:
+    - `entity.action: string`: 一个字符串，表示实体当前的行为状态（例如 `'idle'`, `'walk'`, `'attack'`）。
+    - `entity.setAction(actionName: string, callback: (deltaTime: number) => void)`: 用于定义一个行为。`callback` 函数会在每一帧被调用（当 `entity.action` 为 `actionName` 时）。
+    - `entity.update(deltaTime: number)`: 由 `MapRender` 在每一帧调用，它会执行当前 `action` 对应的 `callback`。
+- **使用方法**:
+    - 创建一个继承自 `Entity` 的自定义类（例如 `PlayerEntity`）。
+    - 在 `PlayerEntity` 的构造函数中，可以添加 `Sprite` 并定义各种行为，例如：
+      ```typescript
+      // 在 PlayerEntity.ts 中
+      constructor() {
+          super();
+          const sprite = new PIXI.Sprite(Assets.get('player'));
+          this.addChild(sprite);
+
+          // 定义“idle”行为，让角色轻微上下浮动
+          this.setAction('idle', (deltaTime) => {
+              this.y = Math.sin(Date.now() / 300) * 5;
+          });
+      }
+      ```
+    - 在游戏主循环中，将 `PlayerEntity` 实例添加到 `MapRender` 中，并设置其 `action`。
+      ```typescript
+      const player = new PlayerEntity();
+      mapRender.addEntity(player);
+      player.action = 'idle'; // 开始执行 idle 动画
+      ```
 
 ## 5. 数据格式约定
 
