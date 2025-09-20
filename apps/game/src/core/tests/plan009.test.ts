@@ -16,10 +16,13 @@ describe('plan009 features', () => {
     beforeEach(() => {
         baseState = {
             currentFloor: 1,
-            map: [
-                [0, 0],
-                [0, 0],
-            ],
+            map: {
+                floor: 1,
+                layout: [
+                    [0, 0],
+                    [0, 0],
+                ],
+            },
             player: {
                 id: 'player',
                 name: 'Player',

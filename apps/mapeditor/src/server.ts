@@ -2,6 +2,7 @@ import fastify from 'fastify';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { resolve, join } from 'path';
 import { fileURLToPath } from 'url';
+import { normalizeMapLayout } from '@proj-tower/logic-core';
 
 // ESM-safe __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -38,7 +39,12 @@ function registerRoutes(app: any) {
     const filePath = join(mapDir, `${mapId}.json`);
     try {
       const data = await readFile(filePath, 'utf-8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      const fallbackFloor =
+        typeof parsed?.floor === 'number'
+          ? parsed.floor
+          : Number.parseInt((mapId.match(/\d+/) ?? ['1'])[0], 10) || 1;
+      return normalizeMapLayout(parsed, { floor: fallbackFloor });
     } catch (err) {
       app.log?.error?.(err);
       reply.status(404).send({ error: `Map ${mapId} not found` });
@@ -49,8 +55,13 @@ function registerRoutes(app: any) {
     const { mapId } = request.params as { mapId: string };
     const filePath = join(mapDir, `${mapId}.json`);
     try {
-      const mapData = JSON.stringify(request.body, null, 2);
-      await writeFile(filePath, mapData, 'utf-8');
+      const payload = request.body as unknown;
+      const fallbackFloor =
+        typeof (payload as any)?.floor === 'number'
+          ? (payload as any).floor
+          : Number.parseInt((mapId.match(/\d+/) ?? ['1'])[0], 10) || 1;
+      const normalized = normalizeMapLayout(payload as any, { floor: fallbackFloor });
+      await writeFile(filePath, JSON.stringify(normalized, null, 2), 'utf-8');
       return { success: true };
     } catch (err) {
       app.log?.error?.(err);

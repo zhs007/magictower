@@ -22,7 +22,7 @@ describe('MapRender', () => {
 
   beforeEach(() => {
     mockState = {
-      map: [[]],
+      map: { floor: 1, layout: [[]] },
       entities: {},
       tileAssets: {},
     } as any;

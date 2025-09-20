@@ -97,7 +97,8 @@ describe('GameStateManager', () => {
             // Assert
             expect(gameState).toBeDefined();
             expect(gameState.currentFloor).toBe(1);
-            expect(gameState.map).toEqual([
+            // GameState.map is canonical MapLayout; compare the layout grid
+            expect(gameState.map.layout).toEqual([
                 [1, 1, 1],
                 [1, 0, 1],
                 [1, 1, 1],

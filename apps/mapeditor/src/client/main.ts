@@ -2,6 +2,7 @@ import './style.css';
 import { Application, Assets, Container } from 'pixi.js';
 import { MapRender } from '@proj-tower/maprender';
 import type { GameState, MapLayout, ITileAsset } from '@proj-tower/logic-core';
+import { normalizeMapLayout } from '@proj-tower/logic-core';
 
 // --- DOM Elements ---
 const mapSelector = document.getElementById('map-selector') as HTMLSelectElement;
@@ -65,12 +66,14 @@ class EditorRenderer {
     }
 
     async renderMap(mapLayout: MapLayout) {
+        const canonical = normalizeMapLayout(mapLayout);
+
         if (this.mapRender) {
             this.mapRender.destroy({ children: true });
         }
 
-        if (!mapLayout.tileAssets) return;
-        const tileAssetValues = Object.values(mapLayout.tileAssets);
+        if (!canonical.tileAssets) return;
+        const tileAssetValues = Object.values(canonical.tileAssets);
 
         for (const tileAsset of tileAssetValues) {
             try {
@@ -86,9 +89,10 @@ class EditorRenderer {
 
         // MapRender expects a GameState, so we create a dummy one.
         const dummyGameState: GameState = {
-            currentFloor: mapLayout.floor,
-            map: mapLayout.layout as number[][], // Assuming layout is number[][]
-            tileAssets: mapLayout.tileAssets,
+            currentFloor: canonical.floor,
+            // GameState.map is now MapLayout: provide the full object
+            map: canonical,
+            tileAssets: canonical.tileAssets,
             player: null!, // Not used by MapRender
             entities: {}, // Not used by MapRender
             monsters: {}, // Not used by MapRender
@@ -243,17 +247,20 @@ async function loadMap(mapId: string) {
         return;
     }
     const response = await fetch(`/api/maps/${mapId}`);
+    const raw = await response.json();
     state.currentMapId = mapId;
-    state.currentMapData = await response.json();
+    state.currentMapData = normalizeMapLayout(raw);
     rerenderAll();
 }
 
 async function saveMap() {
     if (!state.currentMapId || !state.currentMapData) return;
+    const normalized = normalizeMapLayout(state.currentMapData);
+    state.currentMapData = normalized;
     await fetch(`/api/maps/${state.currentMapId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state.currentMapData, null, 2),
+        body: JSON.stringify(normalized, null, 2),
     });
     alert('Map saved!');
 }
@@ -277,15 +284,15 @@ newMapButton.addEventListener('click', () => {
 
     const newLayout = Array.from({ length: height }, () => Array(width).fill(0));
 
-    const newMapData: MapLayout = {
+    const newMapData: MapLayout = normalizeMapLayout({
         floor: parseInt(mapId.split('_').pop() || '1', 10),
         tileAssets: {
-            "0": { assetId: "map_floor", isEntity: false },
-            "1": { assetId: "map_wall", isEntity: true },
+            '0': { assetId: 'map_floor', isEntity: false },
+            '1': { assetId: 'map_wall', isEntity: true },
         },
         layout: newLayout,
         entities: {},
-    };
+    });
 
     state.currentMapId = mapId;
     state.currentMapData = newMapData;

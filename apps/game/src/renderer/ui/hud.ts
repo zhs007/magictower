@@ -93,8 +93,15 @@ export class HUD extends Container {
         this.monsterStatsText.text = `${name}: HP ${hp}  ATK ${attack}  DEF ${defense}`;
     }
 
-    private updateKeys(keys: { yellow: number; blue: number; red: number }): void {
-        this.keysText.text = `钥匙: 黄 ${keys.yellow}  蓝 ${keys.blue}  红 ${keys.red}`;
+    private updateKeys(
+        keys:
+            | { yellow?: number; blue?: number; red?: number }
+            | { yellow: number; blue: number; red: number }
+    ): void {
+        const yellow = (keys as any).yellow ?? 0;
+        const blue = (keys as any).blue ?? 0;
+        const red = (keys as any).red ?? 0;
+        this.keysText.text = `钥匙: 黄 ${yellow}  蓝 ${blue}  红 ${red}`;
     }
 
     private handlePlayerUpdate(payload: {

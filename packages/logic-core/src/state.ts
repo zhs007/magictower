@@ -11,6 +11,7 @@ import {
     handleUsePotion,
 } from './logic';
 import { dataManager as defaultDataManager } from './data-manager';
+import { normalizeMapLayout } from './map-utils';
 
 export class GameStateManager {
     private currentState: GameState;
@@ -48,7 +49,8 @@ export class GameStateManager {
                 throw new Error(`Map for floor ${floor} not found.`);
             }
 
-            const map = mapData.layout.map((row: (number | string)[]) => row.map(Number));
+            const mapLayout = normalizeMapLayout(mapData, { floor });
+            const tileAssets = mapLayout.tileAssets;
             const entities: Record<string, any> = {};
             const monsters: Record<string, IMonster> = {};
             const items: Record<string, IItem> = {};
@@ -58,93 +60,93 @@ export class GameStateManager {
 
             const playerTemplate = playerToPreserve;
 
-            if (mapData.entities) {
-                for (const entityKey of Object.keys(mapData.entities)) {
-                    const entityInfo = mapData.entities[entityKey];
+            const mapEntities = mapLayout.entities ?? {};
 
-                    if (entityInfo.type === 'player_start') {
-                        if (playerTemplate) {
-                            player = { ...playerTemplate, ...entityInfo };
-                        } else {
-                            const rawPlayerData = dm.getPlayerData();
-                            const playerData =
-                                rawPlayerData ??
-                                ({
-                                    id: 'player',
-                                    name: 'Player',
-                                    level: 1,
-                                    exp: 0,
-                                    hp: 10,
-                                    keys: { yellow: 0, blue: 0, red: 0 },
-                                } as any);
-                            const allLevelData = dm.getLevelData();
-                            let levelData = allLevelData.find((ld: LevelData) => ld.level === playerData.level);
-                            // Fallback: if the exact level entry isn't found, use the first
-                            // entry or a minimal default to keep initialization robust in
-                            // tests that stub loadAllData.
-                            if (!levelData) {
-                                levelData = allLevelData[0] || {
-                                    level: playerData.level,
-                                    exp_needed: 0,
-                                    maxhp: playerData.hp ?? 10,
-                                    attack: playerData.attack ?? 1,
-                                    defense: playerData.defense ?? 0,
-                                    speed: playerData.speed ?? 1,
-                                } as LevelData;
-                            }
-                            player = {
-                                ...playerData,
-                                hp: levelData.maxhp,
-                                maxhp: levelData.maxhp,
-                                attack: levelData.attack,
-                                defense: levelData.defense,
-                                speed: levelData.speed,
-                                equipment: {},
-                                backupEquipment: [],
-                                buffs: [],
-                                direction: 'right',
-                                ...entityInfo,
-                            };
-                        }
-                        playerKey = entityKey;
-                    } else if (entityInfo.type === 'monster') {
-                        const monsterData = dm.getMonsterData(entityInfo.id);
-                        if (monsterData) {
-                            const monster = {
-                                ...monsterData,
-                                ...entityInfo,
-                                equipment: {},
-                                backupEquipment: [],
-                                buffs: [],
-                                direction: 'right' as 'left' | 'right',
-                            };
-                            monsters[entityKey] = monster;
-                            entities[entityKey] = monster;
-                        }
-                    } else if (entityInfo.type === 'item') {
-                        const itemData = dm.getItemData(entityInfo.id);
-                        if (itemData) {
-                            const item: IItem = Object.assign({}, itemData, {
-                                type: itemData.type ?? 'special',
-                                x: entityInfo.x,
-                                y: entityInfo.y,
-                            });
-                            items[entityKey] = item;
-                            entities[entityKey] = item;
-                        }
-                    } else if (entityInfo.type === 'equipment') {
-                        const equipmentData = dm.getEquipmentData(entityInfo.id);
-                        if (equipmentData) {
-                            const equipment: IEquipment = {
-                                ...equipmentData,
-                                ...entityInfo,
-                            };
-                            equipments[entityKey] = equipment;
-                            entities[entityKey] = equipment;
-                        }
+            for (const entityKey of Object.keys(mapEntities)) {
+                const entityInfo = mapEntities[entityKey];
+
+                if (entityInfo.type === 'player_start') {
+                    if (playerTemplate) {
+                        player = { ...playerTemplate, ...entityInfo };
                     } else {
-                        entities[entityKey] = { ...entityInfo };
+                        const rawPlayerData = dm.getPlayerData();
+                        const playerData =
+                            rawPlayerData ??
+                            ({
+                                id: 'player',
+                                name: 'Player',
+                                level: 1,
+                                exp: 0,
+                                hp: 10,
+                                keys: { yellow: 0, blue: 0, red: 0 },
+                            } as any);
+                        const allLevelData = dm.getLevelData();
+                        let levelData = allLevelData.find((ld: LevelData) => ld.level === playerData.level);
+                        // Fallback: if the exact level entry isn't found, use the first
+                        // entry or a minimal default to keep initialization robust in
+                        // tests that stub loadAllData.
+                        if (!levelData) {
+                            levelData = allLevelData[0] || {
+                                level: playerData.level,
+                                exp_needed: 0,
+                                maxhp: playerData.hp ?? 10,
+                                attack: playerData.attack ?? 1,
+                                defense: playerData.defense ?? 0,
+                                speed: playerData.speed ?? 1,
+                            } as LevelData;
+                        }
+                        player = {
+                            ...playerData,
+                            hp: levelData.maxhp,
+                            maxhp: levelData.maxhp,
+                            attack: levelData.attack,
+                            defense: levelData.defense,
+                            speed: levelData.speed,
+                            equipment: {},
+                            backupEquipment: [],
+                            buffs: [],
+                            direction: 'right',
+                            ...entityInfo,
+                        };
                     }
+                    playerKey = entityKey;
+                } else if (entityInfo.type === 'monster') {
+                    const monsterData = dm.getMonsterData(entityInfo.id);
+                    if (monsterData) {
+                        const monster = {
+                            ...monsterData,
+                            ...entityInfo,
+                            equipment: {},
+                            backupEquipment: [],
+                            buffs: [],
+                            direction: 'right' as 'left' | 'right',
+                        };
+                        monsters[entityKey] = monster;
+                        entities[entityKey] = monster;
+                    }
+                } else if (entityInfo.type === 'item') {
+                    const itemData = dm.getItemData(entityInfo.id);
+                    if (itemData) {
+                        const item: IItem = Object.assign({}, itemData, {
+                            type: itemData.type ?? 'special',
+                            x: entityInfo.x,
+                            y: entityInfo.y,
+                        });
+                        items[entityKey] = item;
+                        entities[entityKey] = item;
+                    }
+                } else if (entityInfo.type === 'equipment') {
+                    const equipmentData = dm.getEquipmentData(entityInfo.id);
+                    if (equipmentData) {
+                        const equipment: IEquipment = {
+                            ...equipmentData,
+                            ...entityInfo,
+                        };
+                        equipments[entityKey] = equipment;
+                        entities[entityKey] = equipment;
+                    }
+                } else {
+                    entities[entityKey] = { ...entityInfo };
                 }
             }
 
@@ -165,15 +167,15 @@ export class GameStateManager {
             console.log('Successfully created new game state.');
             return {
                 currentFloor: floor,
-                map,
-                tileAssets: mapData.tileAssets,
+                map: mapLayout,
+                tileAssets,
                 player,
                 entities,
                 monsters,
                 items,
                 equipments,
-                doors: mapData.doors || {},
-                stairs: mapData.stairs || {},
+                doors: mapLayout.doors || {},
+                stairs: mapLayout.stairs || {},
                 interactionState: { type: 'none' },
             };
         } catch (error) {
@@ -259,4 +261,3 @@ export class GameStateManager {
         this.actionHistory.push(action);
     }
 }
-

@@ -21,31 +21,11 @@ const start = async () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const repoRoot = resolve(__dirname, '..', '..', '..');
     const vite = await createServer({
-      // keep app root in the mapeditor package so vite serves the app HTML
       root: resolve(__dirname, '..'),
       server: {
         middlewareMode: true,
         hmr: { server: httpServer },
-        // Allow serving files from workspace packages (monorepo)
-        fs: {
-          // permit Vite to serve files from the repo root (packages, node_modules, etc.)
-          allow: [repoRoot],
-          strict: false,
-        },
-      },
-      // Resolve workspace packages to their source so imports like
-      // `@proj-tower/maprender` and `@proj-tower/logic-core` work in dev
-      resolve: {
-        alias: {
-          '@proj-tower/maprender': resolve(repoRoot, 'packages', 'maprender', 'src'),
-          '@proj-tower/logic-core': resolve(repoRoot, 'packages', 'logic-core', 'src'),
-        },
-      },
-      // Pre-bundle these workspace packages so the dev client can load them quickly
-      optimizeDeps: {
-        include: ['@proj-tower/maprender', '@proj-tower/logic-core'],
       },
       appType: 'custom',
     });
@@ -53,19 +33,17 @@ const start = async () => {
     // Compose request handling: let Vite handle first; if not handled, pass to Fastify
     const handler = (req: any, res: any) => {
       const url = req.url || '';
-      const handleApi = url.startsWith('/api') || url.startsWith('/assets/');
-      if (handleApi) {
-        // Route API and asset requests to Fastify directly
+      // Route API requests to Fastify directly
+      if (url.startsWith('/api')) {
         if (typeof app.routing === 'function') {
           app.routing(req, res);
         } else {
-          // Fallback: emit request on the underlying server
           (app.server as any).emit('request', req, res);
         }
         return;
       }
       vite.middlewares(req, res, () => {
-        // Fallback to Fastify for anything Vite doesn't handle
+        // Fallback to Fastify for anything Vite doesn't handle (like index.html)
         if (typeof app.routing === 'function') {
           app.routing(req, res);
         } else {
@@ -83,7 +61,7 @@ const start = async () => {
         resolveStart();
       });
     });
-    console.log(`Mapeditor dev server listening on http://${host}:${port}`);
+    console.log(`Monstereditor dev server listening on http://${host}:${port}`);
 
     // Graceful shutdown
     const shutdown = async () => {

@@ -11,6 +11,7 @@ import * as _ from 'lodash';
 import { calculateFinalStats } from './stat-calculator';
 import { compareEquipment } from './equipment-manager';
 import { LevelData, IItem } from './types';
+import { normalizeMapLayout } from './map-utils';
 
 const MAX_COMBAT_ROUNDS = 8;
 
@@ -39,13 +40,40 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     const newX = player.x + dx;
     const newY = player.y + dy;
 
-    // Check for collision
+    const mapLayout = normalizeMapLayout(newState.map, {
+        floor: newState.currentFloor,
+        tileAssets: newState.tileAssets,
+    });
+    const mapGrid = mapLayout.layout;
+    newState.map = mapLayout;
+    if (mapLayout.tileAssets) {
+        newState.tileAssets = mapLayout.tileAssets;
+    }
+
+    const width = mapGrid[0]?.length ?? 0;
+    const row = mapGrid[newY];
+    const cell = row ? row[newX] : undefined;
+    const numericCell = typeof cell === 'string' ? Number(cell) : cell;
+    const isNumericBlocked = Number.isFinite(numericCell) ? numericCell === 1 : false;
+    const tileAssets = mapLayout.tileAssets ?? newState.tileAssets ?? {};
+    const assetKey =
+        cell === undefined || cell === null
+            ? undefined
+            : typeof cell === 'string'
+              ? cell
+              : String(cell);
+    const tileAsset = assetKey !== undefined ? tileAssets[assetKey] : undefined;
+    const isBlockedByAsset = tileAsset?.isEntity ?? false;
+
+    // If width is zero, treat as blocked/out-of-bounds to be safe.
     if (
         newX < 0 ||
-        newX >= newState.map[0].length ||
         newY < 0 ||
-        newY >= newState.map.length ||
-        newState.map[newY][newX] === 1
+        width === 0 ||
+        newX >= width ||
+        newY >= mapGrid.length ||
+        isNumericBlocked ||
+        isBlockedByAsset
     ) {
         console.debug(`handleMove: collision at ${newX},${newY} or out-of-bounds`);
         return state; // No change in position or direction
@@ -485,6 +513,9 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
 
     if (item.type === 'key') {
         if (item.color === 'yellow') {
+            // keys.yellow is optional; initialize if needed
+            if (!newState.player.keys) newState.player.keys = { yellow: 0 } as any;
+            if (typeof newState.player.keys.yellow !== 'number') newState.player.keys.yellow = 0;
             newState.player.keys.yellow++;
         }
     } else if (item.type === 'special') {

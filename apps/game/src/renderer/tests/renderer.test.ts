@@ -227,10 +227,13 @@ function createMockGameState(): GameState {
 
     return {
         currentFloor: 1,
-        map: [
-            [0, 1],
-            [0, 0],
-        ],
+        map: {
+            floor: 1,
+            layout: [
+                [0, 1],
+                [0, 0],
+            ],
+        },
         player,
         entities: {
             player_start_0_0: { ...player, type: 'player_start' },
