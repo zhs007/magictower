@@ -61,11 +61,14 @@ describe('Game Logic with Interactions', () => {
 
         gameState = {
             currentFloor: 1,
-            map: [
-                [0, 0, 0],
-                [0, 1, 0],
-                [0, 0, 0],
-            ],
+            map: {
+                floor: 1,
+                layout: [
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 0],
+                ],
+            },
             player,
             entities: {
                 [playerEntityKey]: { ...player, type: 'player_start' },

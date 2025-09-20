@@ -111,7 +111,10 @@ describe('Plan 021: Leveling and Experience System', () => {
 
         const initialState: GameState = {
             currentFloor: 1,
-            map: [[]],
+            map: {
+                floor: 1,
+                layout: [[]],
+            },
             player,
             monsters: { monster_1: monster },
             entities: {
@@ -179,7 +182,10 @@ describe('Plan 021: Leveling and Experience System', () => {
 
         const initialState: GameState = {
             currentFloor: 1,
-            map: [[]],
+            map: {
+                floor: 1,
+                layout: [[]],
+            },
             player,
             monsters: { monster_1: monster },
             entities: {
@@ -255,7 +261,10 @@ describe('Plan 021: Leveling and Experience System', () => {
 
         const initialState: GameState = {
             currentFloor: 1,
-            map: [[]],
+            map: {
+                floor: 1,
+                layout: [[]],
+            },
             player,
             monsters: { monster_1: monster },
             entities: {

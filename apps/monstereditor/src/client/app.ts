@@ -129,7 +129,7 @@ function updatePlayerStatsDisplay() {
             hp: stats.maxhp,
             name: 'Player',
             x: 7, y: 8, direction: 'right',
-            equipment: {}, backupEquipment: [], keys: { yellow: 0 },
+      equipment: {}, backupEquipment: [], keys: { yellow: 0 }, buffs: [],
             exp: 0, hasMonsterManual: false, specialItems: [],
         };
         playerStatsDisplay.innerHTML = `
@@ -258,21 +258,32 @@ async function setupPixiApp() {
   const tileAssets: Record<string, TileAsset> = {
       '0': { assetId: 'map_floor', isEntity: false }
   };
+  // Construct a MapLayout for GameState.map
+  const mapLayout = {
+    floor: 1,
+    layout: emptyLayout,
+    tileAssets,
+  };
+
   const gameState: GameState = {
-      map: { layout: emptyLayout, entities: {} }, tileAssets,
-      player: { id: 'player', name: 'Player', hp: 1, maxhp: 1, attack: 1, defense: 1, speed: 1, level: 1, exp: 0, x: 7, y: 8, direction: 'right', equipment: {}, backupEquipment: [], keys: {yellow: 0}, hasMonsterManual: false, specialItems: [] },
-      monsters: {}, items: {}, equipments: {}, doors: {}, npcs: {}, stairs: {}
+    currentFloor: 1,
+    map: mapLayout,
+    tileAssets,
+    player: { id: 'player', name: 'Player', hp: 1, maxhp: 1, attack: 1, defense: 1, speed: 1, level: 1, exp: 0, x: 7, y: 8, direction: 'right', equipment: {}, backupEquipment: [], keys: {yellow: 0}, buffs: [], hasMonsterManual: false, specialItems: [] },
+    entities: {},
+    monsters: {}, items: {}, equipments: {}, doors: {}, stairs: {},
+    interactionState: { type: 'none' }
   };
 
   mapRender = new MapRender(gameState);
-  app.stage.addChild(mapRender);
+  app.stage.addChild(mapRender as any);
 
-  playerEntity = new CharacterEntity('player');
+  playerEntity = new CharacterEntity(Assets.get('player') as any);
   playerEntity.x = 7;
   playerEntity.y = 8;
   mapRender.addEntity(playerEntity);
 
-  monsterEntity = new CharacterEntity('monster_monster');
+  monsterEntity = new CharacterEntity(Assets.get('monster_monster') as any);
   monsterEntity.x = 8;
   monsterEntity.y = 8;
   monsterEntity.visible = false;

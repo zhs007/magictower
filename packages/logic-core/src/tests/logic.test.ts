@@ -8,11 +8,11 @@ describe('handleMove', () => {
     beforeEach(() => {
         gameState = {
             currentFloor: 1,
-            map: [
+            map: { floor: 1, layout: [
                 [0, 0, 1],
                 [0, 0, 0],
                 [1, 0, 0],
-            ],
+            ] },
             player: {
                 id: 'player',
                 name: 'Hero',
@@ -159,8 +159,8 @@ describe('handleMove', () => {
     });
 
     it('should turn, then do nothing when moving into a wall', () => {
-        // Player is at (1,1) facing left, wall is at (2,1)
-        gameState.map[1][2] = 1;
+    // Player is at (1,1) facing left, wall is at (2,1)
+    gameState.map.layout[1][2] = 1;
         gameState.player.direction = 'left';
 
         // First press: turn right
@@ -233,7 +233,7 @@ describe('handleOpenDoor', () => {
     it('should allow player to open a door', () => {
         const gameState: GameState = {
             currentFloor: 1,
-            map: [[0]],
+            map: { floor: 1, layout: [[0]] },
             player: {
                 id: 'player',
                 name: 'Hero',
@@ -272,9 +272,9 @@ describe('handleUsePotion', () => {
     let gameState: GameState;
 
     beforeEach(() => {
-        gameState = {
+            gameState = {
             currentFloor: 1,
-            map: [[0]],
+            map: { floor: 1, layout: [[0]] },
             player: {
                 id: 'player',
                 name: 'Hero',

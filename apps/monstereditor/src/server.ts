@@ -1,3 +1,4 @@
+// @ts-ignore: dev env may not have @types/fastify installed during some CI/typecheck runs
 import fastify from 'fastify';
 import { readdir, readFile } from 'fs/promises';
 import { resolve, join } from 'path';

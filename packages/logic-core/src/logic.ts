@@ -39,13 +39,16 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     const newX = player.x + dx;
     const newY = player.y + dy;
 
+    // Map is a MapLayout; use its layout grid
+    const mapGrid: (number | string)[][] = newState.map.layout;
+
     // Check for collision
     if (
         newX < 0 ||
-        newX >= newState.map[0].length ||
+        newX >= mapGrid[0].length ||
         newY < 0 ||
-        newY >= newState.map.length ||
-        newState.map[newY][newX] === 1
+        newY >= mapGrid.length ||
+        mapGrid[newY][newX] === 1
     ) {
         console.debug(`handleMove: collision at ${newX},${newY} or out-of-bounds`);
         return state; // No change in position or direction
@@ -485,6 +488,9 @@ export function handlePickupItem(state: GameState, itemEntityKey: string): GameS
 
     if (item.type === 'key') {
         if (item.color === 'yellow') {
+            // keys.yellow is optional; initialize if needed
+            if (!newState.player.keys) newState.player.keys = { yellow: 0 } as any;
+            if (typeof newState.player.keys.yellow !== 'number') newState.player.keys.yellow = 0;
             newState.player.keys.yellow++;
         }
     } else if (item.type === 'special') {

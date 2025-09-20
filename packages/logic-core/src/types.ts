@@ -78,10 +78,11 @@ export interface ICharacter extends IBaseObject {
 
 export interface IPlayer extends ICharacter {
     exp: number;
+    // Make specific key counts optional so callers can provide partial key sets
     keys: {
-        yellow: number;
-        blue: number;
-        red: number;
+        yellow?: number;
+        blue?: number;
+        red?: number;
     };
     hasMonsterManual?: boolean;
     specialItems?: string[];
@@ -147,7 +148,8 @@ export interface ITileAsset {
 
 export interface GameState {
     currentFloor: number;
-    map: number[][];
+    // Map is the structured MapLayout object
+    map: MapLayout;
     tileAssets?: Record<string, ITileAsset>;
     player: IPlayer;
     entities: Record<string, any>; // A dictionary of all entities on the map
@@ -248,6 +250,7 @@ export interface BuffData {
 
 export interface MapLayout {
     floor: number;
+    // Primary 2D layout grid. layout[y][x] gives a cell value.
     layout: (number | string)[][];
     tileAssets?: Record<string, ITileAsset>;
     entities?: {
@@ -262,6 +265,11 @@ export interface MapLayout {
     doors?: Record<string, IDoor>;
     stairs?: Record<string, IStair>;
 }
+
+// Backwards-compatible aliases: some apps import the non-I prefixed names.
+export type Player = IPlayer;
+export type Monster = IMonster;
+export type TileAsset = ITileAsset;
 
 export interface PlayerData {
     id: string;

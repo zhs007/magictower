@@ -47,9 +47,12 @@ export class MapRender extends Container {
 
         const useNewTiles = state.tileAssets && Object.keys(state.tileAssets).length > 0;
 
-        for (let y = 0; y < state.map.length; y++) {
-            for (let x = 0; x < state.map[y].length; x++) {
-                const tileValue = state.map[y][x];
+        // Use MapLayout.layout grid directly
+        const mapGrid: (number | string)[][] = state.map.layout;
+
+        for (let y = 0; y < mapGrid.length; y++) {
+            for (let x = 0; x < mapGrid[y].length; x++) {
+                const tileValue = mapGrid[y][x];
                 let tileTexture;
                 let isEntity = false;
 

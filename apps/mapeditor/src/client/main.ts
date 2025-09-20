@@ -87,7 +87,8 @@ class EditorRenderer {
         // MapRender expects a GameState, so we create a dummy one.
         const dummyGameState: GameState = {
             currentFloor: mapLayout.floor,
-            map: mapLayout.layout as number[][], // Assuming layout is number[][]
+            // GameState.map is now MapLayout: provide the full object
+            map: mapLayout,
             tileAssets: mapLayout.tileAssets,
             player: null!, // Not used by MapRender
             entities: {}, // Not used by MapRender
