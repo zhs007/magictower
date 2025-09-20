@@ -11,6 +11,7 @@ import * as _ from 'lodash';
 import { calculateFinalStats } from './stat-calculator';
 import { compareEquipment } from './equipment-manager';
 import { LevelData, IItem } from './types';
+import { normalizeMapLayout } from './map-utils';
 
 const MAX_COMBAT_ROUNDS = 8;
 
@@ -39,17 +40,31 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     const newX = player.x + dx;
     const newY = player.y + dy;
 
-    // Defensive handling: support canonical MapLayout ({floor, layout}) or
-    // legacy raw 2D arrays. Normalize to `mapGrid` and guard against empty
-    // or ragged maps so we don't read `.length` of undefined at runtime.
-    const rawMap: any = (newState as any).map;
-    const mapLayout = Array.isArray(rawMap)
-        ? { floor: newState.currentFloor ?? 1, layout: rawMap as (number | string)[][] }
-        : (rawMap ?? { floor: newState.currentFloor ?? 1, layout: [] });
-
-    const mapGrid: (number | string)[][] = Array.isArray(mapLayout.layout) ? mapLayout.layout : [];
+    const mapLayout = normalizeMapLayout(newState.map, {
+        floor: newState.currentFloor,
+        tileAssets: newState.tileAssets,
+    });
+    const mapGrid = mapLayout.layout;
+    newState.map = mapLayout;
+    if (mapLayout.tileAssets) {
+        newState.tileAssets = mapLayout.tileAssets;
+    }
 
     const width = mapGrid[0]?.length ?? 0;
+    const row = mapGrid[newY];
+    const cell = row ? row[newX] : undefined;
+    const numericCell = typeof cell === 'string' ? Number(cell) : cell;
+    const isNumericBlocked = Number.isFinite(numericCell) ? numericCell === 1 : false;
+    const tileAssets = mapLayout.tileAssets ?? newState.tileAssets ?? {};
+    const assetKey =
+        cell === undefined || cell === null
+            ? undefined
+            : typeof cell === 'string'
+              ? cell
+              : String(cell);
+    const tileAsset = assetKey !== undefined ? tileAssets[assetKey] : undefined;
+    const isBlockedByAsset = tileAsset?.isEntity ?? false;
+
     // If width is zero, treat as blocked/out-of-bounds to be safe.
     if (
         newX < 0 ||
@@ -57,7 +72,8 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         width === 0 ||
         newX >= width ||
         newY >= mapGrid.length ||
-        mapGrid[newY][newX] === 1
+        isNumericBlocked ||
+        isBlockedByAsset
     ) {
         console.debug(`handleMove: collision at ${newX},${newY} or out-of-bounds`);
         return state; // No change in position or direction

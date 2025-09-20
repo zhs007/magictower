@@ -93,7 +93,11 @@ export class HUD extends Container {
         this.monsterStatsText.text = `${name}: HP ${hp}  ATK ${attack}  DEF ${defense}`;
     }
 
-    private updateKeys(keys: { yellow?: number; blue?: number; red?: number } | { yellow: number; blue: number; red: number }): void {
+    private updateKeys(
+        keys:
+            | { yellow?: number; blue?: number; red?: number }
+            | { yellow: number; blue: number; red: number }
+    ): void {
         const yellow = (keys as any).yellow ?? 0;
         const blue = (keys as any).blue ?? 0;
         const red = (keys as any).red ?? 0;

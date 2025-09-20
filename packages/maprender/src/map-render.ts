@@ -1,5 +1,6 @@
 import { Container, Assets, Sprite, Texture } from 'pixi.js';
 import type { GameState } from '@proj-tower/logic-core';
+import { normalizeMapLayout } from '@proj-tower/logic-core';
 import { Entity } from './entity';
 
 const TILE_SIZE = 65;
@@ -45,18 +46,13 @@ export class MapRender extends Container {
         }
         this.mapEntities = [];
 
-        const useNewTiles = state.tileAssets && Object.keys(state.tileAssets).length > 0;
-
-        // Defensive: accept either the canonical MapLayout or legacy number[][]
-        // Some runtime data (loaded maps or older JSON) may still provide a raw
-        // 2D array. Use a runtime check to support both and avoid crashing when
-        // state.map is unexpectedly undefined.
-        const rawMap: any = (state as any).map;
-        const mapLayout = Array.isArray(rawMap)
-            ? { floor: state.currentFloor ?? 1, layout: rawMap as (number | string)[][] }
-            : (rawMap ?? { floor: state.currentFloor ?? 1, layout: [] });
-
-        const mapGrid: (number | string)[][] = Array.isArray(mapLayout.layout) ? mapLayout.layout : [];
+        const mapLayout = normalizeMapLayout(state.map, {
+            floor: state.currentFloor,
+            tileAssets: state.tileAssets,
+        });
+        const mapGrid = mapLayout.layout;
+        const tileAssets = mapLayout.tileAssets ?? state.tileAssets ?? {};
+        const useNewTiles = Object.keys(tileAssets).length > 0;
 
         for (let y = 0; y < mapGrid.length; y++) {
             for (let x = 0; x < mapGrid[y].length; x++) {
@@ -65,13 +61,19 @@ export class MapRender extends Container {
                 let isEntity = false;
 
                 if (useNewTiles) {
-                    const tileAsset = state.tileAssets![tileValue];
+                    const assetKey =
+                        tileValue === undefined || tileValue === null
+                            ? undefined
+                            : typeof tileValue === 'string'
+                              ? tileValue
+                              : String(tileValue);
+                    const tileAsset = assetKey ? tileAssets[assetKey] : undefined;
                     if (tileAsset) {
                         tileTexture = Assets.get(tileAsset.assetId);
                         isEntity = tileAsset.isEntity;
                     } else {
                         // Fallback to floor tile if tileValue is not in tileAssets
-                        const floorTileAsset = state.tileAssets!['0'];
+                        const floorTileAsset = tileAssets['0'];
                         tileTexture = floorTileAsset ? Assets.get(floorTileAsset.assetId) : Texture.EMPTY;
                     }
                 } else {
@@ -86,7 +88,7 @@ export class MapRender extends Container {
 
                 if (isEntity) {
                     // Always draw a floor tile underneath an entity tile
-                    const floorAsset = useNewTiles ? state.tileAssets!['0'] : { assetId: 'map_floor', isEntity: false };
+                    const floorAsset = useNewTiles ? tileAssets['0'] : { assetId: 'map_floor', isEntity: false };
                     const floorTexture = Assets.get(floorAsset.assetId);
                     const floorSprite = new Sprite(floorTexture);
                     floorSprite.x = x * TILE_SIZE;

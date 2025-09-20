@@ -6,3 +6,4 @@ export * from './data-manager';
 export * from './state';
 export * from './save-manager';
 export * from './logger';
+export * from './map-utils';
