@@ -47,8 +47,16 @@ export class MapRender extends Container {
 
         const useNewTiles = state.tileAssets && Object.keys(state.tileAssets).length > 0;
 
-        // Use MapLayout.layout grid directly
-        const mapGrid: (number | string)[][] = state.map.layout;
+        // Defensive: accept either the canonical MapLayout or legacy number[][]
+        // Some runtime data (loaded maps or older JSON) may still provide a raw
+        // 2D array. Use a runtime check to support both and avoid crashing when
+        // state.map is unexpectedly undefined.
+        const rawMap: any = (state as any).map;
+        const mapLayout = Array.isArray(rawMap)
+            ? { floor: state.currentFloor ?? 1, layout: rawMap as (number | string)[][] }
+            : (rawMap ?? { floor: state.currentFloor ?? 1, layout: [] });
+
+        const mapGrid: (number | string)[][] = Array.isArray(mapLayout.layout) ? mapLayout.layout : [];
 
         for (let y = 0; y < mapGrid.length; y++) {
             for (let x = 0; x < mapGrid[y].length; x++) {

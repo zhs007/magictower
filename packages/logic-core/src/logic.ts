@@ -39,14 +39,23 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
     const newX = player.x + dx;
     const newY = player.y + dy;
 
-    // Map is a MapLayout; use its layout grid
-    const mapGrid: (number | string)[][] = newState.map.layout;
+    // Defensive handling: support canonical MapLayout ({floor, layout}) or
+    // legacy raw 2D arrays. Normalize to `mapGrid` and guard against empty
+    // or ragged maps so we don't read `.length` of undefined at runtime.
+    const rawMap: any = (newState as any).map;
+    const mapLayout = Array.isArray(rawMap)
+        ? { floor: newState.currentFloor ?? 1, layout: rawMap as (number | string)[][] }
+        : (rawMap ?? { floor: newState.currentFloor ?? 1, layout: [] });
 
-    // Check for collision
+    const mapGrid: (number | string)[][] = Array.isArray(mapLayout.layout) ? mapLayout.layout : [];
+
+    const width = mapGrid[0]?.length ?? 0;
+    // If width is zero, treat as blocked/out-of-bounds to be safe.
     if (
         newX < 0 ||
-        newX >= mapGrid[0].length ||
         newY < 0 ||
+        width === 0 ||
+        newX >= width ||
         newY >= mapGrid.length ||
         mapGrid[newY][newX] === 1
     ) {
