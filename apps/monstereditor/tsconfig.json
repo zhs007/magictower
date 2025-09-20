@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "vite/client"],
+  "baseUrl": ".",
+    "paths": {
+      "@proj-tower/logic-core": ["../../packages/logic-core/src"],
+      "@proj-tower/logic-core/*": ["../../packages/logic-core/src/*"],
+      "@proj-tower/maprender": ["../../packages/maprender/src"],
+      "@proj-tower/maprender/*": ["../../packages/maprender/src/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/logic-core" },
+    { "path": "../../packages/maprender" }
+  ]
+}
