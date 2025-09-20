@@ -21,11 +21,31 @@ const start = async () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
+    const repoRoot = resolve(__dirname, '..', '..', '..');
     const vite = await createServer({
+      // keep app root in the mapeditor package so vite serves the app HTML
       root: resolve(__dirname, '..'),
       server: {
         middlewareMode: true,
         hmr: { server: httpServer },
+        // Allow serving files from workspace packages (monorepo)
+        fs: {
+          // permit Vite to serve files from the repo root (packages, node_modules, etc.)
+          allow: [repoRoot],
+          strict: false,
+        },
+      },
+      // Resolve workspace packages to their source so imports like
+      // `@proj-tower/maprender` and `@proj-tower/logic-core` work in dev
+      resolve: {
+        alias: {
+          '@proj-tower/maprender': resolve(repoRoot, 'packages', 'maprender', 'src'),
+          '@proj-tower/logic-core': resolve(repoRoot, 'packages', 'logic-core', 'src'),
+        },
+      },
+      // Pre-bundle these workspace packages so the dev client can load them quickly
+      optimizeDeps: {
+        include: ['@proj-tower/maprender', '@proj-tower/logic-core'],
       },
       appType: 'custom',
     });
