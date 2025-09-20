@@ -48,6 +48,9 @@ let playerEntity: CharacterEntity | null = null;
 let monsterEntity: CharacterEntity | null = null;
 const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2];
 let currentZoomIndex = 2; // 100%
+const TILE_SIZE = 65;
+let pixiCanvas: HTMLCanvasElement | null = null;
+let battleInProgress = false;
 
 // --- Modal Logic ---
 playerConfigBtn.onclick = () => { modal.style.display = 'block'; };
@@ -103,7 +106,7 @@ function updateMonsterDropdown() {
   const selectedLevel = parseInt(monsterLevelSelect.value, 10);
   monsterSelect.innerHTML = '<option value="">Select monster</option>';
   selectedMonster = null;
-  updateMonsterStatsDisplay();
+  renderMonsterStats();
   if (!isNaN(selectedLevel)) {
     const filteredMonsters = allMonsters.filter(m => m.level === selectedLevel);
     if (filteredMonsters.length === 0) {
@@ -119,6 +122,62 @@ function updateMonsterDropdown() {
   }
 }
 
+function renderPlayerStats(currentHp?: number) {
+    if (!selectedPlayer) {
+        playerStatsDisplay.innerHTML = 'Select a level.';
+        if (playerEntity) {
+            playerEntity.visible = false;
+        }
+        return;
+    }
+
+    const hp = Math.max(
+        0,
+        Math.min(selectedPlayer.maxhp, currentHp ?? selectedPlayer.maxhp)
+    );
+
+    playerStatsDisplay.innerHTML = `
+        <b>Player (Lvl ${selectedPlayer.level})</b><br/>
+        HP: ${hp} / ${selectedPlayer.maxhp}<br/>
+        ATK: ${selectedPlayer.attack}<br/>
+        DEF: ${selectedPlayer.defense}<br/>
+        SPD: ${selectedPlayer.speed}
+    `;
+
+    if (playerEntity) {
+        playerEntity.visible = true;
+        playerEntity.setDirection('right');
+    }
+}
+
+function renderMonsterStats(currentHp?: number) {
+    if (!selectedMonster) {
+        monsterStatsDisplay.innerHTML = 'Select a monster.';
+        if (monsterEntity) {
+            monsterEntity.visible = false;
+        }
+        return;
+    }
+
+    const hp = Math.max(
+        0,
+        Math.min(selectedMonster.maxhp, currentHp ?? selectedMonster.maxhp)
+    );
+
+    monsterStatsDisplay.innerHTML = `
+        <b>${selectedMonster.name} (Lvl ${selectedMonster.level})</b><br/>
+        HP: ${hp} / ${selectedMonster.maxhp}<br/>
+        ATK: ${selectedMonster.attack}<br/>
+        DEF: ${selectedMonster.defense}<br/>
+        SPD: ${selectedMonster.speed}
+    `;
+
+    if (monsterEntity) {
+        monsterEntity.visible = true;
+        monsterEntity.setDirection('left');
+    }
+}
+
 function updatePlayerStatsDisplay() {
     const level = parseInt(playerLevelSelect.value, 10);
     const stats = levelData.find(l => l.level === level);
@@ -132,16 +191,10 @@ function updatePlayerStatsDisplay() {
       equipment: {}, backupEquipment: [], keys: { yellow: 0 }, buffs: [],
             exp: 0, hasMonsterManual: false, specialItems: [],
         };
-        playerStatsDisplay.innerHTML = `
-            <b>Player (Lvl ${stats.level})</b><br/>
-            HP: ${stats.maxhp}<br/>
-            ATK: ${stats.attack}<br/>
-            DEF: ${stats.defense}<br/>
-            SPD: ${stats.speed}
-        `;
+        renderPlayerStats();
     } else {
         selectedPlayer = null;
-        playerStatsDisplay.innerHTML = 'Select a level.';
+        renderPlayerStats();
     }
 }
 
@@ -150,19 +203,7 @@ function updateMonsterStatsDisplay() {
     const monsterId = monsterSelect.value;
     const monster = allMonsters.find(m => m.id === monsterId);
     selectedMonster = monster || null;
-    if (monster) {
-        monsterStatsDisplay.innerHTML = `
-            <b>${monster.name} (Lvl ${monster.level})</b><br/>
-            HP: ${monster.maxhp}<br/>
-            ATK: ${monster.attack}<br/>
-            DEF: ${monster.defense}<br/>
-            SPD: ${monster.speed}
-        `;
-        if (monsterEntity) monsterEntity.visible = true;
-    } else {
-        monsterStatsDisplay.innerHTML = 'Select a monster.';
-        if (monsterEntity) monsterEntity.visible = false;
-    }
+    renderMonsterStats();
 }
 
 // --- Battle Simulation Logic ---
@@ -208,15 +249,101 @@ function simulateBattle(player: IPlayer, monster: IMonster): BattleResult {
     };
 }
 
-function onSimulationClick() {
+function animateAttack(
+    attacker: CharacterEntity | null,
+    defender: CharacterEntity | null,
+    damage: number
+): Promise<void> {
+    if (!attacker || !defender) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        attacker.attack(defender, damage, () => {}, resolve);
+    });
+}
+
+async function runBattleAnimation(player: IPlayer, monster: IMonster): Promise<BattleResult> {
+    if (!playerEntity || !monsterEntity) {
+        return simulateBattle(player, monster);
+    }
+
+    const playerState: IPlayer = { ...player, hp: player.maxhp };
+    const monsterState: IMonster = { ...monster, hp: monster.maxhp };
+
+    let playerHp = playerState.hp;
+    let monsterHp = monsterState.maxhp;
+    let turns = 0;
+    const firstAttacker = player.speed >= monster.speed ? 'player' : 'monster';
+    let currentAttacker: 'player' | 'monster' = firstAttacker;
+
+    renderPlayerStats(playerHp);
+    renderMonsterStats(monsterHp);
+
+    playerEntity.setDirection('right');
+    monsterEntity.setDirection('left');
+
+    while (playerHp > 0 && monsterHp > 0) {
+        if (turns > 1000) {
+            break;
+        }
+
+        const attackerEntity = currentAttacker === 'player' ? playerEntity : monsterEntity;
+        const defenderEntity = currentAttacker === 'player' ? monsterEntity : playerEntity;
+        const attackerData = currentAttacker === 'player' ? playerState : monsterState;
+        const defenderData = currentAttacker === 'player' ? monsterState : playerState;
+
+        const damage = calculateDamage(attackerData, defenderData);
+        await animateAttack(attackerEntity, defenderEntity, damage);
+
+        if (currentAttacker === 'player') {
+            monsterHp = Math.max(0, monsterHp - damage);
+            monsterState.hp = monsterHp;
+            renderMonsterStats(monsterHp);
+        } else {
+            playerHp = Math.max(0, playerHp - damage);
+            playerState.hp = playerHp;
+            renderPlayerStats(playerHp);
+        }
+
+        turns++;
+
+        if (playerHp <= 0 || monsterHp <= 0) {
+            break;
+        }
+
+        currentAttacker = currentAttacker === 'player' ? 'monster' : 'player';
+    }
+
+    const winner = playerHp > 0 ? 'player' : 'monster';
+
+    return {
+        winner,
+        firstAttacker,
+        turns,
+        playerHpLeft: playerHp,
+        monsterHpLeft: monsterHp,
+        playerHpLostPercent: Math.round(((player.maxhp - playerHp) / player.maxhp) * 100),
+        monsterHpLostPercent: Math.round(((monster.maxhp - monsterHp) / monster.maxhp) * 100),
+    };
+}
+
+async function onSimulationClick() {
+    if (battleInProgress) {
+        return;
+    }
+
     if (!selectedPlayer || !selectedMonster) {
         alert('Please configure a player and select a monster first.');
         return;
     }
 
-    const result = simulateBattle(selectedPlayer, selectedMonster);
+    battleInProgress = true;
 
-    const resultText = `
+    try {
+        const result = await runBattleAnimation(selectedPlayer, selectedMonster);
+
+        const resultText = `
         --- Battle Result ---
         First Attacker: ${result.firstAttacker}
         Total Turns: ${result.turns}
@@ -231,7 +358,12 @@ function onSimulationClick() {
         HP Lost: ${result.monsterHpLostPercent}%
     `;
 
-    alert(resultText);
+        alert(resultText);
+    } catch (error) {
+        console.error('Battle simulation failed', error);
+    } finally {
+        battleInProgress = false;
+    }
 }
 
 
@@ -245,13 +377,26 @@ async function setupPixiApp() {
     backgroundColor: 0x111111,
     resizeTo: simulationArea,
   });
-  simulationArea.appendChild(app.view as HTMLCanvasElement);
-  simulationArea.addEventListener('click', onSimulationClick);
+  if (pixiCanvas) {
+      pixiCanvas.removeEventListener('click', onSimulationClick);
+      if (pixiCanvas.parentElement === simulationArea) {
+          simulationArea.removeChild(pixiCanvas);
+      }
+  }
+  pixiCanvas = app.canvas as HTMLCanvasElement;
+  simulationArea.appendChild(pixiCanvas);
+  pixiCanvas.addEventListener('click', onSimulationClick);
+
+  const assetUrls = {
+      player: new URL('../../../../assets/player.png', import.meta.url).href,
+      monster: new URL('../../../../assets/monster/monster.png', import.meta.url).href,
+      floor: new URL('../../../../assets/map/floor.png', import.meta.url).href,
+  };
 
   await Assets.load([
-      { alias: 'player', src: 'assets/player.png' },
-      { alias: 'monster_monster', src: 'assets/monster/monster.png' },
-      { alias: 'map_floor', src: 'assets/map/floor.png' }
+      { alias: 'player', src: assetUrls.player },
+      { alias: 'monster_monster', src: assetUrls.monster },
+      { alias: 'map_floor', src: assetUrls.floor }
   ]);
 
   const emptyLayout = Array(16).fill(0).map(() => Array(16).fill(0));
@@ -278,19 +423,29 @@ async function setupPixiApp() {
   mapRender = new MapRender(gameState);
   app.stage.addChild(mapRender as any);
 
+  const toWorldX = (tileX: number) => tileX * TILE_SIZE + TILE_SIZE / 2;
+  const toWorldY = (tileY: number) => (tileY + 1) * TILE_SIZE;
+
   playerEntity = new CharacterEntity(Assets.get('player') as any);
-  playerEntity.x = 7;
-  playerEntity.y = 8;
+  playerEntity.x = toWorldX(7);
+  playerEntity.y = toWorldY(8);
+  playerEntity.zIndex = 8;
+  playerEntity.visible = false;
   mapRender.addEntity(playerEntity);
 
   monsterEntity = new CharacterEntity(Assets.get('monster_monster') as any);
-  monsterEntity.x = 8;
-  monsterEntity.y = 8;
+  monsterEntity.x = toWorldX(8);
+  monsterEntity.y = toWorldY(8);
+  monsterEntity.zIndex = 8;
   monsterEntity.visible = false;
   mapRender.addEntity(monsterEntity);
 
   app.ticker.add((time) => { mapRender?.update(time.deltaTime); });
+  renderPlayerStats();
+  renderMonsterStats();
   updateZoom();
+  window.removeEventListener('resize', centerMap);
+  window.addEventListener('resize', centerMap);
 }
 
 // --- Zoom Logic ---
@@ -299,22 +454,38 @@ function updateZoom() {
         const scale = zoomLevels[currentZoomIndex];
         mapRender.scale.set(scale);
         zoomDisplay.textContent = `${Math.round(scale * 100)}%`;
+        centerMap();
     }
 }
 
-zoomInBtn.onclick = () => {
+function centerMap() {
+    if (!mapRender) {
+        return;
+    }
+    const renderWidth = mapRender.width;
+    const renderHeight = mapRender.height;
+    const areaWidth = simulationArea.clientWidth;
+    const areaHeight = simulationArea.clientHeight;
+
+    mapRender.x = (areaWidth - renderWidth) / 2;
+    mapRender.y = (areaHeight - renderHeight) / 2;
+}
+
+zoomInBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
     if (currentZoomIndex < zoomLevels.length - 1) {
         currentZoomIndex++;
         updateZoom();
     }
-};
+});
 
-zoomOutBtn.onclick = () => {
+zoomOutBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
     if (currentZoomIndex > 0) {
         currentZoomIndex--;
         updateZoom();
     }
-};
+});
 
 
 // --- Initialization ---
@@ -322,7 +493,11 @@ zoomOutBtn.onclick = () => {
 async function initialize() {
   console.log("Monster Editor client application loaded.");
   await Promise.all([ fetchLevelData(), fetchAllMonsters() ]);
-  await setupPixiApp();
+  try {
+      await setupPixiApp();
+  } catch (error) {
+      console.error('Failed to initialise Pixi renderer', error);
+  }
 
   monsterLevelSelect.addEventListener('change', updateMonsterDropdown);
   playerLevelSelect.addEventListener('change', updatePlayerStatsDisplay);
