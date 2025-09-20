@@ -1,7 +1,7 @@
 import { Application, Assets } from 'pixi.js';
 import { MapRender } from '@proj-tower/maprender';
 import { CharacterEntity } from '@proj-tower/maprender';
-import { GameState, Player, Monster, TileAsset, ICharacter } from '@proj-tower/logic-core';
+import { GameState, IPlayer, IMonster, ITileAsset, ICharacter } from '@proj-tower/logic-core';
 
 // --- Type Definitions ---
 interface LevelData {
@@ -39,10 +39,10 @@ const zoomDisplay = document.getElementById('zoom-display') as HTMLSpanElement;
 
 
 // --- State ---
-let allMonsters: Monster[] = [];
+let allMonsters: IMonster[] = [];
 let levelData: LevelData[] = [];
-let selectedPlayer: Player | null = null;
-let selectedMonster: Monster | null = null;
+let selectedPlayer: IPlayer | null = null;
+let selectedMonster: IMonster | null = null;
 let mapRender: MapRender | null = null;
 let playerEntity: CharacterEntity | null = null;
 let monsterEntity: CharacterEntity | null = null;
@@ -173,7 +173,7 @@ function calculateDamage(attacker: ICharacter, defender: ICharacter): number {
     return damage <= 0 ? 1 : damage;
 }
 
-function simulateBattle(player: Player, monster: Monster): BattleResult {
+function simulateBattle(player: IPlayer, monster: IMonster): BattleResult {
     let playerHp = player.hp;
     let monsterHp = monster.maxhp;
     let turns = 0;
@@ -255,7 +255,7 @@ async function setupPixiApp() {
   ]);
 
   const emptyLayout = Array(16).fill(0).map(() => Array(16).fill(0));
-  const tileAssets: Record<string, TileAsset> = {
+  const tileAssets: Record<string, ITileAsset> = {
       '0': { assetId: 'map_floor', isEntity: false }
   };
   // Construct a MapLayout for GameState.map

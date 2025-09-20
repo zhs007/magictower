@@ -266,11 +266,6 @@ export interface MapLayout {
     stairs?: Record<string, IStair>;
 }
 
-// Backwards-compatible aliases: some apps import the non-I prefixed names.
-export type Player = IPlayer;
-export type Monster = IMonster;
-export type TileAsset = ITileAsset;
-
 export interface PlayerData {
     id: string;
     name: string;
