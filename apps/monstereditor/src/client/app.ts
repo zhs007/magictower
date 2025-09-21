@@ -7,12 +7,12 @@ import { initAgentChat } from './agent';
 
 // --- Type Definitions ---
 interface LevelData {
-  level: number;
-  exp_needed: number;
-  maxhp: number;
-  attack: number;
-  defense: number;
-  speed: number;
+    level: number;
+    exp_needed: number;
+    maxhp: number;
+    attack: number;
+    defense: number;
+    speed: number;
 }
 
 interface BattleResult {
@@ -39,10 +39,8 @@ const zoomInBtn = document.getElementById('zoom-in') as HTMLButtonElement;
 const zoomOutBtn = document.getElementById('zoom-out') as HTMLButtonElement;
 const zoomDisplay = document.getElementById('zoom-display') as HTMLSpanElement;
 
-
 // --- Agent Chat Setup ---
 initAgentChat();
-
 
 // --- State ---
 let allMonsters: IMonster[] = [];
@@ -59,73 +57,77 @@ let pixiCanvas: HTMLCanvasElement | null = null;
 let battleInProgress = false;
 
 // --- Modal Logic ---
-playerConfigBtn.onclick = () => { modal.style.display = 'block'; };
-closeModalBtn.onclick = () => { modal.style.display = 'none'; };
-window.onclick = (event) => {
-  if (event.target == modal) {
+playerConfigBtn.onclick = () => {
+    modal.style.display = 'block';
+};
+closeModalBtn.onclick = () => {
     modal.style.display = 'none';
-  }
+};
+window.onclick = (event) => {
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
 };
 
 // --- Data Fetching and Population ---
 
 async function fetchLevelData() {
-  try {
-    const response = await fetch('/api/leveldata');
-    if (!response.ok) throw new Error('Failed to fetch level data');
-    levelData = await response.json();
-    populateLevelSelect(playerLevelSelect, levelData);
-    populateLevelSelect(monsterLevelSelect, levelData);
-  } catch (error) {
-    console.error(error);
-    playerLevelSelect.innerHTML = '<option>Error</option>';
-    monsterLevelSelect.innerHTML = '<option>Error</option>';
-  }
+    try {
+        const response = await fetch('/api/leveldata');
+        if (!response.ok) throw new Error('Failed to fetch level data');
+        levelData = await response.json();
+        populateLevelSelect(playerLevelSelect, levelData);
+        populateLevelSelect(monsterLevelSelect, levelData);
+    } catch (error) {
+        console.error(error);
+        playerLevelSelect.innerHTML = '<option>Error</option>';
+        monsterLevelSelect.innerHTML = '<option>Error</option>';
+    }
 }
 
 async function fetchAllMonsters() {
-  try {
-    const response = await fetch('/api/monsters');
-    if (!response.ok) throw new Error('Failed to fetch monster list');
-    const monsterIds: string[] = await response.json();
-    const monsterPromises = monsterIds.map(id =>
-      fetch(`/api/monsters/${id}`).then(res => res.json())
-    );
-    allMonsters = await Promise.all(monsterPromises);
-  } catch (error) {
-    console.error(error);
-    monsterSelect.innerHTML = '<option>Error</option>';
-  }
+    try {
+        const response = await fetch('/api/monsters');
+        if (!response.ok) throw new Error('Failed to fetch monster list');
+        const monsterIds: string[] = await response.json();
+        const monsterPromises = monsterIds.map((id) =>
+            fetch(`/api/monsters/${id}`).then((res) => res.json())
+        );
+        allMonsters = await Promise.all(monsterPromises);
+    } catch (error) {
+        console.error(error);
+        monsterSelect.innerHTML = '<option>Error</option>';
+    }
 }
 
 function populateLevelSelect(selectElement: HTMLSelectElement, data: LevelData[]) {
-  selectElement.innerHTML = '<option value="">Select level</option>';
-  data.forEach(levelInfo => {
-    const option = document.createElement('option');
-    option.value = levelInfo.level.toString();
-    option.textContent = `Level ${levelInfo.level}`;
-    selectElement.appendChild(option);
-  });
+    selectElement.innerHTML = '<option value="">Select level</option>';
+    data.forEach((levelInfo) => {
+        const option = document.createElement('option');
+        option.value = levelInfo.level.toString();
+        option.textContent = `Level ${levelInfo.level}`;
+        selectElement.appendChild(option);
+    });
 }
 
 function updateMonsterDropdown() {
-  const selectedLevel = parseInt(monsterLevelSelect.value, 10);
-  monsterSelect.innerHTML = '<option value="">Select monster</option>';
-  selectedMonster = null;
-  renderMonsterStats();
-  if (!isNaN(selectedLevel)) {
-    const filteredMonsters = allMonsters.filter(m => m.level === selectedLevel);
-    if (filteredMonsters.length === 0) {
-      monsterSelect.innerHTML = '<option>None</option>';
-      return;
+    const selectedLevel = parseInt(monsterLevelSelect.value, 10);
+    monsterSelect.innerHTML = '<option value="">Select monster</option>';
+    selectedMonster = null;
+    renderMonsterStats();
+    if (!isNaN(selectedLevel)) {
+        const filteredMonsters = allMonsters.filter((m) => m.level === selectedLevel);
+        if (filteredMonsters.length === 0) {
+            monsterSelect.innerHTML = '<option>None</option>';
+            return;
+        }
+        filteredMonsters.forEach((monster) => {
+            const option = document.createElement('option');
+            option.value = monster.id;
+            option.textContent = monster.name;
+            monsterSelect.appendChild(option);
+        });
     }
-    filteredMonsters.forEach(monster => {
-      const option = document.createElement('option');
-      option.value = monster.id;
-      option.textContent = monster.name;
-      monsterSelect.appendChild(option);
-    });
-  }
 }
 
 function renderPlayerStats(currentHp?: number) {
@@ -137,10 +139,7 @@ function renderPlayerStats(currentHp?: number) {
         return;
     }
 
-    const hp = Math.max(
-        0,
-        Math.min(selectedPlayer.maxhp, currentHp ?? selectedPlayer.maxhp)
-    );
+    const hp = Math.max(0, Math.min(selectedPlayer.maxhp, currentHp ?? selectedPlayer.maxhp));
 
     playerStatsDisplay.innerHTML = `
         <b>Player (Lvl ${selectedPlayer.level})</b><br/>
@@ -165,10 +164,7 @@ function renderMonsterStats(currentHp?: number) {
         return;
     }
 
-    const hp = Math.max(
-        0,
-        Math.min(selectedMonster.maxhp, currentHp ?? selectedMonster.maxhp)
-    );
+    const hp = Math.max(0, Math.min(selectedMonster.maxhp, currentHp ?? selectedMonster.maxhp));
 
     monsterStatsDisplay.innerHTML = `
         <b>${selectedMonster.name} (Lvl ${selectedMonster.level})</b><br/>
@@ -186,16 +182,23 @@ function renderMonsterStats(currentHp?: number) {
 
 function updatePlayerStatsDisplay() {
     const level = parseInt(playerLevelSelect.value, 10);
-    const stats = levelData.find(l => l.level === level);
+    const stats = levelData.find((l) => l.level === level);
     if (stats) {
         selectedPlayer = {
             ...stats,
             id: 'player',
             hp: stats.maxhp,
             name: 'Player',
-            x: 7, y: 8, direction: 'right',
-      equipment: {}, backupEquipment: [], keys: { yellow: 0 }, buffs: [],
-            exp: 0, hasMonsterManual: false, specialItems: [],
+            x: 7,
+            y: 8,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            keys: { yellow: 0 },
+            buffs: [],
+            exp: 0,
+            hasMonsterManual: false,
+            specialItems: [],
         };
         renderPlayerStats();
     } else {
@@ -204,10 +207,9 @@ function updatePlayerStatsDisplay() {
     }
 }
 
-
 function updateMonsterStatsDisplay() {
     const monsterId = monsterSelect.value;
-    const monster = allMonsters.find(m => m.id === monsterId);
+    const monster = allMonsters.find((m) => m.id === monsterId);
     selectedMonster = monster || null;
     renderMonsterStats();
 }
@@ -372,86 +374,112 @@ async function onSimulationClick() {
     }
 }
 
-
 // --- Rendering Logic ---
 
 async function setupPixiApp() {
-  const app = new Application();
-  await app.init({
-    width: simulationArea.clientWidth,
-    height: simulationArea.clientHeight,
-    backgroundColor: 0x111111,
-    resizeTo: simulationArea,
-  });
-  if (pixiCanvas) {
-      pixiCanvas.removeEventListener('click', onSimulationClick);
-      if (pixiCanvas.parentElement === simulationArea) {
-          simulationArea.removeChild(pixiCanvas);
-      }
-  }
-  pixiCanvas = app.canvas as HTMLCanvasElement;
-  simulationArea.appendChild(pixiCanvas);
-  pixiCanvas.addEventListener('click', onSimulationClick);
+    const app = new Application();
+    await app.init({
+        width: simulationArea.clientWidth,
+        height: simulationArea.clientHeight,
+        backgroundColor: 0x111111,
+        resizeTo: simulationArea,
+    });
+    if (pixiCanvas) {
+        pixiCanvas.removeEventListener('click', onSimulationClick);
+        if (pixiCanvas.parentElement === simulationArea) {
+            simulationArea.removeChild(pixiCanvas);
+        }
+    }
+    pixiCanvas = app.canvas as HTMLCanvasElement;
+    simulationArea.appendChild(pixiCanvas);
+    pixiCanvas.addEventListener('click', onSimulationClick);
 
-  const assetUrls = {
-      player: new URL('../../../../assets/player.png', import.meta.url).href,
-      monster: new URL('../../../../assets/monster/monster.png', import.meta.url).href,
-      floor: new URL('../../../../assets/map/floor.png', import.meta.url).href,
-  };
+    const assetUrls = {
+        player: new URL('../../../../assets/player.png', import.meta.url).href,
+        monster: new URL('../../../../assets/monster/monster.png', import.meta.url).href,
+        floor: new URL('../../../../assets/map/floor.png', import.meta.url).href,
+    };
 
-  await Assets.load([
-      { alias: 'player', src: assetUrls.player },
-      { alias: 'monster_monster', src: assetUrls.monster },
-      { alias: 'map_floor', src: assetUrls.floor }
-  ]);
+    await Assets.load([
+        { alias: 'player', src: assetUrls.player },
+        { alias: 'monster_monster', src: assetUrls.monster },
+        { alias: 'map_floor', src: assetUrls.floor },
+    ]);
 
-  const emptyLayout = Array(16).fill(0).map(() => Array(16).fill(0));
-  const tileAssets: Record<string, ITileAsset> = {
-      '0': { assetId: 'map_floor', isEntity: false }
-  };
-  // Construct a MapLayout for GameState.map
-  const mapLayout = {
-    floor: 1,
-    layout: emptyLayout,
-    tileAssets,
-  };
+    const emptyLayout = Array(16)
+        .fill(0)
+        .map(() => Array(16).fill(0));
+    const tileAssets: Record<string, ITileAsset> = {
+        '0': { assetId: 'map_floor', isEntity: false },
+    };
+    // Construct a MapLayout for GameState.map
+    const mapLayout = {
+        floor: 1,
+        layout: emptyLayout,
+        tileAssets,
+    };
 
-  const gameState: GameState = {
-    currentFloor: 1,
-    map: mapLayout,
-    tileAssets,
-    player: { id: 'player', name: 'Player', hp: 1, maxhp: 1, attack: 1, defense: 1, speed: 1, level: 1, exp: 0, x: 7, y: 8, direction: 'right', equipment: {}, backupEquipment: [], keys: {yellow: 0}, buffs: [], hasMonsterManual: false, specialItems: [] },
-    entities: {},
-    monsters: {}, items: {}, equipments: {}, doors: {}, stairs: {},
-    interactionState: { type: 'none' }
-  };
+    const gameState: GameState = {
+        currentFloor: 1,
+        map: mapLayout,
+        tileAssets,
+        player: {
+            id: 'player',
+            name: 'Player',
+            hp: 1,
+            maxhp: 1,
+            attack: 1,
+            defense: 1,
+            speed: 1,
+            level: 1,
+            exp: 0,
+            x: 7,
+            y: 8,
+            direction: 'right',
+            equipment: {},
+            backupEquipment: [],
+            keys: { yellow: 0 },
+            buffs: [],
+            hasMonsterManual: false,
+            specialItems: [],
+        },
+        entities: {},
+        monsters: {},
+        items: {},
+        equipments: {},
+        doors: {},
+        stairs: {},
+        interactionState: { type: 'none' },
+    };
 
-  mapRender = new MapRender(gameState);
-  app.stage.addChild(mapRender as any);
+    mapRender = new MapRender(gameState);
+    app.stage.addChild(mapRender as any);
 
-  const toWorldX = (tileX: number) => tileX * TILE_SIZE + TILE_SIZE / 2;
-  const toWorldY = (tileY: number) => (tileY + 1) * TILE_SIZE;
+    const toWorldX = (tileX: number) => tileX * TILE_SIZE + TILE_SIZE / 2;
+    const toWorldY = (tileY: number) => (tileY + 1) * TILE_SIZE;
 
-  playerEntity = new CharacterEntity(Assets.get('player') as any);
-  playerEntity.x = toWorldX(7);
-  playerEntity.y = toWorldY(8);
-  playerEntity.zIndex = 8;
-  playerEntity.visible = false;
-  mapRender.addEntity(playerEntity);
+    playerEntity = new CharacterEntity(Assets.get('player') as any);
+    playerEntity.x = toWorldX(7);
+    playerEntity.y = toWorldY(8);
+    playerEntity.zIndex = 8;
+    playerEntity.visible = false;
+    mapRender.addEntity(playerEntity);
 
-  monsterEntity = new CharacterEntity(Assets.get('monster_monster') as any);
-  monsterEntity.x = toWorldX(8);
-  monsterEntity.y = toWorldY(8);
-  monsterEntity.zIndex = 8;
-  monsterEntity.visible = false;
-  mapRender.addEntity(monsterEntity);
+    monsterEntity = new CharacterEntity(Assets.get('monster_monster') as any);
+    monsterEntity.x = toWorldX(8);
+    monsterEntity.y = toWorldY(8);
+    monsterEntity.zIndex = 8;
+    monsterEntity.visible = false;
+    mapRender.addEntity(monsterEntity);
 
-  app.ticker.add((time) => { mapRender?.update(time.deltaTime); });
-  renderPlayerStats();
-  renderMonsterStats();
-  updateZoom();
-  window.removeEventListener('resize', centerMap);
-  window.addEventListener('resize', centerMap);
+    app.ticker.add((time) => {
+        mapRender?.update(time.deltaTime);
+    });
+    renderPlayerStats();
+    renderMonsterStats();
+    updateZoom();
+    window.removeEventListener('resize', centerMap);
+    window.addEventListener('resize', centerMap);
 }
 
 // --- Zoom Logic ---
@@ -493,25 +521,27 @@ zoomOutBtn.addEventListener('click', (event) => {
     }
 });
 
-
 // --- Initialization ---
 
 async function initialize() {
-  console.log("Monster Editor client application loaded.");
-  await Promise.all([ fetchLevelData(), fetchAllMonsters() ]);
-  try {
-      await setupPixiApp();
-  } catch (error) {
-      console.error('Failed to initialise Pixi renderer', error);
-  }
+    console.log('Monster Editor client application loaded.');
+    await Promise.all([fetchLevelData(), fetchAllMonsters()]);
+    try {
+        await setupPixiApp();
+    } catch (error) {
+        console.error('Failed to initialise Pixi renderer', error);
+    }
 
-  monsterLevelSelect.addEventListener('change', updateMonsterDropdown);
-  playerLevelSelect.addEventListener('change', updatePlayerStatsDisplay);
-  monsterSelect.addEventListener('change', updateMonsterStatsDisplay);
-  (document.getElementById('confirm-player-btn') as HTMLButtonElement).addEventListener('click', () => {
-      updatePlayerStatsDisplay();
-      modal.style.display = 'none';
-  });
+    monsterLevelSelect.addEventListener('change', updateMonsterDropdown);
+    playerLevelSelect.addEventListener('change', updatePlayerStatsDisplay);
+    monsterSelect.addEventListener('change', updateMonsterStatsDisplay);
+    (document.getElementById('confirm-player-btn') as HTMLButtonElement).addEventListener(
+        'click',
+        () => {
+            updatePlayerStatsDisplay();
+            modal.style.display = 'none';
+        }
+    );
 }
 
 initialize();

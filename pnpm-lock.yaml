@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@google/genai':
+        specifier: ^1.20.0
+        version: 1.20.0
     devDependencies:
       '@types/glob':
         specifier: ^8.1.0
@@ -198,7 +202,7 @@ importers:
   apps/monstereditor:
     dependencies:
       '@google/genai':
-        specifier: latest
+        specifier: 1.20.0
         version: 1.20.0
       '@proj-tower/logic-core':
         specifier: workspace:*

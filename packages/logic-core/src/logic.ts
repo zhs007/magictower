@@ -100,19 +100,25 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         // If it's an item but items doesn't have the same key, try to find
         // the canonical item key by matching the item's id.
         if (entityObj && entityObj.type === 'item' && !newState.items[resolvedKey]) {
-            const foundItemKey = Object.keys(newState.items).find((k) => newState.items[k].id === entityObj.id);
+            const foundItemKey = Object.keys(newState.items).find(
+                (k) => newState.items[k].id === entityObj.id
+            );
             if (foundItemKey) resolvedKey = foundItemKey;
         }
 
         // Same for monsters
         if (entityObj && entityObj.type === 'monster' && !newState.monsters[resolvedKey]) {
-            const foundMonsterKey = Object.keys(newState.monsters).find((k) => newState.monsters[k].id === entityObj.id);
+            const foundMonsterKey = Object.keys(newState.monsters).find(
+                (k) => newState.monsters[k].id === entityObj.id
+            );
             if (foundMonsterKey) resolvedKey = foundMonsterKey;
         }
 
         // Same for equipments
         if (entityObj && entityObj.type === 'equipment' && !newState.equipments[resolvedKey]) {
-            const foundEquipKey = Object.keys(newState.equipments).find((k) => newState.equipments[k].id === entityObj.id);
+            const foundEquipKey = Object.keys(newState.equipments).find(
+                (k) => newState.equipments[k].id === entityObj.id
+            );
             if (foundEquipKey) resolvedKey = foundEquipKey;
         }
 
@@ -125,16 +131,22 @@ export function handleMove(state: GameState, dx: number, dy: number): GameState 
         finalDestinationKey = Object.keys(newState.entities).find((k) => {
             const e = newState.entities[k];
             return (
-                (e &&
-                    ((e.id && Object.values(newState.items || {}).some((it: any) => it.id === e.id)) ||
-                        (e.id && Object.values(newState.monsters || {}).some((m: any) => m.id === e.id)) ||
-                        (e.id && Object.values(newState.equipments || {}).some((eq: any) => eq.id === e.id)))) &&
+                e &&
+                ((e.id && Object.values(newState.items || {}).some((it: any) => it.id === e.id)) ||
+                    (e.id &&
+                        Object.values(newState.monsters || {}).some((m: any) => m.id === e.id)) ||
+                    (e.id &&
+                        Object.values(newState.equipments || {}).some(
+                            (eq: any) => eq.id === e.id
+                        ))) &&
                 e.x === newX &&
                 e.y === newY
             );
         });
     }
-    console.debug(`handleMove: target ${newX},${newY} entityAtCoords=${entityKeyAtCoords} resolved=${finalDestinationKey}`);
+    console.debug(
+        `handleMove: target ${newX},${newY} entityAtCoords=${entityKeyAtCoords} resolved=${finalDestinationKey}`
+    );
 
     if (finalDestinationKey) {
         const destinationEntity = newState.entities[finalDestinationKey];

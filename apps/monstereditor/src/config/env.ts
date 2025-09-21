@@ -11,31 +11,31 @@ const appDir = resolve(projectRoot, 'apps', 'monstereditor');
 let envLoaded = false;
 
 export function loadEnvOnce() {
-  if (envLoaded) return;
-  envLoaded = true;
-  const candidates = [
-    resolve(appDir, '.env.local'),
-    resolve(appDir, '.env'),
-    resolve(projectRoot, '.env.local'),
-    resolve(projectRoot, '.env'),
-  ];
+    if (envLoaded) return;
+    envLoaded = true;
+    const candidates = [
+        resolve(appDir, '.env.local'),
+        resolve(appDir, '.env'),
+        resolve(projectRoot, '.env.local'),
+        resolve(projectRoot, '.env'),
+    ];
 
-  let loaded = false;
-  for (const envPath of candidates) {
-    if (!existsSync(envPath)) continue;
-    loadDotenv({ path: envPath, override: false });
-    loaded = true;
-  }
+    let loaded = false;
+    for (const envPath of candidates) {
+        if (!existsSync(envPath)) continue;
+        loadDotenv({ path: envPath, override: false });
+        loaded = true;
+    }
 
-  if (!loaded) {
-    loadDotenv({ override: false });
-  }
+    if (!loaded) {
+        loadDotenv({ override: false });
+    }
 }
 
 export function resolveProjectPath(...segments: string[]) {
-  return resolve(projectRoot, ...segments);
+    return resolve(projectRoot, ...segments);
 }
 
 export function getProjectRoot() {
-  return projectRoot;
+    return projectRoot;
 }

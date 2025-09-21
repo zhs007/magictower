@@ -11,15 +11,12 @@ class PrefixedConsoleLogger implements ILogger {
         this.prefix = prefix;
     }
     log(...args: unknown[]) {
-        // eslint-disable-next-line no-console
         console.log(this.prefix, ...args);
     }
     warn(...args: unknown[]) {
-        // eslint-disable-next-line no-console
         console.warn(this.prefix, ...args);
     }
     error(...args: unknown[]) {
-        // eslint-disable-next-line no-console
         console.error(this.prefix, ...args);
     }
 }

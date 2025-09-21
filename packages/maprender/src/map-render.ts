@@ -74,7 +74,9 @@ export class MapRender extends Container {
                     } else {
                         // Fallback to floor tile if tileValue is not in tileAssets
                         const floorTileAsset = tileAssets['0'];
-                        tileTexture = floorTileAsset ? Assets.get(floorTileAsset.assetId) : Texture.EMPTY;
+                        tileTexture = floorTileAsset
+                            ? Assets.get(floorTileAsset.assetId)
+                            : Texture.EMPTY;
                     }
                 } else {
                     // Legacy support for maps without tileAssets
@@ -88,7 +90,9 @@ export class MapRender extends Container {
 
                 if (isEntity) {
                     // Always draw a floor tile underneath an entity tile
-                    const floorAsset = useNewTiles ? tileAssets['0'] : { assetId: 'map_floor', isEntity: false };
+                    const floorAsset = useNewTiles
+                        ? tileAssets['0']
+                        : { assetId: 'map_floor', isEntity: false };
                     const floorTexture = Assets.get(floorAsset.assetId);
                     const floorSprite = new Sprite(floorTexture);
                     floorSprite.x = x * TILE_SIZE;

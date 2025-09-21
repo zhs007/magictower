@@ -41,9 +41,7 @@ describe('GameStateManager map normalization', () => {
                 return basePlayer;
             },
             getLevelData() {
-                return [
-                    { level: 1, exp_needed: 0, maxhp: 10, attack: 2, defense: 1, speed: 1 },
-                ];
+                return [{ level: 1, exp_needed: 0, maxhp: 10, attack: 2, defense: 1, speed: 1 }];
             },
             getMonsterData() {
                 return undefined;

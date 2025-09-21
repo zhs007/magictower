@@ -27,7 +27,7 @@ export class SaveManager {
     ) {
         this.gameStateManager = gameStateManager;
         this.storage = options?.storage ?? (globalThis as any).localStorage;
-    this.logger = options?.logger ?? getLogger();
+        this.logger = options?.logger ?? getLogger();
     }
 
     // Instance method for saving the current game state
@@ -50,8 +50,8 @@ export class SaveManager {
         slotId: string,
         options?: { storage?: StorageLike; logger?: LoggerLike }
     ): Promise<GameState | null> {
-    const storage = options?.storage ?? (globalThis as any).localStorage;
-    const logger = options?.logger ?? getLogger();
+        const storage = options?.storage ?? (globalThis as any).localStorage;
+        const logger = options?.logger ?? getLogger();
         try {
             const jsonData = storage.getItem('save_slot_' + slotId);
             if (!jsonData) {
@@ -63,7 +63,9 @@ export class SaveManager {
 
             // Recreate the initial state from seed using an instance (createInitialState is now an instance method)
             const tempGameStateManager = new GameStateManager();
-            const initialState = await tempGameStateManager.createInitialState(saveData.initialStateSeed);
+            const initialState = await tempGameStateManager.createInitialState(
+                saveData.initialStateSeed
+            );
             tempGameStateManager.initializeState(initialState);
             tempGameStateManager.initialStateSeed = saveData.initialStateSeed;
 

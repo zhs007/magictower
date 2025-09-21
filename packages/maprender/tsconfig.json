@@ -1,17 +1,14 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "moduleResolution": "node",
-    "types": ["vite/client"],
-    "declaration": true,
-    "declarationMap": true,
-    "composite": true,
-    "outDir": "dist",
-    "rootDir": "src"
-  },
-  "include": ["src"]
-  ,
-  "references": [
-    { "path": "../logic-core" }
-  ]
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "moduleResolution": "node",
+        "types": ["vite/client"],
+        "declaration": true,
+        "declarationMap": true,
+        "composite": true,
+        "outDir": "dist",
+        "rootDir": "src"
+    },
+    "include": ["src"],
+    "references": [{ "path": "../logic-core" }]
 }

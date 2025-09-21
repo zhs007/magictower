@@ -1,28 +1,33 @@
 {
-  "name": "@proj-tower/maprender",
-  "version": "1.0.0",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+    "name": "@proj-tower/maprender",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "build:esm": "tsc --outFile dist/index.mjs --module esnext",
+        "dev": "tsc -w",
+        "test:ci": "vitest run",
+        "typecheck": "tsc --noEmit",
+        "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+        "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+        "lint": "eslint --ext .ts,.tsx src",
+        "lint:fix": "eslint --ext .ts,.tsx src --fix"
+    },
+    "dependencies": {
+        "@proj-tower/logic-core": "workspace:^",
+        "pixi.js": "^8.0.0",
+        "gsap": "^3.12.2"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "vitest": "^3.2.4"
     }
-  },
-  "scripts": {
-    "build": "tsc",
-    "build:esm": "tsc --outFile dist/index.mjs --module esnext",
-    "dev": "tsc -w",
-    "test:ci": "vitest run"
-  },
-  "dependencies": {
-    "@proj-tower/logic-core": "workspace:^",
-    "pixi.js": "^8.0.0",
-    "gsap": "^3.12.2"
-  },
-  "devDependencies": {
-    "typescript": "^5.0.0",
-    "vitest": "^3.2.4"
-  }
 }

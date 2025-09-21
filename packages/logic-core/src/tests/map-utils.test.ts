@@ -8,7 +8,10 @@ describe('normalizeMapLayout', () => {
             ['2', 'wall'],
         ];
 
-        const normalized = normalizeMapLayout(layout, { floor: 2, tileAssets: { '0': { assetId: 'floor', isEntity: false } } });
+        const normalized = normalizeMapLayout(layout, {
+            floor: 2,
+            tileAssets: { '0': { assetId: 'floor', isEntity: false } },
+        });
 
         expect(normalized.floor).toBe(2);
         expect(normalized.layout).toEqual([
