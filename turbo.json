@@ -22,9 +22,9 @@
         "typecheck": {
                     "dependsOn": ["^build", "^typecheck"]
         },
-        "check": {
-                "dependsOn": ["^typecheck", "^lint", "^test:ci"]
-        },
+    "check": {
+        "dependsOn": ["^build", "^typecheck", "^lint", "^test:ci"]
+    },
         "check-gamedata": {
             "dependsOn": ["build"]
         },
