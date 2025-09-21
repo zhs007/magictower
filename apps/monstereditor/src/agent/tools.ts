@@ -193,9 +193,9 @@ export const tools = [
                 name: 'getMonstersInfo',
                 description: 'Get detailed attribute data for all monsters at a specific level.',
                 parameters: {
-                    type: 'OBJECT',
+                    type: 'object',
                     properties: {
-                        level: { type: 'NUMBER' },
+                        level: { type: 'number' },
                     },
                     required: ['level'],
                 },
@@ -204,19 +204,19 @@ export const tools = [
                 name: 'updMonsterInfo',
                 description: 'Create a new monster or update an existing one. The monster data must be a complete JSON object.',
                 parameters: {
-                    type: 'OBJECT',
+                    type: 'object',
                     properties: {
                         monsterData: {
-                            type: 'OBJECT',
+                            type: 'object',
                             properties: {
-                                id: { type: 'STRING', description: "Unique identifier, e.g., 'level5_bat_a'" },
-                                name: { type: 'STRING', description: "Display name, e.g., 'Giant Bat'" },
-                                level: { type: 'NUMBER' },
-                                maxhp: { type: 'NUMBER' },
-                                attack: { type: 'NUMBER' },
-                                defense: { type: 'NUMBER' },
-                                speed: { type: 'NUMBER' },
-                                assetId: { type: 'STRING', description: "Asset key for the monster's image, e.g., 'monster_monster'" }
+                                id: { type: 'string', description: "Unique identifier, e.g., 'level5_bat_a'" },
+                                name: { type: 'string', description: "Display name, e.g., 'Giant Bat'" },
+                                level: { type: 'number' },
+                                maxhp: { type: 'number' },
+                                attack: { type: 'number' },
+                                defense: { type: 'number' },
+                                speed: { type: 'number' },
+                                assetId: { type: 'string', description: "Asset key for the monster's image, e.g., 'monster_monster'" }
                             },
                             required: ['id', 'name', 'level', 'maxhp', 'attack', 'defense', 'speed']
                         },
@@ -228,10 +228,10 @@ export const tools = [
                 name: 'simBattle',
                 description: 'Simulate a battle between a specific monster and a player of a given level.',
                 parameters: {
-                    type: 'OBJECT',
+                    type: 'object',
                     properties: {
-                        monsterId: { type: 'STRING', description: "The ID of the monster to simulate against." },
-                        playerLevel: { type: 'NUMBER', description: "The level of the player for the simulation." },
+                        monsterId: { type: 'string', description: "The ID of the monster to simulate against." },
+                        playerLevel: { type: 'number', description: "The level of the player for the simulation." },
                     },
                     required: ['monsterId', 'playerLevel'],
                 },

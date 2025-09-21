@@ -101,7 +101,11 @@ export function registerAgentRoutes(app: FastifyInstance) {
 
             // Kick off a single-turn generation. If a function call is returned, handle it and loop.
             // In @google/genai v1, function calling can be returned in the response candidates.
-            let prompt = message.trim();
+            // Build a per-turn history starting with prior messages + this user's message
+            const turnHistory: any[] = [
+                ...history,
+                { role: 'user', parts: [{ text: message.trim() }] },
+            ];
             // eslint-disable-next-line no-constant-condition
             while (true) {
                 try {
@@ -109,32 +113,57 @@ export function registerAgentRoutes(app: FastifyInstance) {
                     (reply as any).log?.debug(
                         {
                             conversationId: conversation.id,
-                            promptPreview: prompt.slice(0, 120),
-                            promptLen: prompt.length,
+                            promptPreview: ((): string => {
+                                try {
+                                    const lastUser = [...turnHistory].reverse().find((h: any) => h.role === 'user');
+                                    const text = lastUser?.parts?.map((p: any) => p.text).filter(Boolean).join(' ') || '';
+                                    return text.slice(0, 120);
+                                } catch {
+                                    return '';
+                                }
+                            })(),
+                            promptLen: ((): number => {
+                                try {
+                                    const lastUser = [...turnHistory].reverse().find((h: any) => h.role === 'user');
+                                    const text = lastUser?.parts?.map((p: any) => p.text).filter(Boolean).join(' ') || '';
+                                    return text.length;
+                                } catch {
+                                    return 0;
+                                }
+                            })(),
                         },
                         '[agent] generating content'
                     );
                 } catch (_) {}
-                const result: any = await model.generateContent({
+                const response: any = await model.generateContent({
                     model: config.model,
                     systemInstruction: config.systemInstruction
                         ? { role: 'system', parts: [{ text: config.systemInstruction }] }
                         : undefined,
-                    contents: [...history, { role: 'user', parts: [{ text: prompt }] }],
+                    contents: turnHistory,
+                    generationConfig: {
+                        responseMimeType: 'text/plain',
+                    },
+                    toolConfig: {
+                        functionCallingConfig: {
+                            mode: 'AUTO',
+                        },
+                    },
                     tools,
                 });
-                const candidate = result?.response?.candidates?.[0];
+                const candidate = response?.candidates?.[0];
                 try {
-                    const finishReason = candidate?.finishReason || result?.response?.candidates?.[0]?.finishReason;
-                    const safety = candidate?.safetyRatings || result?.response?.promptFeedback || undefined;
+                    const finishReason = candidate?.finishReason ?? response?.candidates?.[0]?.finishReason;
+                    const safety = candidate?.safetyRatings || response?.promptFeedback || undefined;
                     const partsSummary = candidate?.content?.parts?.map((p: any) => {
                         if (p.functionCall) return { functionCall: { name: p.functionCall.name, argsKeys: Object.keys(p.functionCall.args || {}) } };
                         if (p.text) return { textLen: p.text.length, preview: String(p.text).slice(0, 60) };
                         return { other: Object.keys(p).join(',') };
                     });
-                    (reply as any).log?.debug({ finishReason, safety, partsSummary }, '[agent] model candidate summary');
+                    (reply as any).log?.info({ finishReason, safety, partsSummary }, '[agent] model candidate summary');
                 } catch (_) {}
-                const call = candidate?.content?.parts?.find((p: any) => p.functionCall)?.functionCall;
+                const callPart = candidate?.content?.parts?.find((p: any) => p.functionCall);
+                const call = callPart?.functionCall;
                 if (call) {
                     try {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,6 +177,9 @@ export function registerAgentRoutes(app: FastifyInstance) {
                         );
                     } catch (_) {}
                     appendMessage(conversation.id, 'assistant', JSON.stringify({ tool_code: { name: call.name, args: call.args } }));
+                    // Add the assistant's functionCall into the turn history before tool response
+                    turnHistory.push({ role: 'model', parts: [callPart] });
+
                     const fn = (toolFunctions as any)[call.name];
                     const functionResult = fn
                         ? await (async () => {
@@ -180,14 +212,38 @@ export function registerAgentRoutes(app: FastifyInstance) {
                             '[agent] tool result summary'
                         );
                     } catch (_) {}
-                    // Optionally record tool result as assistant content, but not required for flow.
-                    // appendMessage(conversation.id, 'assistant', functionResult);
-                    // Feed tool result back into the loop as next user content
-                    prompt = functionResult;
+                    // Append function response as a tool message for the next turn per @google/genai v1
+                    let responsePayload: any;
+                    if (typeof functionResult === 'string') {
+                        try {
+                            responsePayload = JSON.parse(functionResult);
+                        } catch {
+                            responsePayload = { text: functionResult };
+                        }
+                    } else {
+                        responsePayload = functionResult;
+                    }
+                    turnHistory.push({
+                        role: 'tool',
+                        parts: [{ functionResponse: { name: call.name, response: responsePayload } }],
+                    });
                     // And continue to allow the model to produce a final text
                     continue;
                 } else {
-                    const text = result?.response?.text?.() ?? candidate?.content?.parts?.map((p: any) => p.text).join('') ?? '';
+                    const textRaw = response?.text ?? candidate?.content?.parts?.map((p: any) => p?.text ?? '').join('') ?? '';
+                    let text = textRaw;
+                    if (!text) {
+                        try {
+                            (reply as any).log?.warn({ parts: candidate?.content?.parts }, '[agent] model returned empty text');
+                        } catch (_) {}
+                        // Provide a helpful fallback so the UI doesn't look empty
+                        const finishReason = candidate?.finishReason ?? response?.candidates?.[0]?.finishReason;
+                        const feedback = response?.promptFeedback;
+                        const fb = feedback
+                            ? `; feedback: ${JSON.stringify(feedback)}`
+                            : '';
+                        text = `No content returned by model (finishReason: ${String(finishReason) || 'unknown'}${fb}).`;
+                    }
                     try {
                         (reply as any).log?.info(
                             { conversationId: conversation.id, textLen: text.length, preview: text.slice(0, 160) },
