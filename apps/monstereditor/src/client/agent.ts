@@ -43,6 +43,9 @@ async function requestNewConversation(statusEl: HTMLElement) {
   const response = await fetch('/api/agent/new-task', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    // Fastify rejects requests with Content-Type: application/json and an empty body.
+    // Send an empty JSON object so the server accepts the request.
+    body: JSON.stringify({}),
   });
   if (!response.ok) {
     throw new Error('Failed to start new task');
