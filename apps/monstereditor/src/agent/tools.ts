@@ -6,10 +6,18 @@ import path from 'path';
 const MONSTERS_DIR = path.join(process.cwd(), 'gamedata', 'monsters');
 const LEVEL_DATA_PATH = path.join(process.cwd(), 'gamedata', 'leveldata.json');
 
+function logDebug(meta: Record<string, unknown>, msg: string) {
+    try {
+        // eslint-disable-next-line no-console
+        console.debug('[agent-tools]', msg, meta);
+    } catch (_) {}
+}
+
 // --- Tool Implementations ---
 
 async function getAllMonsters(): Promise<string> {
     try {
+        logDebug({}, 'getAllMonsters: start');
         const files = await fs.readdir(MONSTERS_DIR);
         const monsters = await Promise.all(
             files
@@ -21,9 +29,12 @@ async function getAllMonsters(): Promise<string> {
                 }),
         );
         if (monsters.length === 0) {
+            logDebug({ monsters: 0 }, 'getAllMonsters: done');
             return 'No monsters found.';
         }
-        return `Here are the existing monsters:\n${monsters.join('\n')}`;
+        const out = `Here are the existing monsters:\n${monsters.join('\n')}`;
+        logDebug({ monsters: monsters.length, outLen: out.length }, 'getAllMonsters: done');
+        return out;
     } catch (error) {
         console.error('Error in getAllMonsters:', error);
         return 'Error: Could not retrieve the list of monsters.';
@@ -32,6 +43,7 @@ async function getAllMonsters(): Promise<string> {
 
 async function getMonstersInfo(level: number): Promise<string> {
     try {
+        logDebug({ level }, 'getMonstersInfo: start');
         const files = await fs.readdir(MONSTERS_DIR);
         const monsters = await Promise.all(
             files
@@ -46,10 +58,12 @@ async function getMonstersInfo(level: number): Promise<string> {
         const filteredMonsters = monsters.filter((m) => m.level === level);
 
         if (filteredMonsters.length === 0) {
+            logDebug({ level, count: 0 }, 'getMonstersInfo: done');
             return `No monsters found at level ${level}.`;
         }
-
-        return JSON.stringify(filteredMonsters, null, 2);
+        const out = JSON.stringify(filteredMonsters, null, 2);
+        logDebug({ level, count: filteredMonsters.length, outLen: out.length }, 'getMonstersInfo: done');
+        return out;
     } catch (error) {
         console.error('Error in getMonstersInfo:', error);
         return `Error: Could not retrieve monster info for level ${level}.`;
@@ -57,6 +71,7 @@ async function getMonstersInfo(level: number): Promise<string> {
 }
 
 async function updMonsterInfo(monsterData: IMonster): Promise<string> {
+    logDebug({ id: monsterData?.id, name: monsterData?.name }, 'updMonsterInfo: start');
     if (
         !monsterData.id ||
         !monsterData.name ||
@@ -66,13 +81,16 @@ async function updMonsterInfo(monsterData: IMonster): Promise<string> {
         !monsterData.defense ||
         !monsterData.speed
     ) {
+        logDebug({}, 'updMonsterInfo: validation failed');
         return 'Error: Missing required monster properties. Please provide id, name, level, maxhp, attack, defense, and speed.';
     }
 
     const filePath = path.join(MONSTERS_DIR, `${monsterData.id}.json`);
     try {
         await fs.writeFile(filePath, JSON.stringify(monsterData, null, 2));
-        return `Successfully saved monster data for "${monsterData.name}" to ${filePath}.`;
+        const out = `Successfully saved monster data for "${monsterData.name}" to ${filePath}.`;
+        logDebug({ id: monsterData.id, outLen: out.length }, 'updMonsterInfo: done');
+        return out;
     } catch (error) {
         console.error('Error in updMonsterInfo:', error);
         return `Error: Could not save monster data for "${monsterData.name}".`;
@@ -84,6 +102,7 @@ async function simBattle(
     playerLevel: number,
 ): Promise<string> {
     try {
+        logDebug({ monsterId, playerLevel }, 'simBattle: start');
         // 1. Load monster data
         const monsterFilePath = path.join(MONSTERS_DIR, `${monsterId}.json`);
         const monsterContent = await fs.readFile(monsterFilePath, 'utf-8');
@@ -143,12 +162,14 @@ async function simBattle(
         const maxHp = winner === 'Player' ? player.maxhp : monster.maxhp;
         const remainingHpPercent = ((remainingHp / maxHp) * 100).toFixed(2);
 
-        return JSON.stringify({
+        const out = JSON.stringify({
             winner,
             remainingHp,
             remainingHpPercent: `${remainingHpPercent}%`,
             rounds: Math.ceil(rounds / 2), // Each character attacking is a "round"
         });
+        logDebug({ monsterId, playerLevel, outLen: out.length }, 'simBattle: done');
+        return out;
     } catch (error) {
         console.error('Error in simBattle:', error);
         if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {

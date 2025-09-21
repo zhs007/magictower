@@ -28,6 +28,10 @@ export function createConversation(): Conversation {
         updatedAt: now,
     };
     conversations.set(id, conversation);
+    try {
+        // eslint-disable-next-line no-console
+        console.info('[agent-conv] create', { id });
+    } catch (_) {}
     return conversation;
 }
 
@@ -36,6 +40,10 @@ export function resetConversation(id: string): Conversation {
     if (existing) {
         existing.messages = [];
         existing.updatedAt = Date.now();
+        try {
+            // eslint-disable-next-line no-console
+            console.info('[agent-conv] reset', { id });
+        } catch (_) {}
         return existing;
     }
     const fresh = createConversation();
@@ -75,6 +83,14 @@ export function appendMessage(
     };
     conversation.messages.push(message);
     conversation.updatedAt = Date.now();
+    try {
+        // eslint-disable-next-line no-console
+        console.debug('[agent-conv] append', {
+            conversationId,
+            role,
+            contentLen: content.length,
+        });
+    } catch (_) {}
     return message;
 }
 

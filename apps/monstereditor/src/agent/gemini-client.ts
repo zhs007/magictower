@@ -3,7 +3,7 @@ import { loadGeminiConfig } from './config';
 import { configureProxyFromEnv } from './proxy';
 
 // Use the new client class from @google/genai v1.x
-const { GoogleGenAI } = genai as unknown as { GoogleGenAI: new (opts: any) => any };
+const GoogleGenAICtor = (genai as any).GoogleGenAI as new (opts: any) => any;
 
 let cachedModels: Map<string, any> = new Map();
 
@@ -15,25 +15,38 @@ export async function getGeminiModel(tools?: any[]): Promise<{
     const cacheKey = tools ? JSON.stringify(tools) : 'no-tools';
 
     if (cachedModels.has(cacheKey)) {
+        try {
+            // eslint-disable-next-line no-console
+            console.debug('[gemini] using cached model surface', {
+                toolsCount: tools?.[0]?.functionDeclarations?.length ?? 0,
+                model: config.model,
+            });
+        } catch (_) {}
         return { model: cachedModels.get(cacheKey)!, config };
     }
 
     configureProxyFromEnv();
 
-    const client: any = new GoogleGenAI({ apiKey: config.apiKey });
+    const client: any = new GoogleGenAICtor({ apiKey: config.apiKey });
 
     const systemInstruction = config.systemInstruction
         ? { role: 'system', parts: [{ text: config.systemInstruction }] }
         : undefined;
 
-    // Create a model instance. In @google/genai, tools are typically passed per-request
-    // so we don't include them in model creation to satisfy strict typings.
-    const modelInstance = (client.models?.getGenerativeModel ?? client.getGenerativeModel).call(client.models ?? client, {
-        model: config.model,
-        systemInstruction,
-    });
+    // In @google/genai v1, generation APIs are exposed on `client.models.*`.
+    // We return that surface as the model, and callers must pass `{ model: config.model, ... }` per request.
+    const modelInstance = client.models;
 
     cachedModels.set(cacheKey, modelInstance);
+
+    try {
+        // eslint-disable-next-line no-console
+        console.info('[gemini] created new model surface', {
+            toolsCount: tools?.[0]?.functionDeclarations?.length ?? 0,
+            hasSystemInstruction: Boolean(systemInstruction),
+            model: config.model,
+        });
+    } catch (_) {}
 
     return { model: modelInstance, config };
 }
