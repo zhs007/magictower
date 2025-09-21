@@ -636,7 +636,7 @@ if (item) {
   - `GEMINI_API_KEY`
   - `GEMINI_MODEL`（默认 `models/gemini-1.5-flash`）
   - 可选代理：`HTTP_PROXY` / `HTTPS_PROXY`
-- **示例配置**: 根目录提供 `.env.example`，复制为 `.env` 后按需填写上述变量。
+- **示例配置**: `apps/monstereditor/.env.example` 提供示例，复制为同目录下的 `.env` 即可；若有多项目共享配置，可额外在仓库根目录放置 `.env`。
 - **后端接口**:
   - `POST /api/agent/new-task`：创建新会话。
   - `GET /api/agent/stream?conversationId=...&message=...`：SSE 通道，返回 `start` / `chunk` / `done` / `agent-error` 事件。

@@ -20,7 +20,7 @@ Consult the latest plan in `jules.md` before coding. After completing assigned w
 
 ## Monstereditor Agent
 - Gemini integration uses `@google/genai`; configure credentials via `.env` (`GEMINI_API_KEY`, `GEMINI_MODEL`) plus optional `HTTP_PROXY` / `HTTPS_PROXY`.
-- Copy `.env.example` to `.env` for the expected variable list before running local servers.
+- Copy `apps/monstereditor/.env.example` to `.env` (same folder) for the expected variable list before running local servers; root-level `.env` files are still respected but optional.
 - System instructions live in `apps/monstereditor/prompts/system.md`; keep persona changes synchronized there.
 - Backend exposes `POST /api/agent/new-task` to reset conversations and `GET /api/agent/stream` for SSE replies (`start`/`chunk`/`done`/`agent-error`).
 - Frontend chat UI (`apps/monstereditor/src/client/agent.ts`) manages EventSource streaming—avoid breaking basic controls (`New Task`, send, live updates) when iterating.
