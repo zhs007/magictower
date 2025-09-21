@@ -30,13 +30,32 @@ export async function getGeminiModel(): Promise<{
   const GoogleAI =
     genaiModule.GoogleAI ||
     genaiModule.GoogleAIClient ||
-    genaiModule.GoogleGenerativeAI;
+    genaiModule.GoogleGenerativeAI ||
+    genaiModule.GoogleGenAI ||
+    genaiModule.GoogleGenAIClient;
 
   if (!GoogleAI) {
     throw new Error('Failed to load google/genai client. Ensure @google/genai is installed.');
   }
 
   const client = new GoogleAI({ apiKey: config.apiKey });
+
+  const systemInstruction = config.systemInstruction
+    ? { role: 'system', parts: [{ text: config.systemInstruction }] }
+    : undefined;
+
+  // Newer @google/genai exposes generation methods under client.models
+  if (client.models && typeof client.models.generateContentStream === 'function') {
+    const modelInstance: GenerativeModelLike = {
+      generateContentStream: (request: { contents: any[] }) =>
+        // delegate directly to the client's models API
+        client.models.generateContentStream({ ...request, model: config.model, ...(systemInstruction ? { systemInstruction } : {}) }),
+    };
+
+    cachedModel = modelInstance;
+    return { model: modelInstance, config };
+  }
+
   const getModelFn =
     client.getGenerativeModel?.bind(client) ||
     client.generativeModel?.bind(client) ||
@@ -45,10 +64,6 @@ export async function getGeminiModel(): Promise<{
   if (!getModelFn) {
     throw new Error('google/genai client does not expose a getGenerativeModel method.');
   }
-
-  const systemInstruction = config.systemInstruction
-    ? { role: 'system', parts: [{ text: config.systemInstruction }] }
-    : undefined;
 
   const modelInstance: GenerativeModelLike = getModelFn({
     model: config.model,
