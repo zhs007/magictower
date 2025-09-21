@@ -47,9 +47,31 @@ export async function getGeminiModel(): Promise<{
   // Newer @google/genai exposes generation methods under client.models
   if (client.models && typeof client.models.generateContentStream === 'function') {
     const modelInstance: GenerativeModelLike = {
-      generateContentStream: (request: { contents: any[] }) =>
-        // delegate directly to the client's models API
-        client.models.generateContentStream({ ...request, model: config.model, ...(systemInstruction ? { systemInstruction } : {}) }),
+      generateContentStream: async (request: { contents: any[] }) => {
+        // Call the library and normalize various return shapes to an object
+        // with { stream: AsyncIterable, response: Promise }
+        const maybe = await client.models.generateContentStream({
+          ...request,
+          model: config.model,
+          ...(systemInstruction ? { systemInstruction } : {}),
+        });
+
+        // If library already returns { stream, response }
+        if (maybe && typeof maybe === 'object' && 'stream' in maybe) {
+          return maybe as any;
+        }
+
+        // If it directly returned an async iterable
+        const asyncIter = (maybe as any)?.[Symbol.asyncIterator]
+          ? (maybe as any)
+          : undefined;
+        if (asyncIter) {
+          return { stream: asyncIter, response: Promise.resolve() } as any;
+        }
+
+        // Fallback: return as-is (may cause downstream errors which will be clearer)
+        return (maybe as any) || { stream: async function* () { /* empty */ }(), response: Promise.resolve() };
+      },
     };
 
     cachedModel = modelInstance;
