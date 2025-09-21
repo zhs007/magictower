@@ -636,6 +636,7 @@ if (item) {
   - `GEMINI_API_KEY`
   - `GEMINI_MODEL`（默认 `models/gemini-1.5-flash`）
   - 可选代理：`HTTP_PROXY` / `HTTPS_PROXY`
+- **示例配置**: 根目录提供 `.env.example`，复制为 `.env` 后按需填写上述变量。
 - **后端接口**:
   - `POST /api/agent/new-task`：创建新会话。
   - `GET /api/agent/stream?conversationId=...&message=...`：SSE 通道，返回 `start` / `chunk` / `done` / `agent-error` 事件。
