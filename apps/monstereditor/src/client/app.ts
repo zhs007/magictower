@@ -3,6 +3,8 @@ import { MapRender } from '@proj-tower/maprender';
 import { CharacterEntity } from '@proj-tower/maprender';
 import { GameState, IPlayer, IMonster, ITileAsset, ICharacter } from '@proj-tower/logic-core';
 
+import { initAgentChat } from './agent';
+
 // --- Type Definitions ---
 interface LevelData {
   level: number;
@@ -36,6 +38,10 @@ const simulationArea = document.getElementById('simulation-area') as HTMLDivElem
 const zoomInBtn = document.getElementById('zoom-in') as HTMLButtonElement;
 const zoomOutBtn = document.getElementById('zoom-out') as HTMLButtonElement;
 const zoomDisplay = document.getElementById('zoom-display') as HTMLSpanElement;
+
+
+// --- Agent Chat Setup ---
+initAgentChat();
 
 
 // --- State ---

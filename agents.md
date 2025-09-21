@@ -17,3 +17,9 @@ Follow the existing Conventional Commit style (`feat:`, `refactor:`, `fix:`). Ea
 
 ## Agent Workflow Notes
 Consult the latest plan in `jules.md` before coding. After completing assigned work, author a `jules/planXXX-report.md` entry and update `jules.md` status. Log major agent actions under "Agent Activity Log" within this file when applicable.
+
+## Monstereditor Agent
+- Gemini integration uses `@google/genai`; configure credentials via `.env` (`GEMINI_API_KEY`, `GEMINI_MODEL`) plus optional `HTTP_PROXY` / `HTTPS_PROXY`.
+- System instructions live in `apps/monstereditor/prompts/system.md`; keep persona changes synchronized there.
+- Backend exposes `POST /api/agent/new-task` to reset conversations and `GET /api/agent/stream` for SSE replies (`start`/`chunk`/`done`/`agent-error`).
+- Frontend chat UI (`apps/monstereditor/src/client/agent.ts`) manages EventSource streaming—avoid breaking basic controls (`New Task`, send, live updates) when iterating.

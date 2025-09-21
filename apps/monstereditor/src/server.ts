@@ -4,6 +4,8 @@ import { readdir, readFile } from 'fs/promises';
 import { resolve, join } from 'path';
 import { fileURLToPath } from 'url';
 
+import { registerAgentRoutes } from './agent/routes';
+
 // ESM-safe __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = resolve(__filename, '..');
@@ -70,6 +72,8 @@ function registerRoutes(app: any) {
     }
     reply.status(404).send({ message: 'Not Found' });
   });
+
+  registerAgentRoutes(app);
 }
 
 export default async function createApp() {

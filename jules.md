@@ -608,7 +608,9 @@ if (item) {
 编辑器界面分为左右两部分：
 
 - **左侧 - Agent 聊天对话区**:
-  - (占位)
+  - 集成 Gemini 驱动的 "Ada" Agent，可进行多轮对话，支持 `New Task` 按钮重置会话上下文。
+  - 消息通过 SSE 流式返回，界面实时渲染逐步生成的回复；错误信息会内联提示。
+  - 会话历史保存在后端内存中，并随每次请求附带完整上下文，便于持续调平衡方案。
 
 - **右侧 - 编辑展示区**:
   - **上部 - 选择区**:
@@ -626,3 +628,15 @@ if (item) {
     pnpm dev:monstereditor
     ```
 3.  在浏览器中打开提示的 URL (通常是 `http://localhost:5173`)。
+
+### 19.4 Agent 初始化与配置
+- **系统提示文件**: `apps/monstereditor/prompts/system.md`（角色设定为精于数值设计的 Ada）。
+- **Gemini 客户端**: 基于 `@google/genai` 最新版，通过 `undici` 配置 HTTP/HTTPS 代理。
+- **环境变量**: 支持 `.env` 加载，需提供：
+  - `GEMINI_API_KEY`
+  - `GEMINI_MODEL`（默认 `models/gemini-1.5-flash`）
+  - 可选代理：`HTTP_PROXY` / `HTTPS_PROXY`
+- **后端接口**:
+  - `POST /api/agent/new-task`：创建新会话。
+  - `GET /api/agent/stream?conversationId=...&message=...`：SSE 通道，返回 `start` / `chunk` / `done` / `agent-error` 事件。
+- **前端逻辑**: `apps/monstereditor/src/client/agent.ts` 负责会话管理、SSE 消费与 UI 状态（禁用按钮、防重复发送等）。

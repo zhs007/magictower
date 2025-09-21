@@ -2,8 +2,11 @@ import http from 'http';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+import { loadEnvOnce } from './config/env';
+
 const start = async () => {
   try {
+    loadEnvOnce();
     const { default: createApp } = await import('./server');
     const app: any = await createApp();
 
