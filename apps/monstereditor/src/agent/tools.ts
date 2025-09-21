@@ -105,6 +105,7 @@ async function simBattle(
             keys: { yellow: 0 },
             equipment: {},
             backupEquipment: [],
+            buffs: [],
             direction: 'right',
             x: 0,
             y: 0,
@@ -130,7 +131,7 @@ async function simBattle(
             }
 
             // Swap roles
-            const temp = attacker;
+            const temp: IPlayer | IMonster = attacker;
             attacker = defender;
             defender = temp;
             rounds++;

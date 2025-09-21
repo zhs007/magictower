@@ -1,39 +1,15 @@
 import type { FastifyInstance } from 'fastify';
-import {
-    appendMessage,
-    createConversation,
-    ensureConversation,
-    getMessages,
-    Message,
-} from './conversation-store';
+import { appendMessage, createConversation, ensureConversation, getMessages } from './conversation-store';
 import { getGeminiModel } from './gemini-client';
 import { setupSse } from './sse';
 import { tools, toolFunctions } from './tools';
-import * as genai from '@google/genai';
-
-function convertMessagesToHistory(messages: Message[]): genai.Content[] {
-    const history: genai.Content[] = [];
+function convertMessagesToHistory(messages: ReturnType<typeof getMessages>): any[] {
+    const history: any[] = [];
     for (const message of messages) {
         const role = message.role === 'assistant' ? 'model' : 'user';
-        let parts: genai.Part[] = [];
+    let parts: any[] = [];
 
-        if (message.role === 'tool') {
-            // This case should be handled by sending a FunctionResponsePart in the next message
-            // but we need to create the history properly. We'll add the tool request from the model
-            // and the tool response from the function.
-            const lastMessage = history[history.length - 1];
-            if (lastMessage && lastMessage.role === 'model') {
-                 parts.push({
-                    functionResponse: {
-                        name: message.toolName!,
-                        response: { content: message.content },
-                    },
-                });
-                // This is tricky, the API expects a function response to follow a model's function call
-                // We will rely on the startChat's history conversion
-            }
-            continue; // Skip adding a new history item for tool responses this way
-        }
+        // conversation-store only supports 'user' | 'assistant'
 
         try {
             const parsed = JSON.parse(message.content);
@@ -87,54 +63,46 @@ export function registerAgentRoutes(app: FastifyInstance) {
 
         try {
             const { model } = await getGeminiModel(tools);
-
-            // Rebuild history from our store for the chat session
             const history = convertMessagesToHistory(getMessages(conversation.id).slice(0, -1));
-            const chat = model.startChat({ history });
 
-            // Send the latest user message
-            let result = await chat.sendMessage(message.trim());
-
+            // Kick off a single-turn generation. If a function call is returned, handle it and loop.
+            // In @google/genai v1, function calling can be returned in the response candidates.
+            let prompt = message.trim();
+            // eslint-disable-next-line no-constant-condition
             while (true) {
-                const call = result.response.functionCall();
-
+                const result: any = await model.generateContent({
+                    contents: [...history, { role: 'user', parts: [{ text: prompt }] }],
+                    tools,
+                });
+                const candidate = result?.response?.candidates?.[0];
+                const call = candidate?.content?.parts?.find((p: any) => p.functionCall)?.functionCall;
                 if (call) {
                     appendMessage(conversation.id, 'assistant', JSON.stringify({ tool_code: { name: call.name, args: call.args } }));
-
-                    const toolFunction = (toolFunctions as any)[call.name];
-                    let functionResult: string;
-
-                    if (toolFunction) {
-                        console.log(`Calling tool: ${call.name} with args:`, call.args);
-
-                        // Use a switch statement for robust argument handling
-                        switch (call.name) {
-                            case 'getAllMonsters':
-                                functionResult = await toolFunctions.getAllMonsters();
-                                break;
-                            case 'getMonstersInfo':
-                                functionResult = await toolFunctions.getMonstersInfo(call.args.level as number);
-                                break;
-                            case 'updMonsterInfo':
-                                functionResult = await toolFunctions.updMonsterInfo(call.args.monsterData as any);
-                                break;
-                            case 'simBattle':
-                                functionResult = await toolFunctions.simBattle(call.args.monsterId as string, call.args.playerLevel as number);
-                                break;
-                            default:
-                                functionResult = `Error: Tool "${call.name}" has no implementation.`;
-                        }
-                    } else {
-                        functionResult = `Error: Tool "${call.name}" not found.`;
-                    }
-
-                    appendMessage(conversation.id, 'tool', functionResult, call.name);
-
-                    // Send the tool's result back to the model
-                    result = await chat.sendMessage(functionResult);
+                    const fn = (toolFunctions as any)[call.name];
+                    const functionResult = fn
+                        ? await (async () => {
+                              switch (call.name) {
+                                  case 'getAllMonsters':
+                                      return await toolFunctions.getAllMonsters();
+                                  case 'getMonstersInfo':
+                                      return await toolFunctions.getMonstersInfo(call.args.level as number);
+                                  case 'updMonsterInfo':
+                                      return await toolFunctions.updMonsterInfo(call.args.monsterData as any);
+                                  case 'simBattle':
+                                      return await toolFunctions.simBattle(call.args.monsterId as string, call.args.playerLevel as number);
+                                  default:
+                                      return `Error: Tool "${call.name}" has no implementation.`;
+                              }
+                          })()
+                        : `Error: Tool "${call.name}" not found.`;
+                    // Optionally record tool result as assistant content, but not required for flow.
+                    // appendMessage(conversation.id, 'assistant', functionResult);
+                    // Feed tool result back into the loop as next user content
+                    prompt = functionResult;
+                    // And continue to allow the model to produce a final text
+                    continue;
                 } else {
-                    // It's a text response, end the loop
-                    const text = result.response.text();
+                    const text = result?.response?.text?.() ?? candidate?.content?.parts?.map((p: any) => p.text).join('') ?? '';
                     await streamToClient(sse, conversation.id, text);
                     break;
                 }

@@ -2,13 +2,13 @@ import * as genai from '@google/genai';
 import { loadGeminiConfig } from './config';
 import { configureProxyFromEnv } from './proxy';
 
-// The import must be a namespace import, and we extract the class from it.
-const { GoogleGenerativeAI } = genai;
+// Use the new client class from @google/genai v1.x
+const { GoogleGenAI } = genai as unknown as { GoogleGenAI: new (opts: any) => any };
 
-let cachedModels: Map<string, genai.GenerativeModel> = new Map();
+let cachedModels: Map<string, any> = new Map();
 
-export async function getGeminiModel(tools?: genai.Tool[]): Promise<{
-    model: genai.GenerativeModel;
+export async function getGeminiModel(tools?: any[]): Promise<{
+    model: any;
     config: Awaited<ReturnType<typeof loadGeminiConfig>>;
 }> {
     const config = await loadGeminiConfig();
@@ -20,16 +20,17 @@ export async function getGeminiModel(tools?: genai.Tool[]): Promise<{
 
     configureProxyFromEnv();
 
-    const client = new GoogleGenerativeAI(config.apiKey);
+    const client: any = new GoogleGenAI({ apiKey: config.apiKey });
 
     const systemInstruction = config.systemInstruction
         ? { role: 'system', parts: [{ text: config.systemInstruction }] }
         : undefined;
 
-    const modelInstance = client.getGenerativeModel({
+    // Create a model instance. In @google/genai, tools are typically passed per-request
+    // so we don't include them in model creation to satisfy strict typings.
+    const modelInstance = (client.models?.getGenerativeModel ?? client.getGenerativeModel).call(client.models ?? client, {
         model: config.model,
         systemInstruction,
-        tools,
     });
 
     cachedModels.set(cacheKey, modelInstance);
