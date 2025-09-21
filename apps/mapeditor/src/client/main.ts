@@ -25,7 +25,6 @@ let isPainting = false;
 let pendingRender = false;
 let lastPaintKey: string | null = null;
 
-
 // --- State ---
 let state: {
     maps: string[];
@@ -107,7 +106,7 @@ class EditorRenderer {
         this.viewport.addChild(this.mapRender);
     }
 
-        setZoom(next: number) {
+    setZoom(next: number) {
         const newZoom = Math.max(0.25, Math.min(4, next));
         const factor = newZoom / this.zoom;
         // zoom around the center of the renderer panel
@@ -127,22 +126,21 @@ class EditorRenderer {
         this.viewport.y += cy - newScreenPosY;
 
         this.zoom = newZoom;
-            this.updateZoomUI();
-        }
+        this.updateZoomUI();
+    }
 
-        updateZoomUI() {
-            if (zoomDisplay) {
-                zoomDisplay.textContent = `${Math.round(this.zoom * 100)}%`;
-            }
+    updateZoomUI() {
+        if (zoomDisplay) {
+            zoomDisplay.textContent = `${Math.round(this.zoom * 100)}%`;
         }
+    }
 }
 const editorRenderer = new EditorRenderer();
-
 
 // --- UI Rendering Functions ---
 function renderMapSelector() {
     mapSelector.innerHTML = '<option value="">Select a map</option>';
-    state.maps.forEach(mapId => {
+    state.maps.forEach((mapId) => {
         const option = document.createElement('option');
         option.value = mapId;
         option.textContent = mapId;
@@ -153,7 +151,7 @@ function renderMapSelector() {
 
 function renderTileAssetSelector() {
     newTileAssetSelect.innerHTML = '';
-    state.tileAssets.forEach(assetName => {
+    state.tileAssets.forEach((assetName) => {
         const option = document.createElement('option');
         option.value = assetName;
         option.textContent = assetName;
@@ -397,14 +395,9 @@ function updateHint() {
     hintEl.classList.toggle('hidden', !shouldShow);
 }
 
-
 // --- Initialization ---
 async function init() {
-    await Promise.all([
-        fetchMaps(),
-        fetchTileAssets(),
-        editorRenderer.init()
-    ]);
+    await Promise.all([fetchMaps(), fetchTileAssets(), editorRenderer.init()]);
     rerenderAll();
 }
 

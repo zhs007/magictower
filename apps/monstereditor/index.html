@@ -22,6 +22,9 @@
         border-right: 1px solid #444;
         padding: 1rem;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
       }
       #editor-panel {
         width: 70%;
@@ -43,6 +46,84 @@
       }
       .placeholder { color: #888; }
       .config-section { flex: 1; }
+
+      .chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .chat-history {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding-right: 0.5rem;
+      }
+
+      .chat-message {
+        padding: 0.75rem;
+        border-radius: 8px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+      }
+
+      .chat-message.user {
+        align-self: flex-end;
+        background: #1f4a6b;
+      }
+
+      .chat-message.assistant {
+        align-self: flex-start;
+        background: #333;
+      }
+
+      .chat-message.assistant.streaming {
+        border: 1px solid #555;
+      }
+
+      .chat-composer {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .chat-composer textarea {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        background: #2a2a2a;
+        color: #eee;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 0.75rem;
+        font-family: inherit;
+      }
+
+      .chat-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
+
+      .chat-actions button,
+      .chat-header button {
+        cursor: pointer;
+      }
+
+      .chat-actions button:disabled,
+      .chat-header button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .chat-status {
+        min-height: 1.25rem;
+        font-size: 0.85rem;
+        color: #bbb;
+      }
 
       /* Modal styles */
       .modal {
@@ -94,8 +175,24 @@
   <body>
     <div id="root">
       <div id="chat-panel">
-        <h2>Agent Chat</h2>
-        <div class="placeholder">Chat area placeholder...</div>
+        <div class="chat-header">
+          <h2>Agent Chat</h2>
+          <button id="agent-new-task">New Task</button>
+        </div>
+        <div id="chat-status" class="chat-status"></div>
+        <div id="chat-history" class="chat-history" aria-live="polite"></div>
+        <form id="chat-form" class="chat-composer">
+          <textarea
+            id="chat-input"
+            name="chat-input"
+            placeholder="Ask Ada about monster balance..."
+            autocomplete="off"
+            required
+          ></textarea>
+          <div class="chat-actions">
+            <button type="submit" id="chat-send">Send</button>
+          </div>
+        </form>
       </div>
       <div id="editor-panel">
         <div id="selection-area">

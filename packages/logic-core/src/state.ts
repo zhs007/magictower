@@ -81,19 +81,23 @@ export class GameStateManager {
                                 keys: { yellow: 0, blue: 0, red: 0 },
                             } as any);
                         const allLevelData = dm.getLevelData();
-                        let levelData = allLevelData.find((ld: LevelData) => ld.level === playerData.level);
+                        let levelData = allLevelData.find(
+                            (ld: LevelData) => ld.level === playerData.level
+                        );
                         // Fallback: if the exact level entry isn't found, use the first
                         // entry or a minimal default to keep initialization robust in
                         // tests that stub loadAllData.
                         if (!levelData) {
-                            levelData = allLevelData[0] || {
-                                level: playerData.level,
-                                exp_needed: 0,
-                                maxhp: playerData.hp ?? 10,
-                                attack: playerData.attack ?? 1,
-                                defense: playerData.defense ?? 0,
-                                speed: playerData.speed ?? 1,
-                            } as LevelData;
+                            levelData =
+                                allLevelData[0] ||
+                                ({
+                                    level: playerData.level,
+                                    exp_needed: 0,
+                                    maxhp: playerData.hp ?? 10,
+                                    attack: playerData.attack ?? 1,
+                                    defense: playerData.defense ?? 0,
+                                    speed: playerData.speed ?? 1,
+                                } as LevelData);
                         }
                         player = {
                             ...playerData,

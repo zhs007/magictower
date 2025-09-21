@@ -19,7 +19,9 @@ const deepClone = <T>(value: T | undefined): T | undefined => {
     return JSON.parse(JSON.stringify(value)) as T;
 };
 
-const cloneTileAssets = (tileAssets?: Record<string, ITileAsset>): Record<string, ITileAsset> | undefined => {
+const cloneTileAssets = (
+    tileAssets?: Record<string, ITileAsset>
+): Record<string, ITileAsset> | undefined => {
     if (!tileAssets) return undefined;
     const cloned: Record<string, ITileAsset> = {};
     for (const [key, value] of Object.entries(tileAssets)) {

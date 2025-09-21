@@ -4,10 +4,10 @@ The Leveldata Editor is a tool for visualizing and editing the `gamedata/levelda
 
 ## Features
 
--   **Visual Editing**: Edit level data in a simple, intuitive table.
--   **Chart Visualization**: See the impact of your changes immediately in a line chart that displays key stats (`exp_needed`, `maxhp`, `attack`, `defense`, `speed`) versus level.
--   **Data Expansion/Contraction**: Easily expand the number of levels using a linear growth model or shrink it to a smaller size.
--   **Save to Game Data**: Save your changes directly to `gamedata/leveldata.json`.
+- **Visual Editing**: Edit level data in a simple, intuitive table.
+- **Chart Visualization**: See the impact of your changes immediately in a line chart that displays key stats (`exp_needed`, `maxhp`, `attack`, `defense`, `speed`) versus level.
+- **Data Expansion/Contraction**: Easily expand the number of levels using a linear growth model or shrink it to a smaller size.
+- **Save to Game Data**: Save your changes directly to `gamedata/leveldata.json`.
 
 ## How to Run
 

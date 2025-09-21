@@ -72,14 +72,12 @@ export class DataManager {
             overrides?.monsters ??
             import.meta.glob('../../../gamedata/monsters/*.json', { eager: true });
         const itemModules =
-            overrides?.items ??
-            import.meta.glob('../../../gamedata/items/*.json', { eager: true });
+            overrides?.items ?? import.meta.glob('../../../gamedata/items/*.json', { eager: true });
         const equipmentModules =
             overrides?.equipments ??
             import.meta.glob('../../../gamedata/equipments/*.json', { eager: true });
         const buffModules =
-            overrides?.buffs ??
-            import.meta.glob('../../../gamedata/buffs/*.json', { eager: true });
+            overrides?.buffs ?? import.meta.glob('../../../gamedata/buffs/*.json', { eager: true });
         const mapModules =
             overrides?.maps ?? import.meta.glob('../../../mapdata/*.json', { eager: true });
 

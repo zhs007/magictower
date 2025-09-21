@@ -20,7 +20,11 @@ describe('SaveManager + FileStorage integration', () => {
 
     it('should save and load a game using FileStorage', async () => {
         // minimal data manager stubs
-        const mockMap = { floor: 1, layout: [[0]], entities: { player_start: { type: 'player_start', id: 'player', x: 0, y: 0 } } } as any;
+        const mockMap = {
+            floor: 1,
+            layout: [[0]],
+            entities: { player_start: { type: 'player_start', id: 'player', x: 0, y: 0 } },
+        } as any;
         // temporarily stub dataManager functions
         const origGetMap = dataManager.getMapLayout;
         const origLoad = dataManager.loadAllData;
