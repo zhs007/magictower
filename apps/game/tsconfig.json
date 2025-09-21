@@ -5,9 +5,11 @@
         "baseUrl": ".",
         "paths": {
             "@proj-tower/logic-core": ["../../packages/logic-core/src"],
-            "@proj-tower/logic-core/*": ["../../packages/logic-core/src/*"]
+            "@proj-tower/logic-core/*": ["../../packages/logic-core/src/*"],
+            "@proj-tower/maprender": ["../../packages/maprender/src"],
+            "@proj-tower/maprender/*": ["../../packages/maprender/src/*"]
         }
     },
     "include": ["src"],
-    "references": [{ "path": "../../packages/logic-core" }]
+    "references": [{ "path": "../../packages/logic-core" }, { "path": "../../packages/maprender" }]
 }
