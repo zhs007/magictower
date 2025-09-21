@@ -4,7 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "tsx src/run-server.ts",
+        "dev": "npx tsx src/run-server.ts",
         "build": "vite build",
         "test": "vitest --run",
         "test:watch": "vitest",
