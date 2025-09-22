@@ -15,6 +15,10 @@ export function configureProxyFromEnv() {
     try {
         const agent = new ProxyAgent(proxyUrl);
         setGlobalDispatcher(agent);
+        try {
+            // eslint-disable-next-line no-console
+            console.info('[agent] proxy configured', { source: httpsProxy ? 'HTTPS_PROXY' : 'HTTP_PROXY' });
+        } catch (_) {}
     } catch (error) {
         // eslint-disable-next-line no-console
         console.warn('[agent] Failed to configure proxy agent:', error);

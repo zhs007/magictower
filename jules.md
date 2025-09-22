@@ -641,3 +641,32 @@ if (item) {
   - `POST /api/agent/new-task`：创建新会话。
   - `GET /api/agent/stream?conversationId=...&message=...`：SSE 通道，返回 `start` / `chunk` / `done` / `agent-error` 事件。
 - **前端逻辑**: `apps/monstereditor/src/client/agent.ts` 负责会话管理、SSE 消费与 UI 状态（禁用按钮、防重复发送等）。
+
+### 19.5 Agent 实现 (plan043)
+
+为了实现一个能够与设计师有效沟通并能完成具体数据操作的 Agent，我们对其后端逻辑进行了扩展，核心是引入了基于 **Gemini Function Calling** 的工具调用机制。
+
+- **Agent 核心循环**:
+  - Agent 的主逻辑位于 `apps/monstereditor/src/agent/routes.ts`。它不再是简单的将用户消息转发给模型，而是实现了一个多步的工具调用循环。
+  1.  **请求 + 工具定义**: 将用户的最新消息、完整的对话历史以及一套预定义的工具（`tools.ts`）发送给 Gemini 模型。
+  2.  **模型决策**: 模型根据对话上下文，决策是直接回复文本，还是调用一个或多个工具来获取信息或执行操作。
+  3.  **工具执行**: 如果模型请求调用工具（例如 `simBattle`），Node.js 后端会执行对应的本地函数。这些函数会直接与 `gamedata` 文件系统或 `logic-core` 核心逻辑交互。
+  4.  **结果返回**: 工具的执行结果（例如战斗模拟的 JSON 报告）会被格式化并再次发送给模型。
+  5.  **生成最终回复**: 模型在收到工具结果后，会生成一段自然的、面向用户的文本回复，向设计师解释它所做操作的结果。
+  6.  **流式响应**: 最终的文本回复通过 SSE (Server-Sent Events) 流式传输到前端，提供流畅的聊天体验。
+
+- **工具集 (`tools.ts`)**:
+  - `getAllMonsters()`: 读取 `gamedata/monsters/` 目录，返回所有怪物的名称、ID 和等级。这确保了 Agent 在开始新任务时对现有怪物有全局了解。
+  - `getMonstersInfo(level)`: 获取指定等级的所有怪物的详细属性，用于避免创建重复或过于相似的单位。
+  - `updMonsterInfo(monsterData)`: 接收一个完整的怪物数据对象，并将其写入或更新到 `gamedata/monsters/` 目录下的对应 JSON 文件。
+  - `simBattle(monsterId, playerLevel)`: 核心工具之一。它会：
+    1.  加载指定怪物的属性。
+    2.  加载指定等级玩家的基础属性（来自 `leveldata.json`）。
+    3.  在后端完整地模拟一次回合制战斗，复用 `packages/logic-core` 中的 `calculateDamage` 函数来保证战斗逻辑与游戏内完全一致。
+    4.  返回一个包含胜负、剩余血量、战斗回合数等信息的 JSON 对象，供 Agent 分析。
+
+- **系统提示 (`system.md`)**:
+  - `apps/monstereditor/prompts/system.md` 文件被重写，为 Agent (Ada) 提供了非常详细的指令。
+  - 这些指令明确了它的专家身份、必须遵循的工作流程（例如，总是先调用 `getAllMonsters`）、与用户沟通的规范，以及如何循环使用 `updMonsterInfo` 和 `simBattle` 工具来迭代和优化怪物数值，直到满足设计师的要求。
+
+通过这种设计，Agent 不仅仅是一个聊天机器人，而是一个能够实际操作项目数据、执行核心逻辑并根据结果进行迭代的自动化游戏设计助理。

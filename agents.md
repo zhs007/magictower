@@ -24,3 +24,4 @@ Consult the latest plan in `jules.md` before coding. After completing assigned w
 - System instructions live in `apps/monstereditor/prompts/system.md`; keep persona changes synchronized there.
 - Backend exposes `POST /api/agent/new-task` to reset conversations and `GET /api/agent/stream` for SSE replies (`start`/`chunk`/`done`/`agent-error`).
 - Frontend chat UI (`apps/monstereditor/src/client/agent.ts`) manages EventSource streaming—avoid breaking basic controls (`New Task`, send, live updates) when iterating.
+- **Agent Logic**: The agent backend (`apps/monstereditor/src/agent/routes.ts`) uses a **tool-calling loop**. It does not stream responses directly from the model. Instead, it receives a complete response, checks for a `functionCall`, executes the corresponding local function in `tools.ts`, sends the result back to the model, and only then streams the final natural-language response to the client. When modifying the agent, ensure this loop remains intact.

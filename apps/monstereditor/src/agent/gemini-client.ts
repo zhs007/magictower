@@ -1,82 +1,52 @@
+import * as genai from '@google/genai';
 import { loadGeminiConfig } from './config';
 import { configureProxyFromEnv } from './proxy';
 
-interface GenerativeModelLike {
-    generateContentStream: (request: {
-        contents: Array<{ role: string; parts: Array<{ text: string }> }>;
-    }) => Promise<{
-        stream: AsyncIterable<any>;
-        response: Promise<any>;
-    }>;
-}
+// Use the new client class from @google/genai v1.x
+const GoogleGenAICtor = (genai as any).GoogleGenAI as new (opts: any) => any;
 
-let cachedModel: GenerativeModelLike | null = null;
+let cachedModels: Map<string, any> = new Map();
 
-export async function getGeminiModel(): Promise<{
-    model: GenerativeModelLike;
+export async function getGeminiModel(tools?: any[]): Promise<{
+    model: any;
     config: Awaited<ReturnType<typeof loadGeminiConfig>>;
 }> {
-    if (cachedModel) {
-        const config = await loadGeminiConfig();
-        return { model: cachedModel, config };
+    const config = await loadGeminiConfig();
+    const cacheKey = tools ? JSON.stringify(tools) : 'no-tools';
+
+    if (cachedModels.has(cacheKey)) {
+        try {
+            // eslint-disable-next-line no-console
+            console.debug('[gemini] using cached model surface', {
+                toolsCount: tools?.[0]?.functionDeclarations?.length ?? 0,
+                model: config.model,
+            });
+        } catch (_) {}
+        return { model: cachedModels.get(cacheKey)!, config };
     }
 
-    const config = await loadGeminiConfig();
     configureProxyFromEnv();
 
-    // Only support the latest @google/genai shape (GoogleGenAI) in this branch.
-    // If you need backward compatibility, revert to previous implementation.
-    const genaiModule: Record<string, any> = await import('@google/genai');
-    const GoogleGenAI = genaiModule.GoogleGenAI || genaiModule.GoogleGenAIClient;
-
-    if (!GoogleGenAI) {
-        throw new Error(
-            'Failed to load google/genai client (expected GoogleGenAI). Ensure @google/genai is installed.'
-        );
-    }
-
-    const client = new GoogleGenAI({ apiKey: config.apiKey });
+    const client: any = new GoogleGenAICtor({ apiKey: config.apiKey });
 
     const systemInstruction = config.systemInstruction
         ? { role: 'system', parts: [{ text: config.systemInstruction }] }
         : undefined;
 
-    if (!client.models || typeof client.models.generateContentStream !== 'function') {
-        throw new Error(
-            'google/genai client (GoogleGenAI) does not expose models.generateContentStream.'
-        );
-    }
+    // In @google/genai v1, generation APIs are exposed on `client.models.*`.
+    // We return that surface as the model, and callers must pass `{ model: config.model, ... }` per request.
+    const modelInstance = client.models;
 
-    // Use the library's models.generateContentStream directly and normalize its return
-    const modelInstance: GenerativeModelLike = {
-        generateContentStream: async (request: { contents: any[] }) => {
-            const result = await client.models.generateContentStream({
-                ...request,
-                model: config.model,
-                ...(systemInstruction ? { systemInstruction } : {}),
-            });
+    cachedModels.set(cacheKey, modelInstance);
 
-            // Prefer an object with { stream, response }
-            if (result && typeof result === 'object' && 'stream' in result) return result as any;
-
-            // If an async iterable is returned directly, wrap it
-            if (result && typeof result[Symbol.asyncIterator] === 'function') {
-                return { stream: result, response: Promise.resolve() } as any;
-            }
-
-            // Otherwise return an empty stream response to avoid crashes
-            return { stream: (async function* () {})(), response: Promise.resolve() } as any;
-        },
-    };
-
-    cachedModel = modelInstance;
-    return { model: modelInstance, config };
-
-    if (!modelInstance || typeof modelInstance.generateContentStream !== 'function') {
-        throw new Error('Failed to initialize generative model stream interface.');
-    }
-
-    cachedModel = modelInstance;
+    try {
+        // eslint-disable-next-line no-console
+        console.info('[gemini] created new model surface', {
+            toolsCount: tools?.[0]?.functionDeclarations?.length ?? 0,
+            hasSystemInstruction: Boolean(systemInstruction),
+            model: config.model,
+        });
+    } catch (_) {}
 
     return { model: modelInstance, config };
 }

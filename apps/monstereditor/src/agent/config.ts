@@ -41,10 +41,13 @@ export async function loadGeminiConfig(): Promise<GeminiConfig> {
         }
     }
 
+    // Strengthen the instruction to prefer tools and always respond with brief Chinese text
+    const extraGuidance = `\n\nAdditional rules (runtime):\n- When deciding actions, prefer calling the provided tools to gather data and persist changes.\n- Always produce a short Chinese summary to the user every turn, even if you also call tools.\n- If no text is appropriate, return a one-sentence Chinese status update.`;
+
     cachedConfig = {
         apiKey,
         model,
-        systemInstruction: systemInstruction.trim(),
+        systemInstruction: `${systemInstruction.trim()}${extraGuidance}`,
     };
 
     return cachedConfig;
