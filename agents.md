@@ -18,6 +18,13 @@ Follow the existing Conventional Commit style (`feat:`, `refactor:`, `fix:`). Ea
 ## Agent Workflow Notes
 Consult the latest plan in `jules.md` before coding. After completing assigned work, author a `jules/planXXX-report.md` entry and update `jules.md` status. Log major agent actions under "Agent Activity Log" within this file when applicable.
 
+## GenDoubaoImage Service
+- This Go-based gRPC service (`services/gen_doubao_image`) acts as a wrapper for the Doubao image generation API.
+- **Environment Variables**: When running this service (e.g., via Docker), the following environment variables must be set:
+  - `ARK_API_KEY`: The API key for the Ark/Doubao service.
+  - `DOUBAO_MODEL`: The specific model to use (e.g., `doubao-seedream-4-0-250828`).
+  - `TOS_ACCESS_KEY`, `TOS_SECRET_KEY`, `TOS_ENDPOINT`, `TOS_REGION`, `TOS_BUCKET_NAME`: Credentials and configuration for the Volcengine TOS service, which is used for uploading reference images.
+
 ## Monstereditor Agent
 - Gemini integration uses `@google/genai`; configure credentials via `.env` (`GEMINI_API_KEY`, `GEMINI_MODEL`) plus optional `HTTP_PROXY` / `HTTPS_PROXY`.
 - Copy `apps/monstereditor/.env.example` to `.env` (same folder) for the expected variable list before running local servers; root-level `.env` files are still respected but optional.
