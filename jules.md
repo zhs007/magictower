@@ -670,3 +670,47 @@ if (item) {
   - 这些指令明确了它的专家身份、必须遵循的工作流程（例如，总是先调用 `getAllMonsters`）、与用户沟通的规范，以及如何循环使用 `updMonsterInfo` 和 `simBattle` 工具来迭代和优化怪物数值，直到满足设计师的要求。
 
 通过这种设计，Agent 不仅仅是一个聊天机器人，而是一个能够实际操作项目数据、执行核心逻辑并根据结果进行迭代的自动化游戏设计助理。
+
+## 20. genDoubaoImage gRPC 服务
+
+项目新增了一个用于调用豆包服务生成图片的 gRPC 服务。该服务使用 Golang 实现，并被容器化以便于部署和管理。
+
+### 20.1 服务概述
+- **功能**: 提供一个 gRPC 端点，接收文本提示和其他参数，调用豆包（Doubao）文生图 API，然后返回生成的图片二进制数据。
+- **技术栈**: Golang 1.24, gRPC, Docker, `github.com/volcengine/volcengine-go-sdk`。
+- **位置**:
+    - **协议定义**: `protos/doubao.proto`
+    - **服务实现**: `services/gen_doubao_image/`
+
+### 20.2 如何运行服务
+该服务通过 Docker 运行。
+
+1.  **构建 Docker 镜像**:
+    在项目根目录下，运行以下命令来构建镜像。
+    ```bash
+    sudo docker build -t gen-doubao-image-service -f services/gen_doubao_image/Dockerfile services/gen_doubao_image
+    ```
+
+2.  **启动 Docker 容器**:
+    构建成功后，运行以下命令来启动服务。运行时需要传入必要的环境变量。
+    ```bash
+    sudo docker run -d -p 50052:50052 \
+      -e ARK_API_KEY="YOUR_API_KEY" \
+      -e DOUBAO_MODEL="doubao-seedream-4-0-250828" \
+      --name gen-doubao-image-container \
+      gen-doubao-image-service
+    ```
+    服务将在后台运行，并监听 `50052` 端口。
+
+### 20.3 gRPC API
+- **服务**: `GenDoubaoImage`
+- **RPC**: `GenerateImage`
+- **请求**: `GenDoubaoImageRequest`
+    - `prompt` (`string`): 生成图片的文本描述。
+    - `images` (`repeated bytes`): 参考图片数据 (当前为占位实现)。
+    - `size` (`string`): 图片尺寸，如 "2K"。
+    - `watermark` (`bool`): 是否添加水印。
+    - `sequential_image_generation` (`string`): 连续图片生成模式。
+    - `max_images` (`int32`): 最大生成图片数量。
+- **响应**: `GenDoubaoImageResponse`
+    - `images` (`repeated bytes`): 生成的图片二进制数据列表。

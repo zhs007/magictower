@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Monorepo managed by Turborepo and pnpm. Runtime client lives in `apps/game` (Pixi.js renderer, UI, assets). Core rules, state models, and shared types live in `packages/logic-core`; keep framework-agnostic logic there. Rendering helpers and entity abstractions reside in `packages/maprender`. Support editors (map, level data, monster) sit under `apps/` with their own dev commands. Automation scripts belong in `scripts/`, and long-form plans plus reports belong in `jules/`. Python-based services (e.g., `services/rmbg`) run independently via Docker.
+Monorepo managed by Turborepo and pnpm. Runtime client lives in `apps/game` (Pixi.js renderer, UI, assets). Core rules, state models, and shared types live in `packages/logic-core`; keep framework-agnostic logic there. Rendering helpers and entity abstractions reside in `packages/maprender`. Support editors (map, level data, monster) sit under `apps/` with their own dev commands. Automation scripts belong in `scripts/`, and long-form plans plus reports belong in `jules/`. Standalone services (e.g., Python-based `services/rmbg`, Go-based `services/gen_doubao_image`) run independently via Docker.
 
 ## Build, Test, and Development Commands
 Run `pnpm install` once per workspace to sync dependencies. Use `pnpm dev` for the primary game client; `pnpm dev:maprender` and editor-specific commands spin up auxiliary tooling. Execute `pnpm build` to run all package builds through Turbo. Favor `pnpm check` for the aggregated lint/type/test pipeline before sharing work. For map utilities, use `pnpm gen-map` or `pnpm gen-map:v2` as indicated in plan documents.
