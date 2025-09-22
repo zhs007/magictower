@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package doubao;
+
+option go_package = "gen_doubao_image/gen";
+
+service GenDoubaoImage {
+  rpc GenerateImage(GenDoubaoImageRequest) returns (GenDoubaoImageResponse);
+}
+
+message GenDoubaoImageRequest {
+  string prompt = 1;
+  repeated bytes images = 2;
+  string size = 3;
+  bool watermark = 4;
+  string sequential_image_generation = 5;
+  int32 max_images = 6;
+}
+
+message GenDoubaoImageResponse {
+  repeated bytes images = 1;
+}
