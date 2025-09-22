@@ -693,10 +693,25 @@ if (item) {
 
 2.  **启动 Docker 容器**:
     构建成功后，运行以下命令来启动服务。运行时需要传入必要的环境变量。
+    - **基础环境变量**:
+        - `ARK_API_KEY`: 豆包 API 的密钥。
+        - `DOUBAO_MODEL`: 使用的豆包模型，例如 `doubao-seedream-4-0-250828`。
+    - **TOS 环境变量 (用于参考图上传)**:
+        - `TOS_ACCESS_KEY`: TOS 的 Access Key。
+        - `TOS_SECRET_KEY`: TOS 的 Secret Key。
+        - `TOS_ENDPOINT`: TOS 的 Endpoint，例如 `https://tos-cn-beijing.volces.com`。
+        - `TOS_REGION`: TOS 的 Region，例如 `cn-beijing`。
+        - `TOS_BUCKET_NAME`: 用于存储图片的 Bucket 名称。
+
     ```bash
     sudo docker run -d -p 50052:50052 \
       -e ARK_API_KEY="YOUR_API_KEY" \
       -e DOUBAO_MODEL="doubao-seedream-4-0-250828" \
+      -e TOS_ACCESS_KEY="YOUR_TOS_AK" \
+      -e TOS_SECRET_KEY="YOUR_TOS_SK" \
+      -e TOS_ENDPOINT="YOUR_TOS_ENDPOINT" \
+      -e TOS_REGION="YOUR_TOS_REGION" \
+      -e TOS_BUCKET_NAME="YOUR_TOS_BUCKET" \
       --name gen-doubao-image-container \
       gen-doubao-image-service
     ```
@@ -707,7 +722,7 @@ if (item) {
 - **RPC**: `GenerateImage`
 - **请求**: `GenDoubaoImageRequest`
     - `prompt` (`string`): 生成图片的文本描述。
-    - `images` (`repeated bytes`): 参考图片数据 (当前为占位实现)。
+    - `images` (`repeated bytes`): 参考图片数据。服务会将这些图片上传到 TOS，并生成预签名 URL 用于图生图。
     - `size` (`string`): 图片尺寸，如 "2K"。
     - `watermark` (`bool`): 是否添加水印。
     - `sequential_image_generation` (`string`): 连续图片生成模式。

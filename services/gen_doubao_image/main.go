@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -9,11 +12,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/volcengine/ve-tos-golang-sdk/v2/tos"
+	"github.com/volcengine/ve-tos-golang-sdk/v2/tos/enum"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"github.com/volcengine/volcengine-go-sdk/volcengine"
-	"google.golang.org/grpc"
 	pb "gen_doubao_image/gen"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -37,16 +42,57 @@ func (s *server) GenerateImage(ctx context.Context, in *pb.GenDoubaoImageRequest
 		modelName = "doubao-seedream-4-0-250828"
 	}
 
-	client := arkruntime.NewClientWithApiKey(apiKey)
+	var imageUrls []string
+	if len(in.GetImages()) > 0 {
+		// TOS configuration
+		accessKey := os.Getenv("TOS_ACCESS_KEY")
+		secretKey := os.Getenv("TOS_SECRET_KEY")
+		endpoint := os.Getenv("TOS_ENDPOINT")
+		region := os.Getenv("TOS_REGION")
+		bucketName := os.Getenv("TOS_BUCKET_NAME")
 
-	// The user mentioned the 'Image' field is a placeholder for now.
-	// We will ignore it in this implementation.
-	// images := make([]string, len(in.GetImages()))
-	// for i, imgBytes := range in.GetImages() {
-	//  // This is a placeholder. In a real scenario, you might save the bytes
-	//  // to a temporary file and get a URL, or upload them to a service.
-	// 	images[i] = "some_url"
-	// }
+		if accessKey == "" || secretKey == "" || endpoint == "" || region == "" || bucketName == "" {
+			return nil, fmt.Errorf("TOS environment variables not fully configured")
+		}
+
+		tosClient, err := tos.NewClientV2(endpoint, tos.WithRegion(region), tos.WithCredentials(tos.NewStaticCredentials(accessKey, secretKey)))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create TOS client: %w", err)
+		}
+
+		for _, imgBytes := range in.GetImages() {
+			hash := sha256.Sum256(imgBytes)
+			objectKey := fmt.Sprintf("imgs/%s.png", hex.EncodeToString(hash[:]))
+
+			log.Printf("Uploading image to TOS with key: %s", objectKey)
+			_, err := tosClient.PutObjectV2(ctx, &tos.PutObjectV2Input{
+				PutObjectBasicInput: tos.PutObjectBasicInput{
+					Bucket: bucketName,
+					Key:    objectKey,
+				},
+				Content: bytes.NewReader(imgBytes),
+			})
+			if err != nil {
+				log.Printf("Failed to upload image to TOS: %v", err)
+				return nil, fmt.Errorf("failed to upload image to TOS: %w", err)
+			}
+
+			log.Printf("Generating pre-signed URL for key: %s", objectKey)
+			url, err := tosClient.PreSignedURL(&tos.PreSignedURLInput{
+				HTTPMethod: enum.HttpMethodGet,
+				Bucket:     bucketName,
+				Key:        objectKey,
+			})
+			if err != nil {
+				log.Printf("Failed to generate pre-signed URL: %v", err)
+				return nil, fmt.Errorf("failed to generate pre-signed URL: %w", err)
+			}
+			imageUrls = append(imageUrls, url.SignedUrl)
+			log.Printf("Successfully generated pre-signed URL: %s", url.SignedUrl)
+		}
+	}
+
+	client := arkruntime.NewClientWithApiKey(apiKey)
 
 	var seqImgGen model.SequentialImageGeneration
 	if in.GetSequentialImageGeneration() != "" {
@@ -60,6 +106,7 @@ func (s *server) GenerateImage(ctx context.Context, in *pb.GenDoubaoImageRequest
 	generateReq := model.GenerateImagesRequest{
 		Model:          modelName,
 		Prompt:         in.GetPrompt(),
+		Image:          imageUrls,
 		Size:           volcengine.String(in.GetSize()),
 		ResponseFormat: volcengine.String(model.GenerateImagesResponseFormatURL),
 		Watermark:      volcengine.Bool(in.GetWatermark()),

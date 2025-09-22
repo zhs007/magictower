@@ -11,6 +11,7 @@ require (
 require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/volcengine/ve-tos-golang-sdk/v2 v2.7.22 // indirect
 	github.com/volcengine/volc-sdk-golang v1.0.23 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
