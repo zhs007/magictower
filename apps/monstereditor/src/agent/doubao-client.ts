@@ -1,11 +1,13 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
-import dotenv from 'dotenv';
+import { getProjectRoot, loadEnvOnce } from '../config/env';
 
-dotenv.config();
+// Ensure env is loaded (supports app-level and repo-level .env files)
+loadEnvOnce();
 
-const PROTO_PATH = path.join(process.cwd(), 'protos', 'doubao.proto');
+// Always resolve the proto from the repo root to avoid cwd issues
+const PROTO_PATH = path.join(getProjectRoot(), 'protos', 'doubao.proto');
 
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,

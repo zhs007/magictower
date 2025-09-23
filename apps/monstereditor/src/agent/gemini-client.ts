@@ -1,52 +1,93 @@
-import * as genai from '@google/genai';
+import * as GenAI from '@google/genai';
 import { loadGeminiConfig } from './config';
 import { configureProxyFromEnv } from './proxy';
 
-// Use the new client class from @google/genai v1.x
-const GoogleGenAICtor = (genai as any).GoogleGenAI as new (opts: any) => any;
+type GoogleGenAIClass = new (opts: any) => any;
+const GoogleGenAICtor = (GenAI as any).GoogleGenAI as GoogleGenAIClass;
 
-let cachedModels: Map<string, any> = new Map();
+let cachedClients: Map<string, any> = new Map();
 
-export async function getGeminiModel(tools?: any[]): Promise<{
-    model: any;
+export interface GeminiClientWithConfig {
+    client: any;
     config: Awaited<ReturnType<typeof loadGeminiConfig>>;
-}> {
+}
+
+export async function getGeminiModel(tools?: any[]): Promise<GeminiClientWithConfig> {
     const config = await loadGeminiConfig();
     const cacheKey = tools ? JSON.stringify(tools) : 'no-tools';
 
-    if (cachedModels.has(cacheKey)) {
+    if (cachedClients.has(cacheKey)) {
         try {
             // eslint-disable-next-line no-console
-            console.debug('[gemini] using cached model surface', {
+            console.debug('[gemini] using cached client', {
                 toolsCount: tools?.[0]?.functionDeclarations?.length ?? 0,
                 model: config.model,
             });
         } catch (_) {}
-        return { model: cachedModels.get(cacheKey)!, config };
+        return { client: cachedClients.get(cacheKey)!, config };
     }
 
     configureProxyFromEnv();
 
-    const client: any = new GoogleGenAICtor({ apiKey: config.apiKey });
+    const client = new GoogleGenAICtor({ apiKey: config.apiKey });
 
-    const systemInstruction = config.systemInstruction
-        ? { role: 'system', parts: [{ text: config.systemInstruction }] }
-        : undefined;
-
-    // In @google/genai v1, generation APIs are exposed on `client.models.*`.
-    // We return that surface as the model, and callers must pass `{ model: config.model, ... }` per request.
-    const modelInstance = client.models;
-
-    cachedModels.set(cacheKey, modelInstance);
+    cachedClients.set(cacheKey, client);
 
     try {
         // eslint-disable-next-line no-console
-        console.info('[gemini] created new model surface', {
+        console.info('[gemini] created new client', {
             toolsCount: tools?.[0]?.functionDeclarations?.length ?? 0,
-            hasSystemInstruction: Boolean(systemInstruction),
+            hasSystemInstruction: Boolean(config.systemInstruction),
             model: config.model,
         });
     } catch (_) {}
 
-    return { model: modelInstance, config };
+    return { client, config };
+}
+
+// Small helper to call the right surface across SDK versions and always inject systemInstruction
+export async function generateContentWithSystem({
+    client,
+    request,
+}: {
+    client: any;
+    request: {
+        model: string;
+        contents: any[];
+        tools?: any[];
+        toolConfig?: any;
+        generationConfig?: any;
+        systemInstruction?: string | { role: string; parts: Array<{ text?: string }>; };
+    };
+}): Promise<any> {
+    // Prefer the new Responses API if present
+    const sys = request.systemInstruction;
+    const hasResponses = (client as any)?.responses?.generate;
+    if (hasResponses) {
+        return (client as any).responses.generate({
+            model: request.model,
+            // Some SDK builds call this `contents`, others use `input`.
+            contents: request.contents,
+            input: request.contents,
+            tools: request.tools,
+            toolConfig: request.toolConfig,
+            systemInstruction: sys,
+            // Some SDK builds use `config`, others `generationConfig`.
+            config: request.generationConfig,
+            generationConfig: request.generationConfig,
+        });
+    }
+    // Fallback to legacy models surface
+    const hasModelsGenerate = (client as any)?.models?.generateContent;
+    if (hasModelsGenerate) {
+        return (client as any).models.generateContent({
+            model: request.model,
+            contents: request.contents,
+            tools: request.tools,
+            toolConfig: request.toolConfig,
+            systemInstruction: sys,
+            generationConfig: request.generationConfig,
+        });
+    }
+    throw new Error('[gemini] No compatible generation surface found on @google/genai client');
 }

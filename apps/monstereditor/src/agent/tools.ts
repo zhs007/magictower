@@ -4,14 +4,15 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { generateImage } from './doubao-client.js';
+import { resolveProjectPath } from '../config/env';
 
-const MONSTERS_DIR = path.join(process.cwd(), 'gamedata', 'monsters');
-const MONSTER_ASSETS_DIR = path.join(process.cwd(), 'assets', 'monster');
-const MONSTER_PUBLISH_DIR = path.join(process.cwd(), 'monstereditorpublish');
-const LEVEL_DATA_PATH = path.join(process.cwd(), 'gamedata', 'leveldata.json');
+// Always resolve paths from the repo root to avoid cwd issues when running dev/build
+const MONSTERS_DIR = resolveProjectPath('gamedata', 'monsters');
+const MONSTER_ASSETS_DIR = resolveProjectPath('assets', 'monster');
+const MONSTER_PUBLISH_DIR = resolveProjectPath('monstereditorpublish');
+const LEVEL_DATA_PATH = resolveProjectPath('gamedata', 'leveldata.json');
 
-// Ensure the publish directory exists
-fs.mkdir(MONSTER_PUBLISH_DIR, { recursive: true });
+// Ensure the publish directory exists when needed
 
 function logDebug(meta: Record<string, unknown>, msg: string) {
     try {
@@ -199,7 +200,9 @@ async function genDoubaoImage(prompt: string): Promise<string> {
         const filename = `${hash}.png`;
         const filePath = path.join(MONSTER_PUBLISH_DIR, filename);
 
-        await fs.writeFile(filePath, imageBuffer);
+    // Create publish directory if it doesn't exist
+    await fs.mkdir(MONSTER_PUBLISH_DIR, { recursive: true });
+    await fs.writeFile(filePath, imageBuffer);
 
         const imageUrl = `/public/${filename}`;
         logDebug({ prompt, imageUrl }, 'genDoubaoImage: done');

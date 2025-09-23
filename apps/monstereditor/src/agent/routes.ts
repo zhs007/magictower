@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { appendMessage, createConversation, ensureConversation, getMessages } from './conversation-store';
-import { getGeminiModel } from './gemini-client';
+import { getGeminiModel, generateContentWithSystem } from './gemini-client';
 import { setupSse } from './sse';
 import { tools, toolFunctions } from './tools';
 function convertMessagesToHistory(messages: ReturnType<typeof getMessages>): any[] {
@@ -82,7 +82,7 @@ export function registerAgentRoutes(app: FastifyInstance) {
         } catch (_) {}
 
         try {
-            const { model, config } = await getGeminiModel(tools);
+            const { client, config } = await getGeminiModel(tools);
             const history = convertMessagesToHistory(getMessages(conversation.id).slice(0, -1));
             try {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,21 +135,24 @@ export function registerAgentRoutes(app: FastifyInstance) {
                         '[agent] generating content'
                     );
                 } catch (_) {}
-                const response: any = await model.generateContent({
-                    model: config.model,
-                    systemInstruction: config.systemInstruction
-                        ? { role: 'system', parts: [{ text: config.systemInstruction }] }
-                        : undefined,
-                    contents: turnHistory,
-                    generationConfig: {
-                        responseMimeType: 'text/plain',
-                    },
-                    toolConfig: {
-                        functionCallingConfig: {
-                            mode: 'AUTO',
+                const response: any = await generateContentWithSystem({
+                    client,
+                    request: {
+                        model: config.model,
+                        systemInstruction: config.systemInstruction
+                            ? { role: 'system', parts: [{ text: config.systemInstruction }] }
+                            : undefined,
+                        contents: turnHistory,
+                        generationConfig: {
+                            responseMimeType: 'text/plain',
                         },
+                        toolConfig: {
+                            functionCallingConfig: {
+                                mode: 'AUTO',
+                            },
+                        },
+                        tools,
                     },
-                    tools,
                 });
                 const candidate = response?.candidates?.[0];
                 try {
