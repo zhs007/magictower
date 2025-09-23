@@ -3,6 +3,7 @@ import fastify from 'fastify';
 import { readdir, readFile } from 'fs/promises';
 import { resolve, join } from 'path';
 import { fileURLToPath } from 'url';
+import fastifyStatic from '@fastify/static';
 
 import { registerAgentRoutes } from './agent/routes';
 
@@ -78,6 +79,13 @@ function registerRoutes(app: any) {
 
 export default async function createApp() {
     const app = fastify({ logger: true });
+
+    // Serve static files from the 'monstereditorpublish' directory
+    app.register(fastifyStatic, {
+        root: resolve(rootDir, 'monstereditorpublish'),
+        prefix: '/public/',
+    });
+
     registerRoutes(app);
 
     // Add routing helper so a Vite plugin can forward raw req/res

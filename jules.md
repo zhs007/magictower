@@ -671,6 +671,44 @@ if (item) {
 
 通过这种设计，Agent 不仅仅是一个聊天机器人，而是一个能够实际操作项目数据、执行核心逻辑并根据结果进行迭代的自动化游戏设计助理。
 
+### 19.6 Agent 图像生成能力 (plan046)
+
+为了让怪物编辑器更具创造性，我们为 Agent (Ada) 赋予了调用外部服务生成怪物图片的能力。
+
+- **gRPC 服务集成**:
+  - Agent 现在可以调用一个 gRPC 服务来生成图片。该服务的地址必须通过环境变量 `DOUBAO_GRPC_URL` 来配置（例如 `localhost:50052`）。
+  - 该服务本身（`services/gen_doubao_image`）是一个独立的 Go 应用，它会调用豆包（Doubao）的文生图 API。
+
+- **新增工具集**:
+  - `genDoubaoImage(prompt)`:
+    1.  接收一个描述性的文本 `prompt`。
+    2.  调用 gRPC 服务生成一张图片。
+    3.  将返回的图片数据保存到项目根目录下的 `monstereditorpublish/` 目录中。文件名是图片内容的 SHA256 哈希值，以避免重复。
+    4.  返回一个临时的、可公开访问的 URL (`/public/HASH.png`) 给 Agent。
+  - `saveMonsterImage(assetId, imageUrl)`:
+    1.  当用户对生成的某张图片满意后，Agent 会调用此工具。
+    2.  它会根据 `imageUrl` 从 `monstereditorpublish/` 目录找到对应的图片。
+    3.  将该图片复制到最终的 `assets/monster/` 目录中，并将其重命名为 `assetId.png`。`assetId` 通常与怪物的 `id` 保持一致。
+
+- **工作流程集成**:
+  - **系统提示更新**: `prompts/system.md` 文件已更新，详细指导了 Agent 如何使用这套新工具。
+  - **流程**:
+    1.  在怪物数值调整满意后，Agent 会询问用户是否需要生成图片。
+    2.  用户提供描述后，Agent 调用 `genDoubaoImage`。
+    3.  Agent 将图片 URL 展示给用户，用户可在聊天界面直接看到缩略图并点击查看大图。
+    4.  此过程可重复，直到用户满意。
+    5.  用户确认后，Agent 调用 `saveMonsterImage` 来永久保存图片。
+    6.  最后，Agent 调用 `updMonsterInfo`，将 `assetId` 字段更新到怪物的 JSON 文件中，完成图片与数据的绑定。
+
+- **前端聊天界面更新**:
+  - `apps/monstereditor/src/client/agent.ts` 已被修改。
+  - 聊天记录现在可以解析包含 `/public/...` 的图片 URL。
+  - 图片 URL 会被渲染成一个可点击的缩略图。
+  - 点击缩略图会弹出一个模态框（Modal），展示完整尺寸的图片。
+
+- **静态文件服务**:
+  - `apps/monstereditor/src/server.ts` 中的 Fastify 服务器现在配置为可以静态地提供 `monstereditorpublish/` 目录下的文件，路径为 `/public`。这使得前端可以直接通过 URL 访问由 `genDoubaoImage` 生成的临时图片。
+
 ## 20. genDoubaoImage gRPC 服务
 
 项目新增了一个用于调用豆包服务生成图片的 gRPC 服务。该服务使用 Golang 实现，并被容器化以便于部署和管理。

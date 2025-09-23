@@ -21,6 +21,51 @@ function setStatus(statusEl: HTMLElement, message: string) {
     statusEl.textContent = message;
 }
 
+function renderMessageContent(container: HTMLElement, text: string) {
+    container.innerHTML = ''; // Clear previous content
+
+    const urlRegex = /(https?:\/\/[^\s]+)|(\/public\/[a-zA-Z0-9]+\.png)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = urlRegex.exec(text)) !== null) {
+        // Add text before the URL
+        if (match.index > lastIndex) {
+            container.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+        }
+
+        const url = match[0];
+        // Check if it's an image URL to render as a thumbnail
+        if (url.match(/\.(jpeg|jpg|gif|png)$/)) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.classList.add('chat-message-image');
+            img.onclick = () => {
+                const modal = document.getElementById('image-modal') as HTMLDivElement;
+                const modalImg = document.getElementById('image-modal-content') as HTMLImageElement;
+                modal.style.display = 'block';
+                modalImg.src = url;
+            };
+            container.appendChild(img);
+        } else {
+            // Otherwise, render as a plain link
+            const a = document.createElement('a');
+            a.href = url;
+            a.textContent = url;
+            a.target = '_blank';
+            container.appendChild(a);
+        }
+
+        lastIndex = match.index + url.length;
+    }
+
+    // Add any remaining text after the last URL
+    if (lastIndex < text.length) {
+        container.appendChild(document.createTextNode(text.substring(lastIndex)));
+    }
+}
+
+
 function createMessageElement(
     historyEl: HTMLElement,
     role: 'user' | 'assistant',
@@ -32,7 +77,13 @@ function createMessageElement(
     if (streaming) {
         messageEl.classList.add('streaming');
     }
-    messageEl.textContent = content;
+
+    if (role === 'user') {
+        messageEl.textContent = content;
+    } else {
+        renderMessageContent(messageEl, content);
+    }
+
     historyEl.appendChild(messageEl);
     historyEl.scrollTop = historyEl.scrollHeight;
     return { container: messageEl, role };
@@ -77,11 +128,22 @@ export function initAgentChat() {
     const form = document.getElementById('chat-form') as HTMLFormElement | null;
     const input = document.getElementById('chat-input') as HTMLTextAreaElement | null;
     const sendBtn = document.getElementById('chat-send') as HTMLButtonElement | null;
+    const imageModal = document.getElementById('image-modal') as HTMLDivElement | null;
+    const imageModalClose = document.getElementById('image-modal-close') as HTMLSpanElement | null;
 
-    if (!historyEl || !newTaskBtn || !statusEl || !form || !input || !sendBtn) {
+    if (!historyEl || !newTaskBtn || !statusEl || !form || !input || !sendBtn || !imageModal || !imageModalClose) {
         // eslint-disable-next-line no-console
         console.warn('[agent] Missing agent UI elements; skipping initialization.');
         return;
+    }
+
+    imageModalClose.onclick = () => {
+        imageModal.style.display = 'none';
+    }
+    imageModal.onclick = (event) => {
+        if (event.target === imageModal) {
+            imageModal.style.display = 'none';
+        }
     }
 
     const controlButtons = [sendBtn, newTaskBtn];
@@ -176,6 +238,7 @@ async function streamAgentResponse(
             const data = JSON.parse((event as MessageEvent).data);
             if (typeof data.text === 'string') {
                 state.aggregated += data.text;
+                // During streaming, just update text content for performance.
                 assistantMessage.container.textContent = state.aggregated;
                 assistantMessage.container.classList.add('streaming');
                 historyEl.scrollTop = historyEl.scrollHeight;
@@ -190,7 +253,10 @@ async function streamAgentResponse(
         closeEventSource();
         const payload = JSON.parse((event as MessageEvent).data);
         const content = typeof payload.content === 'string' ? payload.content : state.aggregated;
-        assistantMessage.container.textContent = content;
+
+        // Render the final content with images
+        renderMessageContent(assistantMessage.container, content);
+
         assistantMessage.container.classList.remove('streaming');
         state.aggregated = '';
         setStatus(statusEl, '');

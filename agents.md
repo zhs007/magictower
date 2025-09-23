@@ -27,6 +27,7 @@ Consult the latest plan in `jules.md` before coding. After completing assigned w
 
 ## Monstereditor Agent
 - Gemini integration uses `@google/genai`; configure credentials via `.env` (`GEMINI_API_KEY`, `GEMINI_MODEL`) plus optional `HTTP_PROXY` / `HTTPS_PROXY`.
+- The agent client also requires the `DOUBAO_GRPC_URL` environment variable to connect to the image generation service (e.g., `DOUBAO_GRPC_URL=localhost:50052`).
 - Copy `apps/monstereditor/.env.example` to `.env` (same folder) for the expected variable list before running local servers; root-level `.env` files are still respected but optional.
 - System instructions live in `apps/monstereditor/prompts/system.md`; keep persona changes synchronized there.
 - Backend exposes `POST /api/agent/new-task` to reset conversations and `GET /api/agent/stream` for SSE replies (`start`/`chunk`/`done`/`agent-error`).
