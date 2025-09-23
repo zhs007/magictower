@@ -170,6 +170,42 @@
         padding: 5px;
         border-radius: 5px;
       }
+      .chat-message-image {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 8px;
+        display: block;
+      }
+      #image-modal {
+        display: none;
+        position: fixed;
+        z-index: 101; /* Higher than other modals */
+        padding-top: 100px;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.9);
+      }
+      #image-modal-content {
+        margin: auto;
+        display: block;
+        width: 80%;
+        max-width: 700px;
+      }
+      #image-modal-close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: 0.3s;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -239,6 +275,12 @@
         </div>
         <button id="confirm-player-btn">Confirm</button>
       </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div id="image-modal" class="modal">
+      <span id="image-modal-close" class="close-btn">&times;</span>
+      <img class="modal-content" id="image-modal-content">
     </div>
 
     <script type="module" src="/src/client/app.ts"></script>

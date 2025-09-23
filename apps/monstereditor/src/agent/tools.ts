@@ -2,9 +2,17 @@ import { IMonster, IPlayer, LevelData } from '@proj-tower/logic-core';
 import { calculateDamage } from '@proj-tower/logic-core';
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
+import { generateImage } from './doubao-client.js';
+import { resolveProjectPath } from '../config/env';
 
-const MONSTERS_DIR = path.join(process.cwd(), 'gamedata', 'monsters');
-const LEVEL_DATA_PATH = path.join(process.cwd(), 'gamedata', 'leveldata.json');
+// Always resolve paths from the repo root to avoid cwd issues when running dev/build
+const MONSTERS_DIR = resolveProjectPath('gamedata', 'monsters');
+const MONSTER_ASSETS_DIR = resolveProjectPath('assets', 'monster');
+const MONSTER_PUBLISH_DIR = resolveProjectPath('monstereditorpublish');
+const LEVEL_DATA_PATH = resolveProjectPath('gamedata', 'leveldata.json');
+
+// Ensure the publish directory exists when needed
 
 function logDebug(meta: Record<string, unknown>, msg: string) {
     try {
@@ -179,6 +187,56 @@ async function simBattle(
     }
 }
 
+async function genDoubaoImage(prompt: string): Promise<string> {
+    try {
+        logDebug({ prompt }, 'genDoubaoImage: start');
+        const images = await generateImage(prompt);
+        if (!images || images.length === 0) {
+            return 'Error: The image generation service did not return any images.';
+        }
+
+        const imageBuffer = images[0];
+        const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+        const filename = `${hash}.png`;
+        const filePath = path.join(MONSTER_PUBLISH_DIR, filename);
+
+    // Create publish directory if it doesn't exist
+    await fs.mkdir(MONSTER_PUBLISH_DIR, { recursive: true });
+    await fs.writeFile(filePath, imageBuffer);
+
+        const imageUrl = `/public/${filename}`;
+        logDebug({ prompt, imageUrl }, 'genDoubaoImage: done');
+        return `Generated image successfully. You can view it here: ${imageUrl}`;
+    } catch (error) {
+        console.error('Error in genDoubaoImage:', error);
+        return 'Error: Failed to generate monster image.';
+    }
+}
+
+async function saveMonsterImage(assetId: string, imageUrl: string): Promise<string> {
+    try {
+        logDebug({ assetId, imageUrl }, 'saveMonsterImage: start');
+        if (!imageUrl.startsWith('/public/')) {
+            return 'Error: Invalid image URL. It must be a local URL starting with /public/';
+        }
+        const filename = path.basename(imageUrl);
+        const sourcePath = path.join(MONSTER_PUBLISH_DIR, filename);
+        const destPath = path.join(MONSTER_ASSETS_DIR, `${assetId}.png`);
+
+        await fs.copyFile(sourcePath, destPath);
+
+        const out = `Successfully saved image for asset ID "${assetId}" to ${destPath}.`;
+        logDebug({ assetId, imageUrl, outLen: out.length }, 'saveMonsterImage: done');
+        return out;
+    } catch (error) {
+        console.error('Error in saveMonsterImage:', error);
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+            return `Error: Could not find the source image at ${imageUrl}. Make sure genDoubaoImage was called successfully first.`;
+        }
+        return `Error: Could not save image for asset ID "${assetId}".`;
+    }
+}
+
 
 // --- Tool Definitions for Gemini ---
 
@@ -236,6 +294,29 @@ export const tools = [
                     required: ['monsterId', 'playerLevel'],
                 },
             },
+            {
+                name: 'genDoubaoImage',
+                description: 'Generate a new image for a monster based on a descriptive prompt.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        prompt: { type: 'string', description: "A detailed text description of the desired monster image." },
+                    },
+                    required: ['prompt'],
+                },
+            },
+            {
+                name: 'saveMonsterImage',
+                description: "Save a previously generated image to the monster assets directory. This should be called when the user is satisfied with a generated image.",
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        assetId: { type: 'string', description: "The asset ID for the monster, which will be used as the filename (e.g., 'level5_bat_a'). This should match the monster's 'id'." },
+                        imageUrl: { type: 'string', description: "The URL of the image to save, as returned by genDoubaoImage." },
+                    },
+                    required: ['assetId', 'imageUrl'],
+                },
+            },
         ],
     },
 ];
@@ -246,4 +327,6 @@ export const toolFunctions = {
     getMonstersInfo,
     updMonsterInfo,
     simBattle,
+    genDoubaoImage,
+    saveMonsterImage,
 };

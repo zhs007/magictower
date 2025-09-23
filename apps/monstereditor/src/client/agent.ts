@@ -1,5 +1,6 @@
 interface AgentState {
     conversationId: string | null;
+    sessionId: string | null;
     eventSource: EventSource | null;
     streaming: boolean;
     aggregated: string;
@@ -12,6 +13,7 @@ interface MessageElement {
 
 const state: AgentState = {
     conversationId: null,
+    sessionId: null,
     eventSource: null,
     streaming: false,
     aggregated: '',
@@ -20,6 +22,51 @@ const state: AgentState = {
 function setStatus(statusEl: HTMLElement, message: string) {
     statusEl.textContent = message;
 }
+
+function renderMessageContent(container: HTMLElement, text: string) {
+    container.innerHTML = ''; // Clear previous content
+
+    const urlRegex = /(https?:\/\/[^\s]+)|(\/public\/[a-zA-Z0-9]+\.png)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = urlRegex.exec(text)) !== null) {
+        // Add text before the URL
+        if (match.index > lastIndex) {
+            container.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+        }
+
+        const url = match[0];
+        // Check if it's an image URL to render as a thumbnail
+        if (url.match(/\.(jpeg|jpg|gif|png)$/)) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.classList.add('chat-message-image');
+            img.onclick = () => {
+                const modal = document.getElementById('image-modal') as HTMLDivElement;
+                const modalImg = document.getElementById('image-modal-content') as HTMLImageElement;
+                modal.style.display = 'block';
+                modalImg.src = url;
+            };
+            container.appendChild(img);
+        } else {
+            // Otherwise, render as a plain link
+            const a = document.createElement('a');
+            a.href = url;
+            a.textContent = url;
+            a.target = '_blank';
+            container.appendChild(a);
+        }
+
+        lastIndex = match.index + url.length;
+    }
+
+    // Add any remaining text after the last URL
+    if (lastIndex < text.length) {
+        container.appendChild(document.createTextNode(text.substring(lastIndex)));
+    }
+}
+
 
 function createMessageElement(
     historyEl: HTMLElement,
@@ -32,7 +79,13 @@ function createMessageElement(
     if (streaming) {
         messageEl.classList.add('streaming');
     }
-    messageEl.textContent = content;
+
+    if (role === 'user') {
+        messageEl.textContent = content;
+    } else {
+        renderMessageContent(messageEl, content);
+    }
+
     historyEl.appendChild(messageEl);
     historyEl.scrollTop = historyEl.scrollHeight;
     return { container: messageEl, role };
@@ -52,8 +105,9 @@ async function requestNewConversation(statusEl: HTMLElement) {
     }
     const data = await response.json();
     state.conversationId = data.conversationId;
+    state.sessionId = data.sessionId || data.conversationId;
     setStatus(statusEl, 'New task ready.');
-    return state.conversationId;
+    return state.sessionId;
 }
 
 function closeEventSource() {
@@ -77,18 +131,34 @@ export function initAgentChat() {
     const form = document.getElementById('chat-form') as HTMLFormElement | null;
     const input = document.getElementById('chat-input') as HTMLTextAreaElement | null;
     const sendBtn = document.getElementById('chat-send') as HTMLButtonElement | null;
+    const imageModal = document.getElementById('image-modal') as HTMLDivElement | null;
+    const imageModalClose = document.getElementById('image-modal-close') as HTMLSpanElement | null;
 
-    if (!historyEl || !newTaskBtn || !statusEl || !form || !input || !sendBtn) {
+    if (!historyEl || !newTaskBtn || !statusEl || !form || !input || !sendBtn || !imageModal || !imageModalClose) {
         // eslint-disable-next-line no-console
         console.warn('[agent] Missing agent UI elements; skipping initialization.');
         return;
     }
 
+    imageModalClose.onclick = () => {
+        imageModal.style.display = 'none';
+    }
+    imageModal.onclick = (event) => {
+        if (event.target === imageModal) {
+            imageModal.style.display = 'none';
+        }
+    }
+
     const controlButtons = [sendBtn, newTaskBtn];
+
+    // Disable chatting until a session is created explicitly
+    sendBtn.disabled = true;
+    input.disabled = true;
 
     const resetConversationUI = () => {
         historyEl.innerHTML = '';
         state.conversationId = null;
+        state.sessionId = null;
         state.aggregated = '';
     };
 
@@ -99,6 +169,9 @@ export function initAgentChat() {
             closeEventSource();
             resetConversationUI();
             await requestNewConversation(statusEl);
+            // Enable input/send once a session is ready
+            sendBtn.disabled = false;
+            input.disabled = false;
         } catch (error) {
             const err = error as Error;
             setStatus(statusEl, err.message || 'Failed to start new task');
@@ -114,12 +187,13 @@ export function initAgentChat() {
 
         try {
             setStreaming(true, controlButtons);
-            if (!state.conversationId) {
-                await requestNewConversation(statusEl);
-                historyEl.innerHTML = '';
-            } else {
-                setStatus(statusEl, '');
+            if (!state.sessionId) {
+                // Require explicit New Task before chatting
+                setStatus(statusEl, 'Start a new task first (click "New Task").');
+                setStreaming(false, controlButtons);
+                return;
             }
+            setStatus(statusEl, '');
 
             createMessageElement(historyEl, 'user', message);
             input.value = '';
@@ -161,7 +235,12 @@ async function streamAgentResponse(
     });
 
     const url = new URL('/api/agent/stream', window.location.origin);
-    url.searchParams.set('conversationId', state.conversationId);
+    // Prefer sessionId for clarity with the backend
+    if (state.sessionId) {
+        url.searchParams.set('sessionId', state.sessionId);
+    } else {
+        url.searchParams.set('conversationId', state.conversationId);
+    }
     url.searchParams.set('message', message);
 
     const eventSource = new EventSource(url.toString());
@@ -176,6 +255,7 @@ async function streamAgentResponse(
             const data = JSON.parse((event as MessageEvent).data);
             if (typeof data.text === 'string') {
                 state.aggregated += data.text;
+                // During streaming, just update text content for performance.
                 assistantMessage.container.textContent = state.aggregated;
                 assistantMessage.container.classList.add('streaming');
                 historyEl.scrollTop = historyEl.scrollHeight;
@@ -190,7 +270,10 @@ async function streamAgentResponse(
         closeEventSource();
         const payload = JSON.parse((event as MessageEvent).data);
         const content = typeof payload.content === 'string' ? payload.content : state.aggregated;
-        assistantMessage.container.textContent = content;
+
+        // Render the final content with images
+        renderMessageContent(assistantMessage.container, content);
+
         assistantMessage.container.classList.remove('streaming');
         state.aggregated = '';
         setStatus(statusEl, '');

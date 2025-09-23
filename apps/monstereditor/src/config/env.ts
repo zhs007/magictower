@@ -6,7 +6,8 @@ import { config as loadDotenv } from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = resolve(__filename, '..');
-const projectRoot = resolve(__dirname, '../../..');
+// From apps/monstereditor/src/config -> repo root requires 4 levels up
+const projectRoot = resolve(__dirname, '../../../..');
 const appDir = resolve(projectRoot, 'apps', 'monstereditor');
 let envLoaded = false;
 
