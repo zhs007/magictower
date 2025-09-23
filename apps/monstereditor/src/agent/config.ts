@@ -1,6 +1,4 @@
 import { readFile } from 'fs/promises';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
 import { resolveProjectPath, loadEnvOnce } from '../config/env';
 
 export interface GeminiConfig {
@@ -24,30 +22,17 @@ export async function loadGeminiConfig(): Promise<GeminiConfig> {
 
     const model = process.env.GEMINI_MODEL || 'models/gemini-1.5-flash';
     const systemPath = resolveProjectPath('apps', 'monstereditor', 'prompts', 'system.md');
-
     let systemInstruction: string;
     try {
         systemInstruction = await readFile(systemPath, 'utf-8');
     } catch (err) {
-        // Fallback: sometimes projectRoot resolution can be different depending on
-        // how the process is started. Try a path relative to this file instead.
-        const thisDir = resolve(fileURLToPath(import.meta.url), '..');
-        const fallback = resolve(thisDir, '..', '..', 'prompts', 'system.md');
-        try {
-            systemInstruction = await readFile(fallback, 'utf-8');
-        } catch (err2) {
-            // If both attempts fail, rethrow the original error for visibility
-            throw err as Error;
-        }
+        throw new Error(`Failed to load system instruction at ${systemPath}: ${(err as Error).message}`);
     }
-
-    // Strengthen the instruction to prefer tools and always respond with brief Chinese text
-    const extraGuidance = `\n\nAdditional rules (runtime):\n- When deciding actions, prefer calling the provided tools to gather data and persist changes.\n- Always produce a short Chinese summary to the user every turn, even if you also call tools.\n- If no text is appropriate, return a one-sentence Chinese status update.`;
 
     cachedConfig = {
         apiKey,
         model,
-        systemInstruction: `${systemInstruction.trim()}${extraGuidance}`,
+        systemInstruction: systemInstruction.trim(),
     };
 
     return cachedConfig;

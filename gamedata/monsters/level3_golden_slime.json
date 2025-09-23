@@ -1,0 +1,9 @@
+{
+  "attack": 70,
+  "speed": 15,
+  "level": 3,
+  "id": "level3_golden_slime",
+  "maxhp": 80,
+  "name": "金色史莱姆",
+  "defense": 8
+}

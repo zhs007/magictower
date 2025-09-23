@@ -1,5 +1,6 @@
 interface AgentState {
     conversationId: string | null;
+    sessionId: string | null;
     eventSource: EventSource | null;
     streaming: boolean;
     aggregated: string;
@@ -12,6 +13,7 @@ interface MessageElement {
 
 const state: AgentState = {
     conversationId: null,
+    sessionId: null,
     eventSource: null,
     streaming: false,
     aggregated: '',
@@ -103,8 +105,9 @@ async function requestNewConversation(statusEl: HTMLElement) {
     }
     const data = await response.json();
     state.conversationId = data.conversationId;
+    state.sessionId = data.sessionId || data.conversationId;
     setStatus(statusEl, 'New task ready.');
-    return state.conversationId;
+    return state.sessionId;
 }
 
 function closeEventSource() {
@@ -148,9 +151,14 @@ export function initAgentChat() {
 
     const controlButtons = [sendBtn, newTaskBtn];
 
+    // Disable chatting until a session is created explicitly
+    sendBtn.disabled = true;
+    input.disabled = true;
+
     const resetConversationUI = () => {
         historyEl.innerHTML = '';
         state.conversationId = null;
+        state.sessionId = null;
         state.aggregated = '';
     };
 
@@ -161,6 +169,9 @@ export function initAgentChat() {
             closeEventSource();
             resetConversationUI();
             await requestNewConversation(statusEl);
+            // Enable input/send once a session is ready
+            sendBtn.disabled = false;
+            input.disabled = false;
         } catch (error) {
             const err = error as Error;
             setStatus(statusEl, err.message || 'Failed to start new task');
@@ -176,12 +187,13 @@ export function initAgentChat() {
 
         try {
             setStreaming(true, controlButtons);
-            if (!state.conversationId) {
-                await requestNewConversation(statusEl);
-                historyEl.innerHTML = '';
-            } else {
-                setStatus(statusEl, '');
+            if (!state.sessionId) {
+                // Require explicit New Task before chatting
+                setStatus(statusEl, 'Start a new task first (click "New Task").');
+                setStreaming(false, controlButtons);
+                return;
             }
+            setStatus(statusEl, '');
 
             createMessageElement(historyEl, 'user', message);
             input.value = '';
@@ -223,7 +235,12 @@ async function streamAgentResponse(
     });
 
     const url = new URL('/api/agent/stream', window.location.origin);
-    url.searchParams.set('conversationId', state.conversationId);
+    // Prefer sessionId for clarity with the backend
+    if (state.sessionId) {
+        url.searchParams.set('sessionId', state.sessionId);
+    } else {
+        url.searchParams.set('conversationId', state.conversationId);
+    }
     url.searchParams.set('message', message);
 
     const eventSource = new EventSource(url.toString());
