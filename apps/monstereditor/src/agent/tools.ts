@@ -3,6 +3,7 @@ import { calculateDamage } from '@proj-tower/logic-core';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import sharp from 'sharp';
 import { generateImage } from './doubao-client.js';
 import { removeBackground } from './rmbg-client.js';
 import { resolveProjectPath } from '../config/env';
@@ -201,9 +202,9 @@ async function genDoubaoImage(prompt: string): Promise<string> {
         const filename = `${hash}.png`;
         const filePath = path.join(MONSTER_PUBLISH_DIR, filename);
 
-    // Create publish directory if it doesn't exist
-    await fs.mkdir(MONSTER_PUBLISH_DIR, { recursive: true });
-    await fs.writeFile(filePath, imageBuffer);
+        // Create publish directory if it doesn't exist
+        await fs.mkdir(MONSTER_PUBLISH_DIR, { recursive: true });
+        await fs.writeFile(filePath, imageBuffer);
 
         const imageUrl = `/public/${filename}`;
         logDebug({ prompt, imageUrl }, 'genDoubaoImage: done');
@@ -224,7 +225,27 @@ async function saveMonsterImage(assetId: string, imageUrl: string): Promise<stri
         const sourcePath = path.join(MONSTER_PUBLISH_DIR, filename);
         const destPath = path.join(MONSTER_ASSETS_DIR, `${assetId}.png`);
 
-        await fs.copyFile(sourcePath, destPath);
+        await fs.mkdir(MONSTER_ASSETS_DIR, { recursive: true });
+        await fs.mkdir(MONSTER_PUBLISH_DIR, { recursive: true });
+
+        const TILE_WIDTH = 65;
+        // Trim transparent padding, then clamp width to the tile size without enlarging slim sprites.
+        const { data: trimmedBuffer } = await sharp(sourcePath)
+            .trim()
+            .png()
+            .toBuffer({ resolveWithObject: true });
+
+        const { data: finalBuffer } = await sharp(trimmedBuffer)
+            .resize({ width: TILE_WIDTH, fit: 'inside', withoutEnlargement: true })
+            .png()
+            .toBuffer({ resolveWithObject: true });
+
+        const publishAssetPath = path.join(MONSTER_PUBLISH_DIR, `${assetId}.png`);
+
+        await Promise.all([
+            fs.writeFile(destPath, finalBuffer),
+            fs.writeFile(publishAssetPath, finalBuffer),
+        ]);
 
         const out = `Successfully saved image for asset ID "${assetId}" to ${destPath}.`;
         logDebug({ assetId, imageUrl, outLen: out.length }, 'saveMonsterImage: done');

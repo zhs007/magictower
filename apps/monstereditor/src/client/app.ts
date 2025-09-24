@@ -166,6 +166,7 @@ async function refreshMonsterData() {
         if (Assets.cache.has(alias)) {
             Assets.cache.remove(alias);
         }
+        delete MONSTER_TEXTURE_URLS[updatedMonster.assetId];
     }
 
     await updateMonsterStatsDisplay();
@@ -281,21 +282,41 @@ function updatePlayerStatsDisplay() {
 }
 
 async function ensureMonsterTexture(assetId?: string): Promise<Texture> {
-    const normalizedId = assetId && MONSTER_TEXTURE_URLS[assetId] ? assetId : FALLBACK_MONSTER_ASSET_ID;
-    if (assetId && normalizedId !== assetId) {
+    const candidateIds = assetId ? [assetId, FALLBACK_MONSTER_ASSET_ID] : [FALLBACK_MONSTER_ASSET_ID];
+
+    for (const id of candidateIds) {
+        const alias = `monster_asset:${id}`;
+        if (!Assets.cache.has(alias)) {
+            const staticUrl = MONSTER_TEXTURE_URLS[id];
+            const baseSrc = staticUrl ?? `/public/${id}.png`;
+            const srcToLoad = staticUrl ? baseSrc : `${baseSrc}?cb=${Date.now()}`;
+            try {
+                await Assets.load({ alias, src: srcToLoad });
+                if (!staticUrl) {
+                    MONSTER_TEXTURE_URLS[id] = baseSrc;
+                }
+            } catch (error) {
+                console.error(`[monster-editor] Failed to load texture for ${id}`, error);
+                Assets.cache.remove(alias);
+                if (id === FALLBACK_MONSTER_ASSET_ID) {
+                    return Texture.EMPTY;
+                }
+                continue;
+            }
+        }
+
+        const texture = Assets.cache.get(alias) as Texture | undefined;
+        if (texture) {
+            return texture;
+        }
+    }
+
+    if (assetId) {
         console.warn(
-            `[monster-editor] Missing monster asset "${assetId}" – falling back to "${FALLBACK_MONSTER_ASSET_ID}".`
+            `[monster-editor] Could not resolve texture for "${assetId}"; using empty texture.`
         );
     }
-    const src = MONSTER_TEXTURE_URLS[normalizedId];
-    if (!src) {
-        return Texture.EMPTY;
-    }
-    const alias = `monster_asset:${normalizedId}`;
-    if (!Assets.cache.has(alias)) {
-        await Assets.load({ alias, src });
-    }
-    return (Assets.cache.get(alias) as Texture) ?? Texture.EMPTY;
+    return Texture.EMPTY;
 }
 
 async function applyMonsterTexture(monster: MonsterRecord | null): Promise<void> {
