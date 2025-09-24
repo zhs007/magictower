@@ -20,9 +20,10 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 const doubaoProto = grpc.loadPackageDefinition(packageDefinition).doubao as any;
 
 const GRPC_URL = process.env.DOUBAO_GRPC_URL;
-const HTTP_PROXY = process.env.HTTP_PROXY;
-const HTTPS_PROXY = process.env.HTTPS_PROXY;
-let NO_PROXY = process.env.NO_PROXY;
+const DEFAULT_SIZE = process.env.DOUBAO_IMAGE_SIZE ?? '1k';
+const HTTP_PROXY = process.env.HTTP_PROXY ?? process.env.http_proxy;
+const HTTPS_PROXY = process.env.HTTPS_PROXY ?? process.env.https_proxy;
+let NO_PROXY = process.env.NO_PROXY ?? process.env.no_proxy;
 
 if (!GRPC_URL) {
   throw new Error('DOUBAO_GRPC_URL environment variable not set');
@@ -55,7 +56,10 @@ try {
     if (!current.includes(h)) current.push(h);
   }
   NO_PROXY = current.join(',');
-  process.env.NO_PROXY = NO_PROXY; // set before creating any clients
+  // grpc-js only checks lowercase env vars, so mirror the value.
+  process.env.NO_PROXY = NO_PROXY;
+  process.env.no_proxy = NO_PROXY;
+  process.env.no_grpc_proxy = NO_PROXY;
 } catch {}
 
 // Basic diagnostics at startup
@@ -70,7 +74,10 @@ try {
   });
 } catch {}
 
-const client = new doubaoProto.GenDoubaoImage(RESOLVED_TARGET, grpc.credentials.createInsecure());
+const client = new doubaoProto.GenDoubaoImage(RESOLVED_TARGET, grpc.credentials.createInsecure(), {
+  // Disable HTTP CONNECT proxying entirely; local Docker targets fail via proxies.
+  'grpc.enable_http_proxy': 0,
+});
 
 function connectivityName(state: grpc.connectivityState): string {
   // Reverse lookup on the numeric enum to get a human-readable name
@@ -115,25 +122,26 @@ function waitForClientReady(timeoutMs: number): Promise<void> {
 export function generateImage(prompt: string): Promise<Buffer[]> {
   return new Promise((resolve, reject) => {
     // Ensure the connection is established (provides clearer errors)
-  waitForClientReady(10000)
+    waitForClientReady(10000)
       .then(() => {
         client.GenerateImage(
-      {
-        prompt,
-        max_images: 1,
-      },
-      (error: grpc.ServiceError | null, response: { images: Buffer[] }) => {
-        if (error) {
-          console.error('Error calling GenDoubaoImage:', {
-            code: error.code,
-            details: error.details,
-            message: error.message,
-          });
-          return reject(error);
-        }
-        resolve(response.images);
-      },
-    );
+          {
+            prompt,
+            max_images: 1,
+            size: DEFAULT_SIZE,
+          },
+          (error: grpc.ServiceError | null, response: { images: Buffer[] }) => {
+            if (error) {
+              console.error('Error calling GenDoubaoImage:', {
+                code: error.code,
+                details: error.details,
+                message: error.message,
+              });
+              return reject(error);
+            }
+            resolve(response.images);
+          },
+        );
       })
       .catch((err) => {
         // Surface the waitForReady failure early

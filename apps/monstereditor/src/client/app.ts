@@ -1,4 +1,4 @@
-import { Application, Assets } from 'pixi.js';
+import { Application, Assets, Texture } from 'pixi.js';
 import { MapRender } from '@proj-tower/maprender';
 import { CharacterEntity } from '@proj-tower/maprender';
 import { GameState, IPlayer, IMonster, ITileAsset, ICharacter } from '@proj-tower/logic-core';
@@ -25,6 +25,26 @@ interface BattleResult {
     monsterHpLostPercent: number;
 }
 
+type MonsterRecord = IMonster & { assetId?: string };
+
+const monsterAssetImports = import.meta.glob('../../../../assets/monster/*.png', {
+    eager: true,
+    as: 'url',
+}) as Record<string, string>;
+
+const MONSTER_TEXTURE_URLS: Record<string, string> = Object.entries(monsterAssetImports).reduce(
+    (acc, [path, url]) => {
+        const match = /([^/]+)\.png$/i.exec(path);
+        if (match) {
+            acc[match[1]] = url;
+        }
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+const FALLBACK_MONSTER_ASSET_ID = 'monster';
+
 // --- DOM Element References ---
 const playerConfigBtn = document.getElementById('player-config-btn') as HTMLButtonElement;
 const modal = document.getElementById('player-config-modal') as HTMLDivElement;
@@ -43,10 +63,10 @@ const zoomDisplay = document.getElementById('zoom-display') as HTMLSpanElement;
 initAgentChat();
 
 // --- State ---
-let allMonsters: IMonster[] = [];
+let allMonsters: MonsterRecord[] = [];
 let levelData: LevelData[] = [];
 let selectedPlayer: IPlayer | null = null;
-let selectedMonster: IMonster | null = null;
+let selectedMonster: MonsterRecord | null = null;
 let mapRender: MapRender | null = null;
 let playerEntity: CharacterEntity | null = null;
 let monsterEntity: CharacterEntity | null = null;
@@ -91,7 +111,7 @@ async function fetchAllMonsters() {
         if (!response.ok) throw new Error('Failed to fetch monster list');
         const monsterIds: string[] = await response.json();
         const monsterPromises = monsterIds.map((id) =>
-            fetch(`/api/monsters/${id}`).then((res) => res.json())
+            fetch(`/api/monsters/${id}`).then((res) => res.json() as Promise<MonsterRecord>)
         );
         allMonsters = await Promise.all(monsterPromises);
     } catch (error) {
@@ -207,11 +227,46 @@ function updatePlayerStatsDisplay() {
     }
 }
 
-function updateMonsterStatsDisplay() {
+async function ensureMonsterTexture(assetId?: string): Promise<Texture> {
+    const normalizedId = assetId && MONSTER_TEXTURE_URLS[assetId] ? assetId : FALLBACK_MONSTER_ASSET_ID;
+    if (assetId && normalizedId !== assetId) {
+        console.warn(
+            `[monster-editor] Missing monster asset "${assetId}" – falling back to "${FALLBACK_MONSTER_ASSET_ID}".`
+        );
+    }
+    const src = MONSTER_TEXTURE_URLS[normalizedId];
+    if (!src) {
+        return Texture.EMPTY;
+    }
+    const alias = `monster_asset:${normalizedId}`;
+    if (!Assets.cache.has(alias)) {
+        await Assets.load({ alias, src });
+    }
+    return (Assets.cache.get(alias) as Texture) ?? Texture.EMPTY;
+}
+
+async function applyMonsterTexture(monster: MonsterRecord | null): Promise<void> {
+    if (!monsterEntity) {
+        return;
+    }
+    const texture = await ensureMonsterTexture(monster?.assetId);
+    if (monster !== selectedMonster) {
+        // Selection changed while the texture was loading; skip applying the stale texture.
+        return;
+    }
+    monsterEntity.sprite.texture = texture;
+}
+
+async function updateMonsterStatsDisplay() {
     const monsterId = monsterSelect.value;
     const monster = allMonsters.find((m) => m.id === monsterId);
     selectedMonster = monster || null;
     renderMonsterStats();
+    try {
+        await applyMonsterTexture(selectedMonster);
+    } catch (error) {
+        console.error('Failed to load monster texture', error);
+    }
 }
 
 // --- Battle Simulation Logic ---
@@ -396,13 +451,11 @@ async function setupPixiApp() {
 
     const assetUrls = {
         player: new URL('../../../../assets/player.png', import.meta.url).href,
-        monster: new URL('../../../../assets/monster/monster.png', import.meta.url).href,
         floor: new URL('../../../../assets/map/floor.png', import.meta.url).href,
     };
 
     await Assets.load([
         { alias: 'player', src: assetUrls.player },
-        { alias: 'monster_monster', src: assetUrls.monster },
         { alias: 'map_floor', src: assetUrls.floor },
     ]);
 
@@ -465,7 +518,8 @@ async function setupPixiApp() {
     playerEntity.visible = false;
     mapRender.addEntity(playerEntity);
 
-    monsterEntity = new CharacterEntity(Assets.get('monster_monster') as any);
+    const initialMonsterTexture = await ensureMonsterTexture();
+    monsterEntity = new CharacterEntity(initialMonsterTexture);
     monsterEntity.x = toWorldX(8);
     monsterEntity.y = toWorldY(8);
     monsterEntity.zIndex = 8;
@@ -534,7 +588,9 @@ async function initialize() {
 
     monsterLevelSelect.addEventListener('change', updateMonsterDropdown);
     playerLevelSelect.addEventListener('change', updatePlayerStatsDisplay);
-    monsterSelect.addEventListener('change', updateMonsterStatsDisplay);
+    monsterSelect.addEventListener('change', () => {
+        void updateMonsterStatsDisplay();
+    });
     (document.getElementById('confirm-player-btn') as HTMLButtonElement).addEventListener(
         'click',
         () => {
