@@ -76,6 +76,12 @@ const TILE_SIZE = 65;
 let pixiCanvas: HTMLCanvasElement | null = null;
 let battleInProgress = false;
 
+declare global {
+    interface Window {
+        monsterEditorRefreshData?: () => Promise<void>;
+    }
+}
+
 // --- Modal Logic ---
 playerConfigBtn.onclick = () => {
     modal.style.display = 'block';
@@ -119,6 +125,53 @@ async function fetchAllMonsters() {
         monsterSelect.innerHTML = '<option>Error</option>';
     }
 }
+
+async function refreshMonsterData() {
+    const previousLevelValue = monsterLevelSelect.value;
+    const previousMonsterId = monsterSelect.value;
+
+    await fetchAllMonsters();
+
+    let targetLevelValue = previousLevelValue;
+    let updatedMonster: MonsterRecord | undefined;
+
+    if (previousMonsterId) {
+        updatedMonster = allMonsters.find((monster) => monster.id === previousMonsterId);
+        if (updatedMonster) {
+            targetLevelValue = updatedMonster.level.toString();
+        }
+    }
+
+    if (targetLevelValue) {
+        monsterLevelSelect.value = targetLevelValue;
+    } else {
+        monsterLevelSelect.value = '';
+    }
+
+    updateMonsterDropdown();
+
+    if (!previousMonsterId || !updatedMonster) {
+        return;
+    }
+
+    const hasOption = Array.from(monsterSelect.options).some((option) => option.value === previousMonsterId);
+    if (!hasOption) {
+        return;
+    }
+
+    monsterSelect.value = previousMonsterId;
+
+    if (updatedMonster.assetId) {
+        const alias = `monster_asset:${updatedMonster.assetId}`;
+        if (Assets.cache.has(alias)) {
+            Assets.cache.remove(alias);
+        }
+    }
+
+    await updateMonsterStatsDisplay();
+}
+
+window.monsterEditorRefreshData = refreshMonsterData;
 
 function populateLevelSelect(selectElement: HTMLSelectElement, data: LevelData[]) {
     selectElement.innerHTML = '<option value="">Select level</option>';
