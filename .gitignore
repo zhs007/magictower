@@ -167,3 +167,6 @@ build/
 **/test-results/
 
 startdoubaoimg.sh
+startrmbg.sh
+monstereditorpublish/*.png
+rmbg-models
