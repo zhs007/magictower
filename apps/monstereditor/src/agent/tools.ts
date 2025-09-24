@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { generateImage } from './doubao-client.js';
+import { removeBackground } from './rmbg-client.js';
 import { resolveProjectPath } from '../config/env';
 
 // Always resolve paths from the repo root to avoid cwd issues when running dev/build
@@ -237,6 +238,37 @@ async function saveMonsterImage(assetId: string, imageUrl: string): Promise<stri
     }
 }
 
+async function rmbg(imageUrl: string): Promise<string> {
+    try {
+        logDebug({ imageUrl }, 'rmbg: start');
+        if (!imageUrl.startsWith('/public/')) {
+            return 'Error: Invalid image URL. It must be a local URL starting with /public/';
+        }
+        const filename = path.basename(imageUrl);
+        const sourcePath = path.join(MONSTER_PUBLISH_DIR, filename);
+
+        const imageBuffer = await fs.readFile(sourcePath);
+
+        const processedImageBuffer = await removeBackground(imageBuffer);
+
+        const hash = crypto.createHash('sha256').update(processedImageBuffer).digest('hex');
+        const newFilename = `${hash}.png`;
+        const newFilePath = path.join(MONSTER_PUBLISH_DIR, newFilename);
+
+        await fs.writeFile(newFilePath, processedImageBuffer);
+
+        const newImageUrl = `/public/${newFilename}`;
+        logDebug({ imageUrl, newImageUrl }, 'rmbg: done');
+        return `Background removed successfully. You can view the new image here: ${newImageUrl}`;
+    } catch (error) {
+        console.error('Error in rmbg:', error);
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+            return `Error: Could not find the source image at ${imageUrl}. Make sure genDoubaoImage was called successfully first.`;
+        }
+        return 'Error: Failed to remove background from image.';
+    }
+}
+
 
 // --- Tool Definitions for Gemini ---
 
@@ -306,6 +338,17 @@ export const tools = [
                 },
             },
             {
+                name: 'rmbg',
+                description: 'Remove the background from a previously generated image. This should be called after the user is satisfied with the image content but before saving it permanently.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        imageUrl: { type: 'string', description: "The URL of the image to process, as returned by genDoubaoImage." },
+                    },
+                    required: ['imageUrl'],
+                },
+            },
+            {
                 name: 'saveMonsterImage',
                 description: "Save a previously generated image to the monster assets directory. This should be called when the user is satisfied with a generated image.",
                 parameters: {
@@ -328,5 +371,6 @@ export const toolFunctions = {
     updMonsterInfo,
     simBattle,
     genDoubaoImage,
+    rmbg,
     saveMonsterImage,
 };

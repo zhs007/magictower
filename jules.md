@@ -201,6 +201,9 @@
     - `plan027`: 修复了地图上的装备和道具无法被正确加载为实体的问题。
     - `plan037`: 新增 `leveldataeditor` 可视化编辑器。
     - `plan039`: 重构了 `MapRender` 以统一使用 `Entity` 对象处理墙壁等静态实体，简化了内部逻辑。
+    - `plan043`: Implemented the agent with function calling.
+    - `plan046`: Implemented image generation for the agent.
+    - `plan048`: Implemented image background removal for the agent.
 
 - **下一个任务建议**:
     - `plan016`: "优化 Renderer 渲染性能".
@@ -714,6 +717,33 @@ if (item) {
 
 - **静态文件服务**:
   - `apps/monstereditor/src/server.ts` 中的 Fastify 服务器现在配置为可以静态地提供 `monstereditorpublish/` 目录下的文件，路径为 `/public`。这使得前端可以直接通过 URL 访问由 `genDoubaoImage` 生成的临时图片。
+
+### 19.7 Agent 图像背景移除能力 (plan048)
+
+在 `plan046` 的基础上，我们为 Agent (Ada) 增加了图像背景移除的功能，使其能够生成可直接用于游戏的透明背景素材。
+
+- **gRPC 服务集成**:
+  - Agent 现在可以调用一个新的 gRPC 服务来移除图片背景。该服务的地址必须通过环境变量 `RMBG_GRPC_URL` 来配置（例如 `localhost:50053`）。
+  - 该服务本身（`services/rmbg`）是一个独立的 Python 应用，它使用 `rembg` 库来处理图片。
+
+- **新增工具**:
+  - `rmbg(imageUrl)`:
+    1.  接收一个由 `genDoubaoImage` 生成的图片 URL。
+    2.  从 `monstereditorpublish/` 目录读取该图片。
+    3.  调用 gRPC 服务移除背景。
+    4.  将返回的、已处理的图片数据以新的哈希为文件名，再次保存到 `monstereditorpublish/` 目录。
+    5.  返回一个新的、指向背景移除后图片的公开访问 URL。
+
+- **工作流程变更**:
+  - **系统提示更新**: `prompts/system.md` 文件中的工作流程已被更新。
+  - **新流程**:
+    1.  Agent 调用 `genDoubaoImage` 生成图片，并由用户确认。
+    2.  用户对图片内容满意后，Agent **必须** 调用 `rmbg` 工具处理该图片。
+    3.  Agent 将移除背景后的新图片 URL 展示给用户，进行最终确认。
+    4.  用户最终确认后，Agent 调用 `saveMonsterImage`，但此时传递的是**移除了背景的图片 URL**。
+    5.  最后，调用 `updMonsterInfo` 更新 `assetId`，完成整个流程。
+
+这个新步骤确保了所有最终存入 `assets/monster/` 的图片都是经过背景移除处理的，可以直接在游戏引擎中使用。
 
 ## 20. genDoubaoImage gRPC 服务
 
