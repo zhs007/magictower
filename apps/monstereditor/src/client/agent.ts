@@ -278,6 +278,11 @@ async function streamAgentResponse(
         state.aggregated = '';
         setStatus(statusEl, '');
         setStreaming(false, [sendBtn, newTaskBtn]);
+
+        const refresh = window.monsterEditorRefreshData;
+        if (typeof refresh === 'function') {
+            void refresh();
+        }
     });
 
     eventSource.addEventListener('agent-error', (event) => {

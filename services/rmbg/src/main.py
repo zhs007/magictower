@@ -1,19 +1,45 @@
+import os
 import grpc
 from concurrent import futures
 import time
-import io
 
-from PIL import Image
 from rembg import remove
+try:
+    from rembg import new_session
+except ImportError:  # pragma: no cover - fallback for older rembg versions
+    from rembg.session_factory import new_session  # type: ignore
 
 import rmbg_pb2
 import rmbg_pb2_grpc
+from prepare_models import parse_models
+
+
+def _determine_default_model() -> str:
+    # Explicit override wins.
+    explicit = os.environ.get('REMBG_DEFAULT_MODEL')
+    if explicit:
+        return explicit.strip()
+
+    # Fall back to the first configured model, matching prepare_models.py.
+    configured = os.environ.get('REMBG_MODELS')
+    if configured:
+        parsed = parse_models(configured)
+        if parsed:
+            return parsed[0]
+
+    # Final fallback mirrors prepare_models default.
+    return 'isnet-general-use'
+
+
+DEFAULT_MODEL = _determine_default_model()
+_SESSION = new_session(DEFAULT_MODEL)
+print(f"Using rembg model session '{DEFAULT_MODEL}'", flush=True)
 
 class RmbgServiceServicer(rmbg_pb2_grpc.RmbgServiceServicer):
     def RemoveBackground(self, request, context):
         try:
             # The input is bytes, rembg can handle this directly
-            output_image_bytes = remove(request.image_data)
+            output_image_bytes = remove(request.image_data, session=_SESSION)
 
             return rmbg_pb2.RemoveBackgroundResponse(image_data=output_image_bytes)
 

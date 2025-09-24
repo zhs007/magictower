@@ -36,8 +36,8 @@ const start = async () => {
         // Compose request handling: let Vite handle first; if not handled, pass to Fastify
         const handler = (req: any, res: any) => {
             const url = req.url || '';
-            // Route API requests to Fastify directly
-            if (url.startsWith('/api')) {
+            // Route API requests and static assets served by Fastify directly
+            if (url.startsWith('/api') || url.startsWith('/public/')) {
                 if (typeof app.routing === 'function') {
                     app.routing(req, res);
                 } else {

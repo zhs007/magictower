@@ -71,6 +71,9 @@ const callableTool: any = {
                     case 'genDoubaoImage':
                         result = await toolFunctions.genDoubaoImage(args.prompt as string);
                         break;
+                    case 'rmbg':
+                        result = await toolFunctions.rmbg(args.imageUrl as string);
+                        break;
                     case 'saveMonsterImage':
                         result = await toolFunctions.saveMonsterImage(args.assetId as string, args.imageUrl as string);
                         break;

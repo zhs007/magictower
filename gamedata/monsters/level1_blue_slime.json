@@ -1,0 +1,10 @@
+{
+  "speed": 5,
+  "attack": 15,
+  "maxhp": 80,
+  "assetId": "level1_blue_slime",
+  "defense": 8,
+  "id": "level1_blue_slime",
+  "name": "蓝色史莱姆",
+  "level": 1
+}
