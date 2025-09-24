@@ -482,7 +482,7 @@ if (item) {
     - **服务实现**: `services/rmbg/`
 
 ### 15.2 如何运行服务
-该服务通过 Docker 运行。
+该服务通过 Docker 运行，并会在容器启动时预下载所需的 `rembg` 模型到宿主机目录，从而避免每次重新下载。
 
 1.  **构建 Docker 镜像**:
     在项目根目录下，运行以下命令来构建镜像。
@@ -493,9 +493,15 @@ if (item) {
 2.  **启动 Docker 容器**:
     构建成功后，运行以下命令来启动服务。
     ```bash
-    sudo docker run -d -p 50051:50051 --name rmbg-container rmbg-service
+    sudo docker run -d \
+      -p 50051:50051 \
+      -v /path/to/rmbg-models:/models \
+      --name rmbg-container \
+      rmbg-service
     ```
-    服务将在后台运行，并监听 `50051` 端口。
+    - `/path/to/rmbg-models` 是宿主机上的缓存目录，请根据实际情况替换。模型会下载到这里，容器清理后依然可复用。
+    - 如果需要额外的模型，设置环境变量 `REMBG_MODELS`（逗号或空格分隔，例如 `isnet-general-use,u2net`）。容器默认下载 `isnet-general-use` 模型。
+    - 启动时会先下载模型，日志中会显示 `rembg` 的进度条；完成后会打印 `Model preparation complete. Starting service...`，此时 gRPC 服务才会真正启动并开始监听 `50051` 端口。
 
 3.  **验证服务 (可选)**:
     项目包含一个测试客户端，可以用来验证服务是否正常工作。
@@ -504,7 +510,7 @@ if (item) {
     ```
     该客户端会使用 `assets/player.png` 作为输入，并将移除背景后的图片保存为 `assets/player_no_bg.png`。
 
-    *注意：* `rembg` 库在第一次运行时需要下载机器学习模型，这可能需要一些时间。测试客户端的超时时间已设置为120秒以适应这种情况。
+    *注意：* 如果模型尚未下载完毕，客户端调用会因为服务未就绪而失败，等待日志出现 `Model preparation complete. Starting service...` 后再发起请求即可。
 
 ### 15.3 gRPC API
 - **服务**: `RmbgService`

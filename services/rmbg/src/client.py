@@ -8,8 +8,8 @@ def run():
     with grpc.insecure_channel('localhost:50051') as channel:
         stub = rmbg_pb2_grpc.RmbgServiceStub(channel)
 
-        image_path = 'assets/player.png'
-        output_path = 'assets/player_no_bg.png'
+        image_path = 'assets/monster/level3_golden_slime.png'
+        output_path = 'assets/monster/level3_golden_slime_no_bg.png'
 
         # Load a test image
         if not os.path.exists(image_path):
